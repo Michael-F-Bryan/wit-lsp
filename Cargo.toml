@@ -1,0 +1,13 @@
+[workspace]
+members = ["crates/*", "tree-sitter-wit"]
+
+[workspace.package]
+authors = ["Michael-F-Bryan <michaelfbryan@gmail.com>"]
+edition = "2021"
+homepage = "https://github.com/Michael-F-Bryan/wit-lsp.git"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/Michael-F-Bryan/wit-lsp.git"
+# needed for [workspace.package]
+rust-version = "1.71"
+version = "0.1.0"
