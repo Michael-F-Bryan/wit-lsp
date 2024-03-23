@@ -32,7 +32,7 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
       - name: Type Checking
-        name: cargo check --workspace --verbose --locked
+        run: cargo check --workspace --verbose --locked
       - name: Build
         run: cargo build --workspace --verbose --locked
       - name: Test
@@ -41,8 +41,8 @@ jobs:
         run: cargo test --doc --workspace --verbose --locked
 
   parser:
-      name: Parser
-    runs-on: ${{ matrix.os }}
+    name: Parser
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Setup Rust
