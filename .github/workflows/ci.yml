@@ -79,18 +79,10 @@ jobs:
         uses: Swatinem/rust-cache@v2
       - name: Setup Rust
         uses: dsherret/rust-toolchain-file@v1
-        with:
-          components: rustfmt, clippy
       - name: Check Formatting
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all --verbose --check
+        run: cargo fmt --all --verbose --check
       - name: Clippy
-        uses: actions-rs/clippy-check@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --workspace --verbose
+        run: cargo clippy --workspace --verbose --locked
 
   api-docs:
     name: Publish API Docs to GitHub Pages
