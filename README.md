@@ -1,6 +1,6 @@
 # wit-lsp
 
-[![Continuous integration](https://github.com/Michael-F-Bryan/wit-lsp/workflows/Continuous%20Integration/badge.svg?branch=main)](https://github.com/Michael-F-Bryan/wit-lsp/actions)
+[![Continuous Integration](https://github.com/Michael-F-Bryan/wit-lsp/actions/workflows/ci.yml/badge.svg)](https://github.com/Michael-F-Bryan/wit-lsp/actions/workflows/ci.yml)
 
 ([API Docs][api-docs])
 
