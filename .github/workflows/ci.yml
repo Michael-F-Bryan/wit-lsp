@@ -46,6 +46,9 @@ jobs:
   parser:
     name: Parser Tests
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tree-sitter-wit
     steps:
       - uses: actions/checkout@v2
       - name: Setup Rust
@@ -56,9 +59,16 @@ jobs:
           tool: tree-sitter-cli
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
+      - name: Ensure up to date
+        run: |
+          tree-sitter generate
+
+          if [[ `git status --porcelain` ]]; then
+            echo "[ERROR] The tree sitter grammar needs to be re-generated"
+            exit 1
+          fi
       - name: Test
         run: tree-sitter test
-        working-directory: tree-sitter-wit
 
   lints:
     name: Linting and Formatting
