@@ -1,8 +1,16 @@
 ================================
 Package Declaration with version
-:skip
 ================================
 
 package local:demo@1.2.3;
 
 ---
+
+(source_file
+  (package_decl
+    (fully_qualified_package_name
+      (package_name
+        (identifier))
+      (package_path
+        (identifier))
+      (semver))))

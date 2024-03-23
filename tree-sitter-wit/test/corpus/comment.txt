@@ -7,6 +7,5 @@ Comments
 // And this is another
 
 ---
-(program
-      (comment)
-      (comment))
+
+(source_file)

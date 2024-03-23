@@ -1,0 +1,17 @@
+=============================
+Package Declaration with path
+=============================
+
+package local:path/to/demo;
+
+---
+
+(source_file
+  (package_decl
+    (fully_qualified_package_name
+      (package_name
+        (identifier))
+      (package_path
+        (identifier)
+        (identifier)
+        (identifier)))))
