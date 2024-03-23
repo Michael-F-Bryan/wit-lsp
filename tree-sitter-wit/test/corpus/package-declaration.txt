@@ -1,0 +1,7 @@
+===================
+Package Declaration
+===================
+
+package local:demo;
+
+---

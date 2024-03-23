@@ -32,25 +32,30 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
       - name: Type Checking
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --workspace --verbose --locked
+        name: cargo check --workspace --verbose --locked
       - name: Build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --workspace --verbose --locked
+        run: cargo build --workspace --verbose --locked
       - name: Test
-        uses: actions-rs/cargo@v1
-        with:
-          command: nextest
-          args: run --workspace --verbose --locked
+        run: cargo nextest run --workspace --verbose --locked
       - name: Doc Tests
-        uses: actions-rs/cargo@v1
+        run: cargo test --doc --workspace --verbose --locked
+
+  parser:
+      name: Parser
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Rust
+        uses: dsherret/rust-toolchain-file@v1
+      - name: Install Tree Sitter CLI
+        uses: taiki-e/install-action@v2
         with:
-          command: test
-          args: --doc --workspace --verbose --locked
+          tool: tree-sitter-cli
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+      - name: Test
+        run: tree-sitter test
+        working-directory: tree-sitter-wit
 
   lints:
     name: Linting and Formatting

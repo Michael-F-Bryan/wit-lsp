@@ -1,0 +1,10 @@
+=======================
+Multiline Block Comment
+=======================
+/* this
+   is
+   a
+   comment
+ */
+---
+(program (comment))

@@ -1,0 +1,7 @@
+================================
+Package Declaration with version
+================================
+
+package local:demo@1.2.3;
+
+---
