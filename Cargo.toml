@@ -1,5 +1,6 @@
 [workspace]
 members = ["crates/*", "tree-sitter-wit"]
+resolver = "2"
 
 [workspace.package]
 authors = ["Michael-F-Bryan <michaelfbryan@gmail.com>"]
@@ -11,3 +12,9 @@ repository = "https://github.com/Michael-F-Bryan/wit-lsp.git"
 # needed for [workspace.package]
 rust-version = "1.71"
 version = "0.1.0"
+
+[workspace.dependencies]
+clap = { version = "4.5.3", features = ["derive", "env"] }
+color-eyre = { version = "0.6.3", features = ["issue-url"] }
+tokio = { version = "1.36.0", features = ["macros", "rt-multi-thread", "net", "io-std"] }
+tracing = { version = "0.1.40", features = ["async-await"] }
