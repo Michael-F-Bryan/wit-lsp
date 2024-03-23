@@ -1,5 +1,5 @@
 {
-  "name": "WIT",
+  "name": "wit",
   "rules": {
     "program": {
       "type": "REPEAT",

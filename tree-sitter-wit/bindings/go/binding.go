@@ -1,4 +1,4 @@
-package tree_sitter_WIT
+package tree_sitter_wit
 
 // #cgo CFLAGS: -std=c11 -fPIC
 // #include "../../src/parser.c"
