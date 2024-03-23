@@ -1,0 +1,18 @@
+===================
+Nested Package Name
+:skip
+===================
+
+package really:nested:module;
+
+---
+
+(source_file
+  (package_decl
+    (fully_qualified_package_name
+      (package_name
+        (identifier))
+      (package_path
+        (identifier))
+      (semver))))
+

@@ -53,6 +53,7 @@
   },
   "tree-sitter": [
     {
+      "scope": "source.wit",
       "file-types": [
         "WIT"
       ]
