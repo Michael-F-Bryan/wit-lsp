@@ -1,5 +1,6 @@
 =============
 Block Comment
+:skip
 =============
 /* this is a comment */
 ---

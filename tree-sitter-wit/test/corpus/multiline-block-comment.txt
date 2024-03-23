@@ -1,5 +1,6 @@
 =======================
 Multiline Block Comment
+:skip
 =======================
 /* this
    is

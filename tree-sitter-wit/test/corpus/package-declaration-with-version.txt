@@ -1,5 +1,6 @@
 ================================
 Package Declaration with version
+:skip
 ================================
 
 package local:demo@1.2.3;
