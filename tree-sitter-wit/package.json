@@ -30,7 +30,7 @@
     "src/**"
   ],
   "author": "Michael-F-Bryan <consulting@michaelfbryan.com>",
-  "license": "MIT",
+  "license": "MIT OR Apache-2.0",
   "bugs": {
     "url": "https://github.com/Michael-F-Bryan/wit-lsp/issues"
   },
