@@ -63,7 +63,7 @@ jobs:
         run: |
           tree-sitter generate
 
-          if [[ `git status --porcelain` ]]; then
+          if [[ -n $(git status --porcelain) ]]; then
             echo "[ERROR] The tree sitter grammar needs to be re-generated"
             exit 1
           fi
