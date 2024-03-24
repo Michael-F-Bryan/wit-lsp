@@ -9,8 +9,7 @@ homepage = "https://github.com/Michael-F-Bryan/wit-lsp.git"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/Michael-F-Bryan/wit-lsp.git"
-# needed for [workspace.package]
-rust-version = "1.71"
+rust-version = "1.77"
 
 [workspace.dependencies]
 clap = { version = "4.5.3", features = ["derive", "env"] }
