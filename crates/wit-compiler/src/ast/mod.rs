@@ -1,5 +1,6 @@
 //! Strongly-typed AST nodes.
 
+#[rustfmt::skip]
 mod generated;
 mod traits;
 
