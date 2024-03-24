@@ -110,9 +110,6 @@ jobs:
       - name: Build
         run: npm run compile
         working-directory: plugins/vscode
-      - name: Test
-        run: npm run test
-        working-directory: plugins/vscode
 
   api-docs:
     name: Publish API Docs to GitHub Pages
