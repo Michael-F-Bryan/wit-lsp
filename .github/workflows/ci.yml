@@ -61,10 +61,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
       - name: Ensure up to date
         run: |
-          set -x
-          ls -R bindings
           tree-sitter generate
-          git add . && git diff HEAD
           git status --porcelain
 
           if [[ -n $(git status --porcelain) ]]; then
