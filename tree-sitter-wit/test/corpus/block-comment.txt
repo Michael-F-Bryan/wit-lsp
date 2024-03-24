@@ -1,7 +1,8 @@
 =============
 Block Comment
-:skip
 =============
 /* this is a comment */
 ---
-(program (comment))
+
+(source_file
+  (block_comment))

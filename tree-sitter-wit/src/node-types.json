@@ -15,6 +15,11 @@
     }
   },
   {
+    "type": "block_comment",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "borrowed_handle",
     "named": true,
     "fields": {
@@ -1391,6 +1396,10 @@
     "named": false
   },
   {
+    "type": "/*",
+    "named": false
+  },
+  {
     "type": "///",
     "named": false
   },
@@ -1425,10 +1434,6 @@
   {
     "type": "as",
     "named": false
-  },
-  {
-    "type": "block_comment",
-    "named": true
   },
   {
     "type": "bool",

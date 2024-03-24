@@ -2068,8 +2068,21 @@
       ]
     },
     "block_comment": {
-      "type": "PATTERN",
-      "value": "\\/\\*(?:\\*|[^*])*\\*\\/"
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "/*"
+        },
+        {
+          "type": "PATTERN",
+          "value": "[^*]*\\*+([^/*][^*]*\\*+)*"
+        },
+        {
+          "type": "STRING",
+          "value": "/"
+        }
+      ]
     },
     "slash_comment": {
       "type": "PATTERN",

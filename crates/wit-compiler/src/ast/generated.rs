@@ -21,6 +21,22 @@ impl<'tree> super::AstNode<'tree> for Attribute<'tree> {
         self.0
     }
 }
+///The `block_comment` node.
+#[derive(Debug, Clone, PartialEq)]
+pub struct BlockComment<'tree>(tree_sitter::Node<'tree>);
+impl<'tree> BlockComment<'tree> {}
+impl<'tree> super::AstNode<'tree> for BlockComment<'tree> {
+    const NAME: &'static str = "block_comment";
+    fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        if node.kind() == Self::NAME { Some(BlockComment(node)) } else { None }
+    }
+    fn syntax(&self) -> tree_sitter::Node<'tree> {
+        self.0
+    }
+}
 ///The `borrowed_handle` node.
 #[derive(Debug, Clone, PartialEq)]
 pub struct BorrowedHandle<'tree>(tree_sitter::Node<'tree>);
@@ -1346,22 +1362,6 @@ impl<'tree> super::AstNode<'tree> for WorldItems<'tree> {
         Self: Sized,
     {
         if node.kind() == Self::NAME { Some(WorldItems(node)) } else { None }
-    }
-    fn syntax(&self) -> tree_sitter::Node<'tree> {
-        self.0
-    }
-}
-///The `block_comment` node.
-#[derive(Debug, Clone, PartialEq)]
-pub struct BlockComment<'tree>(tree_sitter::Node<'tree>);
-impl<'tree> BlockComment<'tree> {}
-impl<'tree> super::AstNode<'tree> for BlockComment<'tree> {
-    const NAME: &'static str = "block_comment";
-    fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
-    where
-        Self: Sized,
-    {
-        if node.kind() == Self::NAME { Some(BlockComment(node)) } else { None }
     }
     fn syntax(&self) -> tree_sitter::Node<'tree> {
         self.0
