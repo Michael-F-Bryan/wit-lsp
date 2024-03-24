@@ -3,22 +3,19 @@
   "displayName": "WIT Language Server",
   "description": "A Language Server implementation for the WIT Interface Definition Language",
   "version": "0.0.0",
+  "publisher": "michael-f-bryan",
+  "private": true,
   "engines": {
     "vscode": "^1.87.0"
   },
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
-  "main": "./dist/extension.js",
-  "contributes": {
-    "commands": [
-      {
-        "command": "wit-language-server.helloWorld",
-        "title": "Hello World"
-      }
-    ]
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Michael-F-Bryan/wit-lsp.git"
   },
+  "main": "./dist/extension.js",
   "scripts": {
     "vscode:prepublish": "npm run package",
     "compile": "webpack",
@@ -31,17 +28,109 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.87.0",
+    "@types/markdown-it": "^13.0.7",
     "@types/mocha": "^10.0.6",
     "@types/node": "18.x",
+    "@types/vscode": "^1.87.0",
     "@typescript-eslint/eslint-plugin": "^7.0.2",
     "@typescript-eslint/parser": "^7.0.2",
-    "eslint": "^8.56.0",
-    "typescript": "^5.3.3",
-    "ts-loader": "^9.5.1",
-    "webpack": "^5.90.3",
-    "webpack-cli": "^5.1.4",
     "@vscode/test-cli": "^0.0.6",
-    "@vscode/test-electron": "^2.3.9"
+    "@vscode/test-electron": "^2.3.9",
+    "eslint": "^8.56.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.3.3",
+    "webpack": "^5.90.3",
+    "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "markdown-it": "^14.1.0",
+    "vscode-languageclient": "^9.0.1"
+  },
+  "activationEvents": [
+    "onLanguage:wit"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "wit",
+        "extensions": [
+          ".wit"
+        ],
+        "aliases": [
+          "WIT"
+        ],
+        "configuration": "./configuration/language-configuration.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "wit",
+        "path": "./configuration/wit.code-snippets"
+      }
+    ],
+    "commands": [
+      {
+        "command": "wit-language-server.restart",
+        "title": "Restart Server",
+        "category": "WIT"
+      },
+      {
+        "command": "wit-language-server.dumpAst",
+        "title": "Dump AST",
+        "category": "WIT"
+      },
+      {
+        "command": "wit-language-server.changelog",
+        "title": "Show Changelog",
+        "category": "WIT"
+      },
+      {
+        "command": "wit-language-server.version",
+        "title": "Show Version",
+        "category": "WIT"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "WIT Language Server",
+      "properties": {
+        "wit-language-server.updates.channel": {
+          "scope": "resource",
+          "type": "string",
+          "enum": [
+            "nightly",
+            "stable"
+          ],
+          "default": "stable",
+          "description": "The release channel to download Language Server binaries from"
+        },
+        "wit-language-server.updates.onStartup": {
+          "scope": "resource",
+          "type": "boolean",
+          "default": true,
+          "description": "Check for updates on startup?"
+        },
+        "wit-language-server.server.extraEnv": {
+          "scope": "resource",
+          "type": "object",
+          "patternProperties": {
+            ".+": {
+              "type": "string"
+            },
+            "default": {},
+            "markdownDescription": "Extra environment variables that will be passed to the wit-language-server executable. Useful for passing e.g. `RUST_LOG` for debugging."
+          },
+          "wit-language-server.server.path": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "scope": "machine-overridable",
+            "default": null,
+            "markdownDescription": "Path to wit-language-server executable (points to bundled binary by default)."
+          }
+        }
+      }
+    }
   }
 }
