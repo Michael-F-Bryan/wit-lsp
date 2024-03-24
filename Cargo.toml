@@ -11,7 +11,6 @@ readme = "README.md"
 repository = "https://github.com/Michael-F-Bryan/wit-lsp.git"
 # needed for [workspace.package]
 rust-version = "1.71"
-version = "0.1.0"
 
 [workspace.dependencies]
 clap = { version = "4.5.3", features = ["derive", "env"] }

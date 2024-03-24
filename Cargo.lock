@@ -951,7 +951,7 @@ dependencies = [
 
 [[package]]
 name = "tree-sitter-wit"
-version = "0.0.1"
+version = "0.0.0"
 dependencies = [
  "cc",
  "heck",
@@ -1171,7 +1171,7 @@ checksum = "32b752e52a2da0ddfbdbcc6fceadfeede4c939ed16d13e648833a61dfb611ed8"
 
 [[package]]
 name = "wit-compiler"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "tree-sitter",
  "tree-sitter-wit",
@@ -1179,7 +1179,7 @@ dependencies = [
 
 [[package]]
 name = "wit-language-server"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "clap",
  "color-eyre",

@@ -1,6 +1,6 @@
 {
   "name": "tree-sitter-wit",
-  "version": "0.0.1",
+  "version": "0.0.0",
   "description": "A Tree Sitter parser for the WIT Interface Definition Language",
   "main": "index.js",
   "types": "bindings/node",
