@@ -80,13 +80,13 @@ async function showChangelog(client: LanguageClient) {
  * Parse a `*.wit` file and show its AST in a temporary window to the side.
  */
 async function dumpAst(uri: Uri) {
-    let waiUri = Uri.from({
+    let witUri = Uri.from({
         scheme: "wit",
         path: "dump-ast",
         query: "path=" + encodeURI(uri.toString()),
     });
 
-    let doc = await workspace.openTextDocument(waiUri);
+    let doc = await workspace.openTextDocument(witUri);
 
     await window.showTextDocument(doc, {
         preview: false,

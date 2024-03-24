@@ -28,7 +28,7 @@ export async function loadServerOptions(
                     context.globalStorageUri.fsPath,
                     "bundled",
                     "bin",
-                    "wai-language-server" + exeSuffix,
+                    "wit-language-server" + exeSuffix,
                 );
                 if (await exists(bundled)) {
                     exePath = bundled;
@@ -76,7 +76,7 @@ export async function loadServerOptions(
                 return { command: config.path, transport, options };
             } else {
                 throw new Error(
-                    `Unable to locate the project's root directory relative to "${context.extensionPath}" and the "wai.server.path" setting isn't set.`,
+                    `Unable to locate the project's root directory relative to "${context.extensionPath}" and the "wit-language-server.server.path" setting isn't set.`,
                 );
             }
     }

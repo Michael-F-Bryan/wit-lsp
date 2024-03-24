@@ -17,7 +17,7 @@ impl LanguageServer {
 
     pub fn service() -> (LspService<LanguageServer>, ClientSocket) {
         LspService::build(LanguageServer::new)
-            .custom_method("wai/changelog", LanguageServer::changelog)
+            .custom_method("wit-language-server/changelog", LanguageServer::changelog)
             .finish()
     }
 

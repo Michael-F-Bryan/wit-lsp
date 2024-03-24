@@ -6,7 +6,7 @@ use tower_lsp::Server;
 use tracing_subscriber::{fmt::format::FmtSpan, EnvFilter};
 use wit_language_server::LanguageServer;
 
-const RUST_LOG: &[&str] = &["info", "wai_language_server=trace"];
+const RUST_LOG: &[&str] = &["info", "wit_language_server=trace"];
 
 #[tokio::main]
 async fn main() -> Result<(), color_eyre::Report> {
