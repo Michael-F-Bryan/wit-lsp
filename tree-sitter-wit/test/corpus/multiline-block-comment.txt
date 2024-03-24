@@ -1,6 +1,5 @@
 =======================
 Multiline Block Comment
-:skip
 =======================
 /* this
    is
@@ -8,4 +7,6 @@ Multiline Block Comment
    comment
  */
 ---
-(program (comment))
+
+(source_file
+  (block_comment))
