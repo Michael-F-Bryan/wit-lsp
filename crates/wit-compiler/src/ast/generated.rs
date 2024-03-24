@@ -1244,7 +1244,7 @@ impl<'tree> VariantCase<'tree> {
     pub fn name(&self) -> Option<Identifier> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
-    pub fn payload_opt(&self) -> Option<Ty> {
+    pub fn ty_opt(&self) -> Option<Ty> {
         todo!()
     }
 }

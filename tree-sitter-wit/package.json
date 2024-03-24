@@ -55,8 +55,9 @@
     {
       "scope": "source.wit",
       "file-types": [
-        "WIT"
-      ]
+        "wit"
+      ],
+      "highlights": "queries/highlights.scm"
     }
   ]
 }
