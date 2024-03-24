@@ -1,0 +1,15 @@
+================
+Package syntax 3
+================
+
+package foo:bar;
+
+---
+
+(source_file
+  (package_decl
+    (fully_qualified_package_name
+      (package_name
+        (identifier))
+      (package_path
+        (identifier)))))

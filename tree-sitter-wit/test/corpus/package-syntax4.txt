@@ -1,0 +1,16 @@
+================
+Package syntax 4
+================
+
+package foo:bar@2.0.0;
+
+---
+
+(source_file
+  (package_decl
+    (fully_qualified_package_name
+      (package_name
+        (identifier))
+      (package_path
+        (identifier))
+      (semver))))

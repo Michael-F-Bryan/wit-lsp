@@ -1,0 +1,12 @@
+===========
+Basic world
+===========
+
+world foo { }
+
+---
+
+(source_file
+  (top_level_item
+    (world_item
+      (identifier))))

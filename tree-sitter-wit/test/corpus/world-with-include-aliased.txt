@@ -1,0 +1,12 @@
+==========================
+World with include aliased
+:skip
+==========================
+
+world foo {
+    include wasi:io/my-world-1 with { a as a1, b as b1 };
+}
+
+---
+
+

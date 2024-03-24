@@ -1,0 +1,23 @@
+=================
+World with import
+=================
+
+world command {
+  import wasi:filesystem/filesystem;
+}
+
+---
+
+(source_file
+  (top_level_item
+    (world_item
+      (identifier)
+      (world_items
+        (import_item
+          (imported_path
+            (use_path
+              (package_name
+                (identifier))
+              (package_path
+                (identifier)
+                (identifier)))))))))

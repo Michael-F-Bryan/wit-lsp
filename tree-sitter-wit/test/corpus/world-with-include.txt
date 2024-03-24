@@ -1,0 +1,18 @@
+==================
+World with include
+==================
+
+world foo {
+     include bar;
+}
+
+---
+
+(source_file
+  (top_level_item
+    (world_item
+      (identifier)
+      (world_items
+        (include_item
+          (use_path
+            (identifier)))))))
