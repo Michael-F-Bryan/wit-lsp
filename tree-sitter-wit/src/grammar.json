@@ -9,8 +9,12 @@
           "type": "CHOICE",
           "members": [
             {
-              "type": "SYMBOL",
-              "name": "package_decl"
+              "type": "FIELD",
+              "name": "package",
+              "content": {
+                "type": "SYMBOL",
+                "name": "package_decl"
+              }
             },
             {
               "type": "BLANK"
@@ -30,10 +34,14 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "REPEAT",
+          "type": "FIELD",
+          "name": "attributes",
           "content": {
-            "type": "SYMBOL",
-            "name": "attribute"
+            "type": "REPEAT",
+            "content": {
+              "type": "SYMBOL",
+              "name": "attribute"
+            }
           }
         },
         {
@@ -589,10 +597,14 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "REPEAT",
+          "type": "FIELD",
+          "name": "attributes",
           "content": {
-            "type": "SYMBOL",
-            "name": "attribute"
+            "type": "REPEAT",
+            "content": {
+              "type": "SYMBOL",
+              "name": "attribute"
+            }
           }
         },
         {
@@ -650,7 +662,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "variant_items"
+          "name": "variant_item"
         },
         {
           "type": "SYMBOL",
@@ -658,11 +670,11 @@
         },
         {
           "type": "SYMBOL",
-          "name": "flags_items"
+          "name": "flags_item"
         },
         {
           "type": "SYMBOL",
-          "name": "enum_items"
+          "name": "enum_item"
         },
         {
           "type": "SYMBOL",
@@ -674,10 +686,14 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "REPEAT",
+          "type": "FIELD",
+          "name": "attributes",
           "content": {
-            "type": "SYMBOL",
-            "name": "attribute"
+            "type": "REPEAT",
+            "content": {
+              "type": "SYMBOL",
+              "name": "attribute"
+            }
           }
         },
         {
@@ -870,7 +886,7 @@
         },
         {
           "type": "FIELD",
-          "name": "type",
+          "name": "ty",
           "content": {
             "type": "SYMBOL",
             "name": "ty"
@@ -983,10 +999,14 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "REPEAT",
+          "type": "FIELD",
+          "name": "attributes",
           "content": {
-            "type": "SYMBOL",
-            "name": "attribute"
+            "type": "REPEAT",
+            "content": {
+              "type": "SYMBOL",
+              "name": "attribute"
+            }
           }
         },
         {
@@ -1053,10 +1073,14 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "REPEAT",
+          "type": "FIELD",
+          "name": "attributes",
           "content": {
-            "type": "SYMBOL",
-            "name": "attribute"
+            "type": "REPEAT",
+            "content": {
+              "type": "SYMBOL",
+              "name": "attribute"
+            }
           }
         },
         {
@@ -1089,10 +1113,14 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "REPEAT",
+          "type": "FIELD",
+          "name": "attributes",
           "content": {
-            "type": "SYMBOL",
-            "name": "attribute"
+            "type": "REPEAT",
+            "content": {
+              "type": "SYMBOL",
+              "name": "attribute"
+            }
           }
         },
         {
@@ -1109,14 +1137,18 @@
         }
       ]
     },
-    "variant_items": {
+    "variant_item": {
       "type": "SEQ",
       "members": [
         {
-          "type": "REPEAT",
+          "type": "FIELD",
+          "name": "attributes",
           "content": {
-            "type": "SYMBOL",
-            "name": "attribute"
+            "type": "REPEAT",
+            "content": {
+              "type": "SYMBOL",
+              "name": "attribute"
+            }
           }
         },
         {
@@ -1195,10 +1227,14 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "REPEAT",
+          "type": "FIELD",
+          "name": "attributes",
           "content": {
-            "type": "SYMBOL",
-            "name": "attribute"
+            "type": "REPEAT",
+            "content": {
+              "type": "SYMBOL",
+              "name": "attribute"
+            }
           }
         },
         {
@@ -1244,10 +1280,14 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "REPEAT",
+          "type": "FIELD",
+          "name": "attributes",
           "content": {
-            "type": "SYMBOL",
-            "name": "attribute"
+            "type": "REPEAT",
+            "content": {
+              "type": "SYMBOL",
+              "name": "attribute"
+            }
           }
         },
         {
@@ -1326,10 +1366,14 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "REPEAT",
+          "type": "FIELD",
+          "name": "attributes",
           "content": {
-            "type": "SYMBOL",
-            "name": "attribute"
+            "type": "REPEAT",
+            "content": {
+              "type": "SYMBOL",
+              "name": "attribute"
+            }
           }
         },
         {
@@ -1354,14 +1398,18 @@
         }
       ]
     },
-    "flags_items": {
+    "flags_item": {
       "type": "SEQ",
       "members": [
         {
-          "type": "REPEAT",
+          "type": "FIELD",
+          "name": "attributes",
           "content": {
-            "type": "SYMBOL",
-            "name": "attribute"
+            "type": "REPEAT",
+            "content": {
+              "type": "SYMBOL",
+              "name": "attribute"
+            }
           }
         },
         {
@@ -1440,10 +1488,14 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "REPEAT",
+          "type": "FIELD",
+          "name": "attributes",
           "content": {
-            "type": "SYMBOL",
-            "name": "attribute"
+            "type": "REPEAT",
+            "content": {
+              "type": "SYMBOL",
+              "name": "attribute"
+            }
           }
         },
         {
@@ -1452,14 +1504,18 @@
         }
       ]
     },
-    "enum_items": {
+    "enum_item": {
       "type": "SEQ",
       "members": [
         {
-          "type": "REPEAT",
+          "type": "FIELD",
+          "name": "attributes",
           "content": {
-            "type": "SYMBOL",
-            "name": "attribute"
+            "type": "REPEAT",
+            "content": {
+              "type": "SYMBOL",
+              "name": "attribute"
+            }
           }
         },
         {
@@ -1538,10 +1594,14 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "REPEAT",
+          "type": "FIELD",
+          "name": "attributes",
           "content": {
-            "type": "SYMBOL",
-            "name": "attribute"
+            "type": "REPEAT",
+            "content": {
+              "type": "SYMBOL",
+              "name": "attribute"
+            }
           }
         },
         {
@@ -1554,10 +1614,14 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "REPEAT",
+          "type": "FIELD",
+          "name": "attributes",
           "content": {
-            "type": "SYMBOL",
-            "name": "attribute"
+            "type": "REPEAT",
+            "content": {
+              "type": "SYMBOL",
+              "name": "attribute"
+            }
           }
         },
         {

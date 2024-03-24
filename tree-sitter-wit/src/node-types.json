@@ -22,15 +22,22 @@
   {
     "type": "enum_field",
     "named": true,
-    "fields": {},
+    "fields": {
+      "attributes": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "attribute",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
-        {
-          "type": "attribute",
-          "named": true
-        },
         {
           "type": "identifier",
           "named": true
@@ -39,9 +46,19 @@
     }
   },
   {
-    "type": "enum_items",
+    "type": "enum_item",
     "named": true,
     "fields": {
+      "attributes": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "attribute",
+            "named": true
+          }
+        ]
+      },
       "name": {
         "multiple": false,
         "required": true,
@@ -57,10 +74,6 @@
       "multiple": true,
       "required": false,
       "types": [
-        {
-          "type": "attribute",
-          "named": true
-        },
         {
           "type": "enum_field",
           "named": true
@@ -171,15 +184,22 @@
   {
     "type": "flags_field",
     "named": true,
-    "fields": {},
+    "fields": {
+      "attributes": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "attribute",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
-        {
-          "type": "attribute",
-          "named": true
-        },
         {
           "type": "identifier",
           "named": true
@@ -188,9 +208,19 @@
     }
   },
   {
-    "type": "flags_items",
+    "type": "flags_item",
     "named": true,
     "fields": {
+      "attributes": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "attribute",
+            "named": true
+          }
+        ]
+      },
       "name": {
         "multiple": false,
         "required": true,
@@ -206,10 +236,6 @@
       "multiple": true,
       "required": false,
       "types": [
-        {
-          "type": "attribute",
-          "named": true
-        },
         {
           "type": "flags_field",
           "named": true
@@ -257,6 +283,16 @@
     "type": "func_item",
     "named": true,
     "fields": {
+      "attributes": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "attribute",
+            "named": true
+          }
+        ]
+      },
       "name": {
         "multiple": false,
         "required": true,
@@ -269,13 +305,9 @@
       }
     },
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
-        {
-          "type": "attribute",
-          "named": true
-        },
         {
           "type": "func_type",
           "named": true
@@ -456,6 +488,16 @@
     "type": "interface_item",
     "named": true,
     "fields": {
+      "attributes": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "attribute",
+            "named": true
+          }
+        ]
+      },
       "name": {
         "multiple": false,
         "required": true,
@@ -471,10 +513,6 @@
       "multiple": true,
       "required": false,
       "types": [
-        {
-          "type": "attribute",
-          "named": true
-        },
         {
           "type": "interface_items",
           "named": true
@@ -534,7 +572,7 @@
           }
         ]
       },
-      "type": {
+      "ty": {
         "multiple": false,
         "required": true,
         "types": [
@@ -579,15 +617,22 @@
   {
     "type": "package_decl",
     "named": true,
-    "fields": {},
+    "fields": {
+      "attributes": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "attribute",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
-        {
-          "type": "attribute",
-          "named": true
-        },
         {
           "type": "fully_qualified_package_name",
           "named": true
@@ -644,6 +689,16 @@
     "type": "record_field",
     "named": true,
     "fields": {
+      "attributes": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "attribute",
+            "named": true
+          }
+        ]
+      },
       "name": {
         "multiple": false,
         "required": true,
@@ -664,22 +719,22 @@
           }
         ]
       }
-    },
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "attribute",
-          "named": true
-        }
-      ]
     }
   },
   {
     "type": "record_item",
     "named": true,
     "fields": {
+      "attributes": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "attribute",
+            "named": true
+          }
+        ]
+      },
       "name": {
         "multiple": false,
         "required": true,
@@ -696,10 +751,6 @@
       "required": false,
       "types": [
         {
-          "type": "attribute",
-          "named": true
-        },
-        {
           "type": "record_field",
           "named": true
         }
@@ -709,15 +760,22 @@
   {
     "type": "resource_constructor",
     "named": true,
-    "fields": {},
+    "fields": {
+      "attributes": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "attribute",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
-        {
-          "type": "attribute",
-          "named": true
-        },
         {
           "type": "param_list",
           "named": true
@@ -729,6 +787,16 @@
     "type": "resource_item",
     "named": true,
     "fields": {
+      "attributes": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "attribute",
+            "named": true
+          }
+        ]
+      },
       "name": {
         "multiple": false,
         "required": true,
@@ -744,10 +812,6 @@
       "multiple": true,
       "required": false,
       "types": [
-        {
-          "type": "attribute",
-          "named": true
-        },
         {
           "type": "resource_method",
           "named": true
@@ -826,15 +890,22 @@
   {
     "type": "source_file",
     "named": true,
-    "fields": {},
+    "fields": {
+      "package": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "package_decl",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
       "multiple": true,
       "required": false,
       "types": [
-        {
-          "type": "package_decl",
-          "named": true
-        },
         {
           "type": "top_level_item",
           "named": true
@@ -846,6 +917,16 @@
     "type": "static_method",
     "named": true,
     "fields": {
+      "attributes": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "attribute",
+            "named": true
+          }
+        ]
+      },
       "name": {
         "multiple": false,
         "required": true,
@@ -858,13 +939,9 @@
       }
     },
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
-        {
-          "type": "attribute",
-          "named": true
-        },
         {
           "type": "func_type",
           "named": true
@@ -975,6 +1052,16 @@
     "type": "type_item",
     "named": true,
     "fields": {
+      "attributes": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "attribute",
+            "named": true
+          }
+        ]
+      },
       "name": {
         "multiple": false,
         "required": true,
@@ -995,16 +1082,6 @@
           }
         ]
       }
-    },
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "attribute",
-          "named": true
-        }
-      ]
     }
   },
   {
@@ -1016,11 +1093,11 @@
       "required": true,
       "types": [
         {
-          "type": "enum_items",
+          "type": "enum_item",
           "named": true
         },
         {
-          "type": "flags_items",
+          "type": "flags_item",
           "named": true
         },
         {
@@ -1036,7 +1113,7 @@
           "named": true
         },
         {
-          "type": "variant_items",
+          "type": "variant_item",
           "named": true
         }
       ]
@@ -1159,6 +1236,16 @@
     "type": "variant_case",
     "named": true,
     "fields": {
+      "attributes": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "attribute",
+            "named": true
+          }
+        ]
+      },
       "name": {
         "multiple": false,
         "required": true,
@@ -1179,22 +1266,22 @@
           }
         ]
       }
-    },
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "attribute",
-          "named": true
-        }
-      ]
     }
   },
   {
-    "type": "variant_items",
+    "type": "variant_item",
     "named": true,
     "fields": {
+      "attributes": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "attribute",
+            "named": true
+          }
+        ]
+      },
       "name": {
         "multiple": false,
         "required": true,
@@ -1210,10 +1297,6 @@
       "multiple": true,
       "required": false,
       "types": [
-        {
-          "type": "attribute",
-          "named": true
-        },
         {
           "type": "variant_case",
           "named": true

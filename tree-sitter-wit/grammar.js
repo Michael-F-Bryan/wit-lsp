@@ -20,10 +20,13 @@ module.exports = grammar({
     ],
 
     rules: {
-        source_file: $ => seq(optional($.package_decl), repeat($.top_level_item)),
+        source_file: $ => seq(
+            optional(field("package", $.package_decl)),
+            repeat($.top_level_item),
+        ),
 
         package_decl: $ => seq(
-            repeat($.attribute),
+            field("attributes", repeat($.attribute)),
             "package",
             $.fully_qualified_package_name,
             ";",
@@ -88,7 +91,7 @@ module.exports = grammar({
         ),
 
         interface_item: $ => seq(
-            repeat($.attribute),
+            field("attributes", repeat($.attribute)),
             "interface",
             field("name", $.identifier),
             "{",
@@ -98,14 +101,14 @@ module.exports = grammar({
         interface_items: $ => choice($.typedef_item, $.use_item, $.func_item),
         typedef_item: $ => choice(
             $.resource_item,
-            $.variant_items,
+            $.variant_item,
             $.record_item,
-            $.flags_items,
-            $.enum_items,
+            $.flags_item,
+            $.enum_item,
             $.type_item,
         ),
         func_item: $ => seq(
-            repeat($.attribute),
+            field("attributes", repeat($.attribute)),
             field("name", $.identifier),
             ":",
             $.func_type,
@@ -127,7 +130,7 @@ module.exports = grammar({
         named_type: $ => seq(
             field("name", $.identifier),
             ":",
-            field("type", $.ty),
+            field("ty", $.ty),
         ),
 
         include_item: $ => seq(
@@ -146,7 +149,7 @@ module.exports = grammar({
         ),
 
         resource_item: $ => seq(
-            repeat($.attribute),
+            field("attributes", repeat($.attribute)),
             "resource",
             field("name", $.identifier),
             choice(
@@ -160,7 +163,7 @@ module.exports = grammar({
             $.resource_constructor,
         ),
         static_method: $ => seq(
-            repeat($.attribute),
+            field("attributes", repeat($.attribute)),
             field("name", $.identifier),
             ":",
             "static",
@@ -168,14 +171,14 @@ module.exports = grammar({
             ";",
         ),
         resource_constructor: $ => seq(
-            repeat($.attribute),
+            field("attributes", repeat($.attribute)),
             "constructor",
             $.param_list,
             ";",
         ),
 
-        variant_items: $ => seq(
-            repeat($.attribute),
+        variant_item: $ => seq(
+            field("attributes", repeat($.attribute)),
             "variant",
             field("name", $.identifier),
             "{",
@@ -183,7 +186,7 @@ module.exports = grammar({
             "}",
         ),
         variant_case: $ => seq(
-            repeat($.attribute),
+            field("attributes", repeat($.attribute)),
             field("name", $.identifier),
             optional(
                 seq(
@@ -195,7 +198,7 @@ module.exports = grammar({
         ),
 
         record_item: $ => seq(
-            repeat($.attribute),
+            field("attributes", repeat($.attribute)),
             "record",
             field("name", $.identifier),
             "{",
@@ -203,34 +206,40 @@ module.exports = grammar({
             "}",
         ),
         record_field: $ => seq(
-            repeat($.attribute),
+            field("attributes", repeat($.attribute)),
             field("name", $.identifier),
             ":",
             field("ty", $.ty),
         ),
 
-        flags_items: $ => seq(
-            repeat($.attribute),
+        flags_item: $ => seq(
+            field("attributes", repeat($.attribute)),
             "flags",
             field("name", $.identifier),
             "{",
             cases($.flags_field),
             "}",
         ),
-        flags_field: $ => seq(repeat($.attribute), $.identifier),
+        flags_field: $ => seq(
+            field("attributes", repeat($.attribute)),
+            $.identifier,
+        ),
 
-        enum_items: $ => seq(
-            repeat($.attribute),
+        enum_item: $ => seq(
+            field("attributes", repeat($.attribute)),
             "enum",
             field("name", $.identifier),
             "{",
             cases($.enum_field),
             "}",
         ),
-        enum_field: $ => seq(repeat($.attribute), $.identifier),
+        enum_field: $ => seq(
+            field("attributes", repeat($.attribute)),
+            $.identifier,
+        ),
 
         type_item: $ => seq(
-            repeat($.attribute),
+            field("attributes", repeat($.attribute)),
             "type",
             field("name", $.identifier),
             "=",

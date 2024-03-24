@@ -195,7 +195,7 @@ interface wasi {
       (identifier)
       (interface_items
         (typedef_item
-          (enum_items
+          (enum_item
             (identifier)
             (slash_comment)
             (slash_comment)
@@ -219,7 +219,7 @@ interface wasi {
       (slash_comment)
       (interface_items
         (typedef_item
-          (enum_items
+          (enum_item
             (identifier)
             (slash_comment)
             (enum_field
