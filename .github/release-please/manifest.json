@@ -1,5 +1,6 @@
 {
     "crates/wit-compiler": "0.0.0",
     "crates/wit-language-server": "0.0.0",
-    "tree-sitter-wit": "0.0.0"
+    "tree-sitter-wit": "0.0.0",
+    "plugins/vscode": "0.0.0"
 }

@@ -22,6 +22,10 @@
                 },
                 "tree-sitter-wit/Makefile"
             ]
+        },
+        "plugins/vscode": {
+            "component": "vscode",
+            "release-type": "node"
         }
     },
     "plugins": [
