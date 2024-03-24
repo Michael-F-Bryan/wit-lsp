@@ -80,11 +80,11 @@ module.exports = grammar({
             field("path", $.use_path),
             token.immediate("."),
             token.immediate("{"),
-            $.use_names_list,
+            $._use_names_list,
             token.immediate("}"),
             ";",
         ),
-        use_names_list: $ => punctuated($.use_names_item, ","),
+        _use_names_list: $ => punctuated($.use_names_item, ","),
         use_names_item: $ => seq(
             field("name", $.identifier),
             optional(seq("as", field("alias", $.identifier))),
@@ -111,12 +111,12 @@ module.exports = grammar({
             field("attributes", repeat($.attribute)),
             field("name", $.identifier),
             ":",
-            $.func_type,
+            field("ty", $.func_type),
             ";",
         ),
         func_type: $ => seq(
             "func",
-            $.param_list,
+            field("params", $.param_list),
             optional(
                 seq(
                     "->",
@@ -124,9 +124,10 @@ module.exports = grammar({
                 )
             ),
         ),
-        param_list: $ => seq("(", punctuated($.named_type_list, ","), optional(","), ")"),
-        result_list: $ => choice($.ty, seq("(", optional($.named_type_list), ")")),
-        named_type_list: $ => prec.left(punctuated($.named_type, ",")),
+        param_list: $ => seq("(", optional($._param_list_inner), ")"),
+        _param_list_inner: $ => seq(punctuated($._named_type_list, ","), optional(",")),
+        result_list: $ => choice($.ty, seq("(", optional($._named_type_list), ")")),
+        _named_type_list: $ => prec.left(punctuated($.named_type, ",")),
         named_type: $ => seq(
             field("name", $.identifier),
             ":",
@@ -173,7 +174,7 @@ module.exports = grammar({
         resource_constructor: $ => seq(
             field("attributes", repeat($.attribute)),
             "constructor",
-            $.param_list,
+            field("params", $.param_list),
             ";",
         ),
 
@@ -191,7 +192,7 @@ module.exports = grammar({
             optional(
                 seq(
                     "(",
-                    field("payload", $.ty),
+                    field("ty", $.ty),
                     ")",
                 ),
             ),
@@ -222,7 +223,7 @@ module.exports = grammar({
         ),
         flags_field: $ => seq(
             field("attributes", repeat($.attribute)),
-            $.identifier,
+            field("name", $.identifier),
         ),
 
         enum_item: $ => seq(
@@ -235,7 +236,7 @@ module.exports = grammar({
         ),
         enum_field: $ => seq(
             field("attributes", repeat($.attribute)),
-            $.identifier,
+            field("name", $.identifier),
         ),
 
         type_item: $ => seq(
@@ -264,7 +265,9 @@ module.exports = grammar({
             ">",
         ),
 
-        handle: $ => seq("borrow", "<", field("name", $.identifier), ">"),
+        handle: $ => choice($.borrowed_handle, $.owned_handle),
+        borrowed_handle: $ => seq("borrow", "<", field("name", $.identifier), ">"),
+        owned_handle: $ => seq("own", "<", field("name", $.identifier), ">"),
 
         attribute: $ => choice($.doc_comment),
 

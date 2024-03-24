@@ -1,5 +1,5 @@
 use super::Attribute;
-use tree_sitter_wit::tree_sitter::Node;
+use tree_sitter::Node;
 
 pub trait AstNode<'tree>: 'tree {
     const NAME: &'static str;

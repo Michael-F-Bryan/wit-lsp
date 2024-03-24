@@ -1,13 +1,11 @@
 =============
 All Resources
-:skip
 =============
 
 package foo:bar;
 
 interface foo {
-  resource a {
-  }
+  resource a { }
 
   resource b {
     constructor();
@@ -53,4 +51,137 @@ interface i {
 
 ---
 
-
+(source_file
+  (package_decl
+    (fully_qualified_package_name
+      (package_name
+        (identifier))
+      (package_path
+        (identifier))))
+  (top_level_item
+    (interface_item
+      (identifier)
+      (interface_items
+        (typedef_item
+          (resource_item
+            (identifier))))
+      (interface_items
+        (typedef_item
+          (resource_item
+            (identifier)
+            (resource_method
+              (resource_constructor
+                (param_list))))))
+      (interface_items
+        (typedef_item
+          (resource_item
+            (identifier)
+            (resource_method
+              (resource_constructor
+                (param_list
+                  (named_type
+                    (identifier)
+                    (ty))))))))
+      (interface_items
+        (typedef_item
+          (resource_item
+            (identifier)
+            (resource_method
+              (resource_constructor
+                (param_list
+                  (named_type
+                    (identifier)
+                    (ty)))))
+            (resource_method
+              (func_item
+                (identifier)
+                (func_type
+                  (param_list))))
+            (resource_method
+              (static_method
+                (identifier)
+                (func_type
+                  (param_list)))))))
+      (interface_items
+        (typedef_item
+          (resource_item
+            (identifier)
+            (resource_method
+              (resource_constructor
+                (param_list
+                  (named_type
+                    (identifier)
+                    (ty
+                      (handle
+                        (owned_handle
+                          (identifier)))))
+                  (named_type
+                    (identifier)
+                    (ty
+                      (handle
+                        (borrowed_handle
+                          (identifier))))))))
+            (resource_method
+              (func_item
+                (identifier)
+                (func_type
+                  (param_list
+                    (named_type
+                      (identifier)
+                      (ty
+                        (handle
+                          (owned_handle
+                            (identifier)))))
+                    (named_type
+                      (identifier)
+                      (ty
+                        (handle
+                          (borrowed_handle
+                            (identifier))))))))))))))
+  (top_level_item
+    (world_item
+      (identifier)
+      (world_items
+        (typedef_item
+          (resource_item
+            (identifier))))
+      (world_items
+        (typedef_item
+          (resource_item
+            (identifier))))
+      (world_items
+        (typedef_item
+          (resource_item
+            (identifier)
+            (resource_method
+              (resource_constructor
+                (param_list))))))))
+  (top_level_item
+    (interface_item
+      (identifier)
+      (interface_items
+        (typedef_item
+          (resource_item
+            (identifier))))
+      (interface_items
+        (typedef_item
+          (type_item
+            (identifier)
+            (ty
+              (identifier)))))
+      (interface_items
+        (typedef_item
+          (type_item
+            (identifier)
+            (ty
+              (handle
+                (borrowed_handle
+                  (identifier)))))))
+      (interface_items
+        (typedef_item
+          (type_item
+            (identifier)
+            (ty
+              (handle
+                (borrowed_handle
+                  (identifier))))))))))

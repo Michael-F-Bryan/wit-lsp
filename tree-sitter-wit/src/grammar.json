@@ -515,7 +515,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "use_names_list"
+          "name": "_use_names_list"
         },
         {
           "type": "IMMEDIATE_TOKEN",
@@ -530,7 +530,7 @@
         }
       ]
     },
-    "use_names_list": {
+    "_use_names_list": {
       "type": "SEQ",
       "members": [
         {
@@ -709,8 +709,12 @@
           "value": ":"
         },
         {
-          "type": "SYMBOL",
-          "name": "func_type"
+          "type": "FIELD",
+          "name": "ty",
+          "content": {
+            "type": "SYMBOL",
+            "name": "func_type"
+          }
         },
         {
           "type": "STRING",
@@ -726,8 +730,12 @@
           "value": "func"
         },
         {
-          "type": "SYMBOL",
-          "name": "param_list"
+          "type": "FIELD",
+          "name": "params",
+          "content": {
+            "type": "SYMBOL",
+            "name": "param_list"
+          }
         },
         {
           "type": "CHOICE",
@@ -764,11 +772,32 @@
           "value": "("
         },
         {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_param_list_inner"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "STRING",
+          "value": ")"
+        }
+      ]
+    },
+    "_param_list_inner": {
+      "type": "SEQ",
+      "members": [
+        {
           "type": "SEQ",
           "members": [
             {
               "type": "SYMBOL",
-              "name": "named_type_list"
+              "name": "_named_type_list"
             },
             {
               "type": "REPEAT",
@@ -781,7 +810,7 @@
                   },
                   {
                     "type": "SYMBOL",
-                    "name": "named_type_list"
+                    "name": "_named_type_list"
                   }
                 ]
               }
@@ -799,10 +828,6 @@
               "type": "BLANK"
             }
           ]
-        },
-        {
-          "type": "STRING",
-          "value": ")"
         }
       ]
     },
@@ -825,7 +850,7 @@
               "members": [
                 {
                   "type": "SYMBOL",
-                  "name": "named_type_list"
+                  "name": "_named_type_list"
                 },
                 {
                   "type": "BLANK"
@@ -840,7 +865,7 @@
         }
       ]
     },
-    "named_type_list": {
+    "_named_type_list": {
       "type": "PREC_LEFT",
       "value": 0,
       "content": {
@@ -1128,8 +1153,12 @@
           "value": "constructor"
         },
         {
-          "type": "SYMBOL",
-          "name": "param_list"
+          "type": "FIELD",
+          "name": "params",
+          "content": {
+            "type": "SYMBOL",
+            "name": "param_list"
+          }
         },
         {
           "type": "STRING",
@@ -1257,7 +1286,7 @@
                 },
                 {
                   "type": "FIELD",
-                  "name": "payload",
+                  "name": "ty",
                   "content": {
                     "type": "SYMBOL",
                     "name": "ty"
@@ -1499,8 +1528,12 @@
           }
         },
         {
-          "type": "SYMBOL",
-          "name": "identifier"
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
         }
       ]
     },
@@ -1605,8 +1638,12 @@
           }
         },
         {
-          "type": "SYMBOL",
-          "name": "identifier"
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
         }
       ]
     },
@@ -1930,11 +1967,49 @@
       ]
     },
     "handle": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "borrowed_handle"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "owned_handle"
+        }
+      ]
+    },
+    "borrowed_handle": {
       "type": "SEQ",
       "members": [
         {
           "type": "STRING",
           "value": "borrow"
+        },
+        {
+          "type": "STRING",
+          "value": "<"
+        },
+        {
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": ">"
+        }
+      ]
+    },
+    "owned_handle": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "own"
         },
         {
           "type": "STRING",
