@@ -1,0 +1,31 @@
+{
+    "release-type": "rust",
+    "packages": {
+        "crates/wit-compiler": {
+            "component": "wit-compiler"
+        },
+        "crates/wit-language-server": {
+            "component": "wit-language-server"
+        },
+        "tree-sitter-wit": {
+            "component": "wit-language-server",
+            "extra-files": [
+                {
+                    "type": "json",
+                    "path": "tree-sitter-wit/package.json",
+                    "jsonpath": "$.version"
+                },
+                {
+                    "type": "toml",
+                    "path": "tree-sitter-wit/pyproject.toml",
+                    "jsonpath": "$.project.version"
+                },
+                "tree-sitter-wit/Makefile"
+            ]
+        }
+    },
+    "plugins": [
+        "cargo-workspace"
+    ],
+    "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
+}

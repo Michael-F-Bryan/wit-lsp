@@ -7,7 +7,8 @@ on:
     - main
 
 env:
-  DEFAULT_CRATE_NAME: wit_lsp
+  DEFAULT_CRATE_NAME: wit_language_server
+  RUST_BACKTRACE: 1
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -94,10 +95,8 @@ jobs:
         uses: Swatinem/rust-cache@v2
       - name: Setup Rust
         uses: dsherret/rust-toolchain-file@v1
-      - uses: actions-rs/cargo@v1
-        with:
-          command: doc
-          args: --workspace --verbose --locked
+      - name: Generate API Docs
+        run: cargo doc --workspace --verbose --locked
       - name: Redirect top-level GitHub Pages
         run: 'echo ''<meta http-equiv="refresh" content="0; url=${{ env.DEFAULT_CRATE_NAME }}/index.html" />'' > target/doc/index.html'
         shell: bash

@@ -3,8 +3,8 @@ package tree_sitter_wit_test
 import (
 	"testing"
 
+	tree_sitter_wit "github.com/Michael-F-Bryan/wit-lsp/tree-sitter-wit"
 	tree_sitter "github.com/smacker/go-tree-sitter"
-	"github.com/tree-sitter/tree-sitter-wit"
 )
 
 func TestCanLoadGrammar(t *testing.T) {

@@ -1,4 +1,4 @@
-module github.com/tree-sitter/tree-sitter-wit
+module github.com/Michael-F-Bryan/wit-lsp/tree-sitter-wit
 
 go 1.22
 
