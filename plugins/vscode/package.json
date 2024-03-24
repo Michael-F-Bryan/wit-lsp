@@ -2,7 +2,7 @@
   "name": "wit-language-server",
   "displayName": "WIT Language Server",
   "description": "A Language Server implementation for the WIT Interface Definition Language",
-  "version": "0.0.1",
+  "version": "0.0.0",
   "engines": {
     "vscode": "^1.87.0"
   },
