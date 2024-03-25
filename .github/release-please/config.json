@@ -8,7 +8,7 @@
             "component": "wit-language-server"
         },
         "tree-sitter-wit": {
-            "component": "wit-language-server",
+            "component": "tree-sitter-wit",
             "extra-files": [
                 {
                     "type": "json",
