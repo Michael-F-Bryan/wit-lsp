@@ -1,0 +1,6 @@
+type foo = bar;
+
+world wasi {
+    
+}
+
