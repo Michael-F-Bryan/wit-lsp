@@ -3,7 +3,7 @@ members = ["crates/*", "integration-tests", "tree-sitter-wit"]
 resolver = "2"
 
 [workspace.package]
-authors = ["Michael-F-Bryan <michaelfbryan@gmail.com>"]
+authors = ["Michael-F-Bryan <consulting@michaelfbryan.com>"]
 edition = "2021"
 homepage = "https://github.com/Michael-F-Bryan/wit-lsp.git"
 license = "MIT OR Apache-2.0"
