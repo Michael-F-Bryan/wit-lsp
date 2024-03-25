@@ -40,6 +40,10 @@ export async function activate(context: ExtensionContext) {
 	registerCommands(context, client);
 
 	await client.start();
+
+	if (context.extensionMode != ExtensionMode.Production) {
+		await commands.executeCommand('workbench.action.toggleDevTools');
+	}
 }
 
 export function deactivate(): Thenable<void> | undefined {
