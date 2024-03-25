@@ -14,7 +14,7 @@ use tower_lsp::{
 };
 use wit_compiler::{queries::Workspace, Text};
 
-use crate::Database;
+use crate::{Database, Db};
 
 /// The language server implementation.
 #[derive(Debug)]
@@ -209,7 +209,8 @@ impl tower_lsp::LanguageServer for LanguageServer {
         let db = self.db.lock().await;
 
         match self.workspace_for_path(path).await {
-            Some(ws) => Ok(Some(crate::ops::folding_range(&*db, ws, path.into()))),
+            Some(ws) => Ok(wit_compiler::queries::parse(db.as_wit(), ws, path.into())
+                .map(|ast| crate::ops::folding_range(&*db, ast).into_iter().collect())),
             _ => {
                 tracing::warn!(%path, "Workspace not found for file");
                 Ok(None)

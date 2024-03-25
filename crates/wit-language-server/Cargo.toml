@@ -23,5 +23,9 @@ tower-service = "0.3.2"
 tracing = { workspace = true }
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 tree-sitter = { workspace = true }
+tree-sitter-wit = { version = "0.0.0", path = "../../tree-sitter-wit" }
 uuid = { version = "1.8.0", features = ["v4"] }
 wit-compiler = { path = "../wit-compiler", version = "0.0.0" }
+
+[dev-dependencies]
+insta = { workspace = true }

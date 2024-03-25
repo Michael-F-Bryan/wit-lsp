@@ -1,4 +1,5 @@
 mod database;
+mod ops;
 mod server;
 
 pub use crate::{
