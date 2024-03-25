@@ -10,7 +10,9 @@
 			"type": "extensionHost",
 			"request": "launch",
 			"args": [
-				"--extensionDevelopmentPath=${workspaceFolder}/plugins/vscode"
+				"--disable-extensions",
+				"--extensionDevelopmentPath=${workspaceFolder}/plugins/vscode",
+				"${workspaceFolder}/integration-tests"
 			],
 			"outFiles": [
 				"${workspaceFolder}/plugins/vscode/dist/**/*.js"
