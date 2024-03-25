@@ -47,7 +47,8 @@
     "vscode-languageclient": "^9.0.1"
   },
   "activationEvents": [
-    "onLanguage:wit"
+    "onLanguage:wit",
+    "workspaceContains:**/*.wit"
   ],
   "contributes": {
     "languages": [
