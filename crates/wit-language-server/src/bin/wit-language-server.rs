@@ -1,9 +1,12 @@
-use std::{io::IsTerminal, net::SocketAddr};
+use std::{future::Future, io::IsTerminal, net::SocketAddr, pin::Pin};
 
 use clap::Parser;
 use color_eyre::config::Theme;
 use tower_lsp::Server;
+use tower_service::Service;
+use tracing::Instrument;
 use tracing_subscriber::{fmt::format::FmtSpan, EnvFilter};
+use uuid::Uuid;
 use wit_language_server::LanguageServer;
 
 const RUST_LOG: &[&str] = &["info", "wit_language_server=trace"];
@@ -25,6 +28,7 @@ async fn main() -> Result<(), color_eyre::Report> {
 
 async fn serve(mode: Mode) -> Result<(), color_eyre::Report> {
     let (service, socket) = LanguageServer::service();
+    let service = LoggingService(service);
 
     match mode {
         Mode::Connect(addr) => {
@@ -127,4 +131,57 @@ fn initialize_logging() -> Result<(), color_eyre::Report> {
         .init();
 
     Ok(())
+}
+
+struct LoggingService<S>(S);
+
+impl<S> Service<tower_lsp::jsonrpc::Request> for LoggingService<S>
+where
+    S: Service<tower_lsp::jsonrpc::Request, Response = Option<tower_lsp::jsonrpc::Response>>,
+    S::Error: std::error::Error + 'static,
+    S::Future: Send + 'static,
+{
+    type Response = S::Response;
+    type Error = S::Error;
+    type Future =
+        Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send + 'static>>;
+
+    fn poll_ready(
+        &mut self,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Result<(), Self::Error>> {
+        self.0.poll_ready(cx)
+    }
+
+    fn call(&mut self, req: tower_lsp::jsonrpc::Request) -> Self::Future {
+        let id = match req.id() {
+            Some(tower_lsp::jsonrpc::Id::Number(n)) => n.to_string(),
+            Some(tower_lsp::jsonrpc::Id::String(s)) => s.clone(),
+            None | Some(tower_lsp::jsonrpc::Id::Null) => Uuid::new_v4().to_string(),
+        };
+        let method = req.method().to_string();
+
+        let fut = self.0.call(req);
+        let fut = async move {
+            let ret = fut.await;
+
+            match ret.as_ref() {
+                Ok(r) => {
+                    if let Some(err) = r.as_ref().and_then(|r| r.error()) {
+                        tracing::debug!(error = err as &dyn std::error::Error, "Returned an error",);
+                    }
+                }
+                Err(err) => {
+                    tracing::warn!(
+                        error = err as &dyn std::error::Error,
+                        "An error occurred while handling the request",
+                    )
+                }
+            }
+
+            ret
+        };
+
+        Box::pin(fut.instrument(tracing::debug_span!("request", %id, %method)))
+    }
 }
