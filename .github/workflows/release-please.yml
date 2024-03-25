@@ -1,0 +1,81 @@
+name: Release Please
+
+on:
+ push:
+  branches:
+    - main
+  tags: "*"
+ repository_dispatch:
+
+env:
+  DEFAULT_CRATE_NAME: wit_language_server
+  RUST_BACKTRACE: 1
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+    - name: Install release-please
+      run: npm install --global release-please@15.11
+    - name: Update the Release PR
+      run: |
+        release-please release-pr \
+          --debug \
+          --token=${{ secrets.RELEASE_PLEASE_GH_TOKEN }} \
+          --repo-url=${{ github.repositoryUrl }} \
+          --config-file=.github/release-please/config.json \
+          --manifest-file=.github/release-please/manifest.json
+    - name: Publish the GitHub Release
+      run: |
+        release-please github-release \
+          --debug \
+          --token=${{ secrets.RELEASE_PLEASE_GH_TOKEN }} \
+          --repo-url=${{ github.repositoryUrl }} \
+          --config-file=.github/release-please/config.json \
+          --manifest-file=.github/release-please/manifest.json
+
+  publish-to-crates-io:
+    name: Publish to crates.io (if necessary)
+    runs-on: ubuntu-latest
+    needs:
+      - release
+    concurrency: release-please-publish-crates-io
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Rust
+        uses: dsherret/rust-toolchain-file@v1
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+      - name: Install cargo-workspaces
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-workspaces
+      - name: Publish
+        run: cargo workspaces publish --from-git --token "${{ secrets.CRATES_IO_TOKEN }}" --yes
+
+  upload-artifacts:
+    name: Upload Release Artifacts (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    if: startsWith(github.ref, 'refs/tags/')
+    needs:
+    - release
+    strategy:
+      matrix:
+        os:
+        - ubuntu-latest
+        - windows-latest
+        - macos-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup Rust
+      uses: dsherret/rust-toolchain-file@v1
+    - name: Rust Cache
+      uses: Swatinem/rust-cache@v2
+    - name: Dist
+      run: cargo xtask dist
+    - name: Upload Release Artifact
+      run: gh release upload ${TAG_NAME#refs/tags/} ./target/${{ env.DEFAULT_CRATE_NAME }}.*.zip
+    env:
+      GITHUB_TOKEN: ${{ secrets.RELEASE_PLEASE_GH_TOKEN }}
+      TAG_NAME: ${{ github.ref }}
