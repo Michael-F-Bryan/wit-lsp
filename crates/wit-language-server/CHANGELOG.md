@@ -1,5 +1,9 @@
 # Changelog
 
+All notable changes to the `wit-language-server` will be documented in this file.
+
+Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
+
 ## 0.1.0 (2024-03-25)
 
 
@@ -22,9 +26,3 @@
   * dependencies
     * tree-sitter-wit bumped from 0.0.0 to 0.1.0
     * wit-compiler bumped from 0.0.0 to 0.1.0
-
-## Change Log
-
-All notable changes to the "wit-language-server" will be documented in this file.
-
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
