@@ -1,7 +1,6 @@
-use std::sync::Arc;
-
 use im::{OrdMap, Vector};
-use tokio::sync::Mutex;
+use salsa::ParallelDatabase;
+use tokio::sync::{Mutex, MutexGuard};
 use tower_lsp::{
     jsonrpc::Error,
     lsp_types::{
@@ -21,16 +20,14 @@ use crate::{Database, Db};
 #[derive(Debug)]
 pub struct LanguageServer {
     _client: Client,
-    db: Arc<Mutex<Database>>,
-    workspaces: Mutex<OrdMap<Text, Workspace>>,
+    state: Mutex<State>,
 }
 
 impl LanguageServer {
     pub(crate) fn new(client: Client) -> Self {
         LanguageServer {
             _client: client,
-            db: Arc::default(),
-            workspaces: Mutex::default(),
+            state: Mutex::default(),
         }
     }
 
@@ -45,21 +42,23 @@ impl LanguageServer {
     async fn dump_ast(&self, params: DumpAstParams) -> Result<DumpAstResponse, Error> {
         let path = Text::from(params.uri.as_str());
 
-        let ws = self.workspace_for_path(&path).await.ok_or_else(|| {
+        let snap = self.snapshot().await;
+
+        let ws = snap.workspace_for_path(&path).ok_or_else(|| {
             Error::invalid_params(format!("\"{path}\" doesn't belong to a known workspace"))
         })?;
 
-        let db = self.db.lock().await;
+        let db = snap.wit_db();
 
-        match wit_compiler::queries::parse(&*db, ws, path.clone()) {
+        match wit_compiler::queries::parse(db, ws, path.clone()) {
             Some(ast) => Ok(DumpAstResponse {
-                ast: ast.tree(&*db).to_string(),
+                ast: ast.tree(db).to_string(),
             }),
             None => {
-                let ws_root = ws.root(&*db);
+                let ws_root = ws.root(db);
                 let msg = format!("\"{path}\" doesn't belong to the \"{ws_root}\" workspace");
                 tracing::warn!(
-                    workspace = ?ws.debug(&*db),
+                    workspace = ?ws.debug(db),
                     %path,
                     "File not foind in database",
                 );
@@ -73,16 +72,12 @@ impl LanguageServer {
         Ok(crate::CHANGELOG)
     }
 
-    async fn workspace_for_path(&self, path: &str) -> Option<Workspace> {
-        let workspaces = self.workspaces.lock().await;
+    async fn lock(&self) -> MutexGuard<'_, State> {
+        self.state.lock().await
+    }
 
-        for (name, ws) in &*workspaces {
-            if path.starts_with(name.as_str()) {
-                return Some(*ws);
-            }
-        }
-
-        None
+    async fn snapshot(&self) -> Snapshot {
+        self.state.lock().await.snapshot()
     }
 }
 
@@ -98,21 +93,20 @@ impl tower_lsp::LanguageServer for LanguageServer {
         tracing::trace!(?params, "Initialization parameters");
 
         if let Some(folders) = params.workspace_folders {
-            let db = self.db.lock().await;
-
-            let mut workspaces = self.workspaces.lock().await;
-            workspaces.clear();
+            let mut state = self.lock().await;
+            state.workspaces.clear();
 
             for folder in folders {
-                let workspace = Workspace::new(&*db, folder.uri.as_str().into(), OrdMap::new());
+                let db = state.wit_db();
+                let workspace = Workspace::new(db, folder.uri.as_str().into(), OrdMap::new());
                 tracing::debug!(
-                    workspace = ?workspace.debug(&*db),
+                    workspace = ?workspace.debug(db),
                     "Loaded workspace",
                 );
 
-                // TODO: Pre-emptively load all files in the workspace
-
-                workspaces.insert(folder.uri.as_str().into(), workspace);
+                state
+                    .workspaces
+                    .insert(folder.uri.as_str().into(), workspace);
             }
         }
 
@@ -143,11 +137,11 @@ impl tower_lsp::LanguageServer for LanguageServer {
 
         let TextDocumentItem { uri, text, .. } = params.text_document;
         let path = uri.as_str();
-        let mut db = self.db.lock().await;
+        let mut state = self.lock().await;
 
-        if let Some(ws) = self.workspace_for_path(path).await {
+        if let Some(ws) = state.workspace_for_path(path) {
             tracing::debug!(size = text.len(), path, "File opened");
-            ws.update(&mut *db, path, text);
+            ws.update(state.wit_db(), path, text);
         }
     }
 
@@ -156,7 +150,9 @@ impl tower_lsp::LanguageServer for LanguageServer {
         tracing::debug!(document.uri=%params.text_document.uri);
         let path = params.text_document.uri.as_str();
 
-        let Some(ws) = self.workspace_for_path(path).await else {
+        let mut state = self.lock().await;
+
+        let Some(ws) = state.workspace_for_path(path) else {
             return;
         };
 
@@ -164,7 +160,6 @@ impl tower_lsp::LanguageServer for LanguageServer {
             params.content_changes.len() < 2,
             "TODO: figure out how to handle bulk changes"
         );
-        let mut db = self.db.lock().await;
 
         for change in params.content_changes {
             let TextDocumentContentChangeEvent { text, range, .. } = change;
@@ -175,7 +170,7 @@ impl tower_lsp::LanguageServer for LanguageServer {
             }
 
             tracing::debug!(size = text.len(), path, "File changed");
-            ws.update(&mut *db, path, text);
+            ws.update(state.wit_db(), path, text);
         }
     }
 
@@ -186,11 +181,11 @@ impl tower_lsp::LanguageServer for LanguageServer {
         if let Some(text) = params.text {
             let path = params.text_document.uri.as_str();
 
-            if let Some(ws) = self.workspace_for_path(path).await {
-                let mut db = self.db.lock().await;
+            let mut state = self.lock().await;
 
+            if let Some(ws) = state.workspace_for_path(path) {
                 tracing::debug!(size = text.len(), path, "File saved");
-                ws.update(&mut *db, path, text);
+                ws.update(state.wit_db(), path, text);
             }
         }
     }
@@ -208,11 +203,16 @@ impl tower_lsp::LanguageServer for LanguageServer {
         tracing::debug!(document.uri=%params.text_document.uri);
 
         let path = params.text_document.uri.as_str();
-        let db = self.db.lock().await;
+        let snap = self.snapshot().await;
 
-        match self.workspace_for_path(path).await {
-            Some(ws) => Ok(wit_compiler::queries::parse(db.as_wit(), ws, path.into())
-                .map(|ast| crate::ops::folding_range(&*db, ast).into_iter().collect())),
+        match snap.workspace_for_path(path) {
+            Some(ws) => Ok(
+                wit_compiler::queries::parse(snap.db.as_wit(), ws, path.into()).map(|ast| {
+                    crate::ops::folding_range(&*snap.db, ast)
+                        .into_iter()
+                        .collect()
+                }),
+            ),
             _ => {
                 tracing::warn!(%path, "Workspace not found for file");
                 Ok(None)
@@ -228,12 +228,15 @@ impl tower_lsp::LanguageServer for LanguageServer {
         tracing::debug!(document.uri=%params.text_document.uri);
 
         let path = params.text_document.uri.as_str();
-        let db = self.db.lock().await;
+        let snap = self.snapshot().await;
 
-        let Some(ws) = self.workspace_for_path(path).await else {
+        let Some(ws) = snap.workspace_for_path(path) else {
             return Ok(None);
         };
-        let Some(ast) = wit_compiler::queries::parse(&*db, ws, path.into()) else {
+
+        let db = snap.wit_db();
+
+        let Some(ast) = wit_compiler::queries::parse(db, ws, path.into()) else {
             return Ok(None);
         };
 
@@ -245,7 +248,7 @@ impl tower_lsp::LanguageServer for LanguageServer {
                 column: position.character.try_into().unwrap(),
             };
 
-            match wit_compiler::queries::selection_ranges(db.as_wit(), ast, point) {
+            match wit_compiler::queries::selection_ranges(db, ast, point) {
                 Some(mut r) => {
                     let first = r
                         .pop_front()
@@ -259,8 +262,6 @@ impl tower_lsp::LanguageServer for LanguageServer {
                 }
             }
         }
-
-        tracing::warn!(?ranges);
 
         Ok(Some(ranges))
     }
@@ -312,4 +313,68 @@ struct DumpAstParams {
 #[derive(Debug, Clone, serde::Serialize)]
 struct DumpAstResponse {
     ast: String,
+}
+
+/// A readonly snapshot of the [`State`].
+///
+/// This is often used when you want to do something that doesn't require update
+/// inputs. By using a [`Snapshot`] instead of holding onto the [`State`]
+/// directly you allow other readonly queries to run in parallel.
+#[derive(Debug)]
+struct Snapshot {
+    workspaces: OrdMap<Text, Workspace>,
+    db: salsa::Snapshot<Database>,
+}
+
+impl Snapshot {
+    fn db(&self) -> &dyn crate::Db {
+        &*self.db
+    }
+
+    fn wit_db(&self) -> &dyn wit_compiler::Db {
+        self.db().as_wit()
+    }
+
+    fn workspace_for_path(&self, path: &str) -> Option<Workspace> {
+        self.workspaces.iter().find_map(|(name, ws)| {
+            if path.starts_with(name.as_str()) {
+                Some(*ws)
+            } else {
+                None
+            }
+        })
+    }
+}
+
+#[derive(Debug, Default)]
+struct State {
+    workspaces: OrdMap<Text, Workspace>,
+    db: Database,
+}
+
+impl State {
+    fn db(&mut self) -> &mut dyn crate::Db {
+        &mut self.db
+    }
+
+    fn wit_db(&mut self) -> &mut dyn wit_compiler::Db {
+        self.db().as_wit_mut()
+    }
+
+    fn workspace_for_path(&self, path: &str) -> Option<Workspace> {
+        self.workspaces.iter().find_map(|(name, ws)| {
+            if path.starts_with(name.as_str()) {
+                Some(*ws)
+            } else {
+                None
+            }
+        })
+    }
+
+    fn snapshot(&self) -> Snapshot {
+        Snapshot {
+            db: self.db.snapshot(),
+            workspaces: self.workspaces.clone(),
+        }
+    }
 }
