@@ -1,15 +1,9 @@
-export type Config = {
-    updates: UpdatesConfig;
+export interface Config {
     server: ServerConfig;
     checkOnSave: boolean;
 };
 
-export type UpdatesConfig = {
-    channel: "nightly" | "stable";
-    onStartup: boolean;
-};
-
-export type ServerConfig = {
+export interface ServerConfig {
     extraEnv: Record<string, string> | null;
     path?: string;
 };

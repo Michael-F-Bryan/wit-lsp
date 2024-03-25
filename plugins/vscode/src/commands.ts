@@ -16,7 +16,7 @@ export function registerCommands(
 ) {
     context.subscriptions.push(
         workspace.registerTextDocumentContentProvider(
-            "wit-language-server",
+            "wit",
             new WitAstProvider(client),
         ),
     );
@@ -29,7 +29,7 @@ export function registerCommands(
         }),
     );
     context.subscriptions.push(
-        commands.registerTextEditorCommand("wit-language-server.dumpAst", editor =>
+        commands.registerTextEditorCommand("wit-language-server.dump-ast", editor =>
             dumpAst(editor.document.uri),
         ),
     );
@@ -98,6 +98,7 @@ async function showVersion(client: LanguageClient) {
     const serverInfo = client.initializeResult?.serverInfo;
 
     if (!serverInfo) {
+        await window.showWarningMessage("Unable to show WIT server version: not initialized");
         return;
     }
 
@@ -127,7 +128,7 @@ class WitAstProvider implements TextDocumentContentProvider {
         }
 
         const response = await this.client?.sendRequest<{ ast: string }>(
-            "wit-language-server/dumpAst",
+            "wit-language-server/dump-ast",
             { uri: decodeURI(originalUri) },
         );
 

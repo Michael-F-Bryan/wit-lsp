@@ -1,20 +1,17 @@
-import { ExtensionContext, commands, window, workspace } from "vscode";
+import { ExtensionContext, ExtensionMode, commands, window, workspace } from "vscode";
 import {
 	LanguageClient,
 	LanguageClientOptions,
 } from "vscode-languageclient/node";
 import { registerCommands } from "./commands";
-import { ServerConfig, UpdatesConfig } from "./config";
+import { ServerConfig } from "./config";
 import { loadServerOptions } from "./server-options";
 
 let client: LanguageClient | undefined;
 
 export async function activate(context: ExtensionContext) {
 	const config = workspace.getConfiguration("wit-language-server");
-	const serverConfig: Partial<ServerConfig> | undefined =
-		config.get("server");
-	const updateConfig: Partial<UpdatesConfig> | undefined =
-		config.get("updates");
+	const serverConfig: Partial<ServerConfig> | undefined = config.get("server");
 
 	let serverOptions = await loadServerOptions(context, serverConfig);
 

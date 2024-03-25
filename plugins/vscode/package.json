@@ -83,7 +83,7 @@
         "category": "WIT"
       },
       {
-        "command": "wit-language-server.dumpAst",
+        "command": "wit-language-server.dump-ast",
         "title": "Dump AST",
         "category": "WIT"
       },
@@ -102,22 +102,6 @@
       "type": "object",
       "title": "WIT Language Server",
       "properties": {
-        "wit-language-server.updates.channel": {
-          "scope": "resource",
-          "type": "string",
-          "enum": [
-            "nightly",
-            "stable"
-          ],
-          "default": "stable",
-          "description": "The release channel to download Language Server binaries from"
-        },
-        "wit-language-server.updates.onStartup": {
-          "scope": "resource",
-          "type": "boolean",
-          "default": true,
-          "description": "Check for updates on startup?"
-        },
         "wit-language-server.server.extraEnv": {
           "scope": "resource",
           "type": "object",

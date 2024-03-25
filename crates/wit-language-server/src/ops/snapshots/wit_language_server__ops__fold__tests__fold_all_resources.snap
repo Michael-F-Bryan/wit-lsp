@@ -1,0 +1,52 @@
+---
+source: crates/wit-language-server/src/ops/fold.rs
+expression: "&got"
+---
+- startLine: 2
+  startCharacter: 0
+  endLine: 26
+  endCharacter: 1
+- startLine: 5
+  startCharacter: 2
+  endLine: 7
+  endCharacter: 3
+- startLine: 9
+  startCharacter: 2
+  endLine: 11
+  endCharacter: 3
+- startLine: 10
+  startCharacter: 15
+  endLine: 10
+  endCharacter: 23
+- startLine: 13
+  startCharacter: 2
+  endLine: 19
+  endCharacter: 3
+- startLine: 14
+  startCharacter: 15
+  endLine: 14
+  endCharacter: 23
+- startLine: 21
+  startCharacter: 2
+  endLine: 25
+  endCharacter: 3
+- startLine: 22
+  startCharacter: 15
+  endLine: 22
+  endCharacter: 49
+- startLine: 24
+  startCharacter: 16
+  endLine: 24
+  endCharacter: 50
+- startLine: 28
+  startCharacter: 0
+  endLine: 37
+  endCharacter: 1
+- startLine: 34
+  startCharacter: 2
+  endLine: 36
+  endCharacter: 3
+- startLine: 39
+  startCharacter: 0
+  endLine: 45
+  endCharacter: 1
