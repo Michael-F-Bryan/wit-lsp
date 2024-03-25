@@ -16,3 +16,6 @@ im = { workspace = true }
 salsa = { workspace = true }
 tree-sitter = { workspace = true }
 tree-sitter-wit = { version = "0.0.0", path = "../../tree-sitter-wit" }
+
+[dev-dependencies]
+insta = { workspace = true }

@@ -1475,6 +1475,7 @@ name = "wit-compiler"
 version = "0.0.0"
 dependencies = [
  "im",
+ "insta",
  "salsa-2022",
  "tree-sitter",
  "tree-sitter-wit",

@@ -1,0 +1,90 @@
+---
+source: crates/wit-compiler/src/queries/selection.rs
+expression: ranges
+---
+[
+    Range {
+        start_byte: 123,
+        end_byte: 124,
+        start_point: Point {
+            row: 10,
+            column: 17,
+        },
+        end_point: Point {
+            row: 10,
+            column: 18,
+        },
+    },
+    Range {
+        start_byte: 122,
+        end_byte: 128,
+        start_point: Point {
+            row: 10,
+            column: 16,
+        },
+        end_point: Point {
+            row: 10,
+            column: 22,
+        },
+    },
+    Range {
+        start_byte: 121,
+        end_byte: 129,
+        start_point: Point {
+            row: 10,
+            column: 15,
+        },
+        end_point: Point {
+            row: 10,
+            column: 23,
+        },
+    },
+    Range {
+        start_byte: 110,
+        end_byte: 130,
+        start_point: Point {
+            row: 10,
+            column: 4,
+        },
+        end_point: Point {
+            row: 10,
+            column: 24,
+        },
+    },
+    Range {
+        start_byte: 93,
+        end_byte: 134,
+        start_point: Point {
+            row: 9,
+            column: 2,
+        },
+        end_point: Point {
+            row: 11,
+            column: 3,
+        },
+    },
+    Range {
+        start_byte: 18,
+        end_byte: 344,
+        start_point: Point {
+            row: 2,
+            column: 0,
+        },
+        end_point: Point {
+            row: 26,
+            column: 1,
+        },
+    },
+    Range {
+        start_byte: 0,
+        end_byte: 525,
+        start_point: Point {
+            row: 0,
+            column: 0,
+        },
+        end_point: Point {
+            row: 46,
+            column: 0,
+        },
+    },
+]

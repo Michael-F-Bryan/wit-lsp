@@ -14,6 +14,7 @@ pub struct Jar(
     crate::queries::Workspace,
     crate::queries::Ast,
     crate::queries::parse,
+    crate::queries::selection_ranges,
 );
 
 /// The trait that all [`salsa::Database`] implementations must implement to

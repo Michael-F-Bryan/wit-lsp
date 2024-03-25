@@ -8,14 +8,15 @@ An alternative Language Server implementation for [WIT][wit].
 
 ## Features
 
-- [ ] Basic Syntax Highlighting
+- [x] Basic Syntax Highlighting
+- [x] Code Folding
+- [x] Show Syntax Tree
+- [x] Selection range
 - [ ] Semantic Syntax Highlighting
-- [ ] Code Folding
 - [ ] Semantic Autocomplete
 - [ ] Jump to Definition
 - [ ] Jump to Declaration
 - [ ] Hover
-- [ ] Show Syntax Tree
 - [ ] View Memory Layout
 - [ ] Show Dependency Tree
 - [ ] Find All References

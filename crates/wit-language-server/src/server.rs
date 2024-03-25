@@ -1,14 +1,15 @@
 use std::sync::Arc;
 
-use im::OrdMap;
+use im::{OrdMap, Vector};
 use tokio::sync::Mutex;
 use tower_lsp::{
     jsonrpc::Error,
     lsp_types::{
         DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
         DidSaveTextDocumentParams, FoldingRange, FoldingRangeParams, InitializeParams,
-        InitializeResult, ServerCapabilities, ServerInfo, TextDocumentContentChangeEvent,
-        TextDocumentItem, TextDocumentSyncCapability, TextDocumentSyncKind, Url,
+        InitializeResult, SelectionRange, SelectionRangeParams, ServerCapabilities, ServerInfo,
+        TextDocumentContentChangeEvent, TextDocumentItem, TextDocumentSyncCapability,
+        TextDocumentSyncKind, Url,
     },
     Client, ClientSocket, LspService,
 };
@@ -121,6 +122,7 @@ impl tower_lsp::LanguageServer for LanguageServer {
                     TextDocumentSyncKind::FULL,
                 )),
                 folding_range_provider: Some(true.into()),
+                selection_range_provider: Some(true.into()),
                 ..Default::default()
             },
             server_info: Some(ServerInfo {
@@ -144,7 +146,7 @@ impl tower_lsp::LanguageServer for LanguageServer {
         let mut db = self.db.lock().await;
 
         if let Some(ws) = self.workspace_for_path(path).await {
-            tracing::debug!(size = text.len(), path, "File saved");
+            tracing::debug!(size = text.len(), path, "File opened");
             ws.update(&mut *db, path, text);
         }
     }
@@ -216,6 +218,89 @@ impl tower_lsp::LanguageServer for LanguageServer {
                 Ok(None)
             }
         }
+    }
+
+    #[tracing::instrument(level = "debug", skip_all)]
+    async fn selection_range(
+        &self,
+        params: SelectionRangeParams,
+    ) -> Result<Option<Vec<SelectionRange>>, Error> {
+        tracing::debug!(document.uri=%params.text_document.uri);
+
+        let path = params.text_document.uri.as_str();
+        let db = self.db.lock().await;
+
+        let Some(ws) = self.workspace_for_path(path).await else {
+            return Ok(None);
+        };
+        let Some(ast) = wit_compiler::queries::parse(&*db, ws, path.into()) else {
+            return Ok(None);
+        };
+
+        let mut ranges = Vec::new();
+
+        for position in params.positions {
+            let point = tree_sitter::Point {
+                row: position.line.try_into().unwrap(),
+                column: position.character.try_into().unwrap(),
+            };
+
+            match wit_compiler::queries::selection_ranges(db.as_wit(), ast, point) {
+                Some(mut r) => {
+                    let first = r
+                        .pop_front()
+                        .expect("Should always return at least one range");
+                    ranges.push(selection_range(first, r));
+                }
+                None => {
+                    return Err(Error::invalid_params(format!(
+                        "The position, {point}, doesn't exist in \"{path}\""
+                    )));
+                }
+            }
+        }
+
+        tracing::warn!(?ranges);
+
+        Ok(Some(ranges))
+    }
+}
+
+fn selection_range(first: tree_sitter::Range, rest: Vector<tree_sitter::Range>) -> SelectionRange {
+    let mut parent = None;
+
+    for range in rest.iter().rev() {
+        let sel = SelectionRange {
+            range: ts_to_range(*range),
+            parent: parent.take(),
+        };
+        parent = Some(Box::new(sel));
+    }
+
+    SelectionRange {
+        range: ts_to_range(first),
+        parent,
+    }
+}
+
+fn ts_to_range(range: tree_sitter::Range) -> tower_lsp::lsp_types::Range {
+    let tree_sitter::Range {
+        start_point,
+        end_point,
+        ..
+    } = range;
+
+    tower_lsp::lsp_types::Range {
+        start: ts_to_position(start_point),
+        end: ts_to_position(end_point),
+    }
+}
+
+fn ts_to_position(point: tree_sitter::Point) -> tower_lsp::lsp_types::Position {
+    let tree_sitter::Point { row, column } = point;
+    tower_lsp::lsp_types::Position {
+        line: row.try_into().unwrap(),
+        character: column.try_into().unwrap(),
     }
 }
 
