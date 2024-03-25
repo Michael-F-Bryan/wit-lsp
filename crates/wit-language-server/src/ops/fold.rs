@@ -92,7 +92,7 @@ fn node_range(node: Node<'_>, kind: Option<FoldingRangeKind>) -> FoldingRange {
 
 #[cfg(test)]
 mod tests {
-    use wit_compiler::queries::Tree;
+    use wit_compiler::Tree;
 
     use super::*;
 

@@ -44,10 +44,7 @@ impl LanguageServer {
 
         let snap = self.snapshot().await;
 
-        let ws = snap.workspace_for_path(&path).ok_or_else(|| {
-            Error::invalid_params(format!("\"{path}\" doesn't belong to a known workspace"))
-        })?;
-
+        let ws = snap.ws;
         let db = snap.wit_db();
 
         match wit_compiler::queries::parse(db, ws, path.clone()) {
@@ -55,12 +52,10 @@ impl LanguageServer {
                 ast: ast.tree(db).to_string(),
             }),
             None => {
-                let ws_root = ws.root(db);
-                let msg = format!("\"{path}\" doesn't belong to the \"{ws_root}\" workspace");
-                tracing::warn!(
-                    workspace = ?ws.debug(db),
-                    %path,
-                    "File not foind in database",
+                let msg = format!("\"{path}\" isn't in the workspace");
+                tracing::warn!(%path, "File not found in database");
+                tracing::debug!(
+                    tracked_files = ?ws.files(db).keys().collect::<Vec<_>>(),
                 );
                 Err(Error::invalid_params(msg))
             }
@@ -92,22 +87,8 @@ impl tower_lsp::LanguageServer for LanguageServer {
         );
         tracing::trace!(?params, "Initialization parameters");
 
-        if let Some(folders) = params.workspace_folders {
-            let mut state = self.lock().await;
-            state.workspaces.clear();
-
-            for folder in folders {
-                let db = state.wit_db();
-                let workspace = Workspace::new(db, folder.uri.as_str().into(), OrdMap::new());
-                tracing::debug!(
-                    workspace = ?workspace.debug(db),
-                    "Loaded workspace",
-                );
-
-                state
-                    .workspaces
-                    .insert(folder.uri.as_str().into(), workspace);
-            }
+        if let Some(_folders) = params.workspace_folders {
+            // FIXME: Should we try to preload all *.wit files?
         }
 
         Ok(InitializeResult {
@@ -139,10 +120,9 @@ impl tower_lsp::LanguageServer for LanguageServer {
         let path = uri.as_str();
         let mut state = self.lock().await;
 
-        if let Some(ws) = state.workspace_for_path(path) {
-            tracing::debug!(size = text.len(), path, "File opened");
-            ws.update(state.wit_db(), path, text);
-        }
+        tracing::debug!(size = text.len(), path, "File opened");
+        let ws = state.ws;
+        ws.update(state.wit_db(), path, text);
     }
 
     #[tracing::instrument(level = "debug", skip_all)]
@@ -151,10 +131,6 @@ impl tower_lsp::LanguageServer for LanguageServer {
         let path = params.text_document.uri.as_str();
 
         let mut state = self.lock().await;
-
-        let Some(ws) = state.workspace_for_path(path) else {
-            return;
-        };
 
         debug_assert!(
             params.content_changes.len() < 2,
@@ -170,6 +146,7 @@ impl tower_lsp::LanguageServer for LanguageServer {
             }
 
             tracing::debug!(size = text.len(), path, "File changed");
+            let ws = state.ws;
             ws.update(state.wit_db(), path, text);
         }
     }
@@ -183,10 +160,9 @@ impl tower_lsp::LanguageServer for LanguageServer {
 
             let mut state = self.lock().await;
 
-            if let Some(ws) = state.workspace_for_path(path) {
-                tracing::debug!(size = text.len(), path, "File saved");
-                ws.update(state.wit_db(), path, text);
-            }
+            tracing::debug!(size = text.len(), path, "File saved");
+            let ws = state.ws;
+            ws.update(state.wit_db(), path, text);
         }
     }
 
@@ -205,19 +181,15 @@ impl tower_lsp::LanguageServer for LanguageServer {
         let path = params.text_document.uri.as_str();
         let snap = self.snapshot().await;
 
-        match snap.workspace_for_path(path) {
-            Some(ws) => Ok(
-                wit_compiler::queries::parse(snap.db.as_wit(), ws, path.into()).map(|ast| {
-                    crate::ops::folding_range(&*snap.db, ast)
-                        .into_iter()
-                        .collect()
-                }),
-            ),
-            _ => {
-                tracing::warn!(%path, "Workspace not found for file");
-                Ok(None)
-            }
-        }
+        let Some(ast) = wit_compiler::queries::parse(snap.db.as_wit(), snap.ws, path.into()) else {
+            return Ok(None);
+        };
+
+        let ranges = crate::ops::folding_range(&*snap.db, ast)
+            .into_iter()
+            .collect();
+
+        Ok(Some(ranges))
     }
 
     #[tracing::instrument(level = "debug", skip_all)]
@@ -230,13 +202,9 @@ impl tower_lsp::LanguageServer for LanguageServer {
         let path = params.text_document.uri.as_str();
         let snap = self.snapshot().await;
 
-        let Some(ws) = snap.workspace_for_path(path) else {
-            return Ok(None);
-        };
-
         let db = snap.wit_db();
 
-        let Some(ast) = wit_compiler::queries::parse(db, ws, path.into()) else {
+        let Some(ast) = wit_compiler::queries::parse(db, snap.ws, path.into()) else {
             return Ok(None);
         };
 
@@ -322,7 +290,7 @@ struct DumpAstResponse {
 /// directly you allow other readonly queries to run in parallel.
 #[derive(Debug)]
 struct Snapshot {
-    workspaces: OrdMap<Text, Workspace>,
+    ws: Workspace,
     db: salsa::Snapshot<Database>,
 }
 
@@ -334,21 +302,11 @@ impl Snapshot {
     fn wit_db(&self) -> &dyn wit_compiler::Db {
         self.db().as_wit()
     }
-
-    fn workspace_for_path(&self, path: &str) -> Option<Workspace> {
-        self.workspaces.iter().find_map(|(name, ws)| {
-            if path.starts_with(name.as_str()) {
-                Some(*ws)
-            } else {
-                None
-            }
-        })
-    }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct State {
-    workspaces: OrdMap<Text, Workspace>,
+    ws: Workspace,
     db: Database,
 }
 
@@ -361,20 +319,18 @@ impl State {
         self.db().as_wit_mut()
     }
 
-    fn workspace_for_path(&self, path: &str) -> Option<Workspace> {
-        self.workspaces.iter().find_map(|(name, ws)| {
-            if path.starts_with(name.as_str()) {
-                Some(*ws)
-            } else {
-                None
-            }
-        })
-    }
-
     fn snapshot(&self) -> Snapshot {
         Snapshot {
             db: self.db.snapshot(),
-            workspaces: self.workspaces.clone(),
+            ws: self.ws,
         }
+    }
+}
+
+impl Default for State {
+    fn default() -> Self {
+        let db = Database::default();
+        let workspace = Workspace::new(&db, OrdMap::new());
+        Self { ws: workspace, db }
     }
 }

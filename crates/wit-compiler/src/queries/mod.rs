@@ -2,6 +2,6 @@ mod parsing;
 mod selection;
 
 pub use self::{
-    parsing::{parse, Ast, Tree, Workspace},
+    parsing::{parse, Ast, Workspace},
     selection::selection_ranges,
 };

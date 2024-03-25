@@ -3,9 +3,10 @@ mod compiler;
 pub mod queries;
 mod text;
 pub mod traverse;
+mod tree;
 mod workspace;
 
-pub use crate::{compiler::Compiler, text::Text};
+pub use crate::{compiler::Compiler, text::Text, tree::Tree};
 
 /// A [`salsa::jar::Jar`] containing all queries and tracked types used by this
 /// crate.
