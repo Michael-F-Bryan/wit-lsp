@@ -59,13 +59,20 @@
         "aliases": [
           "WIT"
         ],
-        "configuration": "./configuration/language-configuration.json"
+        "configuration": "./etc/language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "wit",
+        "scopeName": "source.wit",
+        "path": "./etc/wit.tmLanguage.json"
       }
     ],
     "snippets": [
       {
         "language": "wit",
-        "path": "./configuration/wit.code-snippets"
+        "path": "./etc/wit.code-snippets"
       }
     ],
     "commands": [
