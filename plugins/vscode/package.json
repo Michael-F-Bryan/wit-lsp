@@ -2,7 +2,7 @@
   "name": "wit-language-server",
   "displayName": "WIT Language Server",
   "description": "A Language Server implementation for the WIT Interface Definition Language",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "publisher": "michael-f-bryan",
   "private": true,
   "engines": {

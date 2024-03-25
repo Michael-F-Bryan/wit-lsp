@@ -1,6 +1,6 @@
 [package]
 name = "wit-compiler"
-version = "0.0.0"
+version = "0.1.0"
 authors.workspace = true
 edition.workspace = true
 homepage.workspace = true
@@ -15,7 +15,7 @@ rust-version.workspace = true
 im = { workspace = true }
 salsa = { workspace = true }
 tree-sitter = { workspace = true }
-tree-sitter-wit = { version = "0.0.0", path = "../../tree-sitter-wit" }
+tree-sitter-wit = { version = "0.1.0", path = "../../tree-sitter-wit" }
 
 [dev-dependencies]
 insta = { workspace = true }
