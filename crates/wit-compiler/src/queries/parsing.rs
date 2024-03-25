@@ -10,7 +10,7 @@ pub fn parse(db: &dyn Db, ws: Workspace, path: Text) -> Option<Ast> {
     let files = ws.files(db);
     let src = files.get(&path)?;
 
-    Some(Ast::new(db, Tree::parse(src)))
+    Some(Ast::new(db, Tree::parse(src), src.clone()))
 }
 
 impl Tree {
@@ -65,6 +65,8 @@ impl Workspace {
 pub struct Ast {
     #[return_ref]
     pub tree: Tree,
+    #[return_ref]
+    pub src: Text,
 }
 
 impl Ast {

@@ -59,7 +59,13 @@ module.exports = grammar({
             optional(seq(token.immediate("@"), field("version", $.semver))),
         ),
 
-        world_item: $ => seq("world", field("name", $.identifier), "{", repeat($.world_items), "}"),
+        world_item: $ => seq(
+            "world",
+            field("name", $.identifier),
+            "{",
+            field("items", repeat($.world_items)),
+            "}",
+        ),
         world_items: $ => choice(
             $.export_item, $.import_item, $.use_item, $.typedef_item, $.include_item,
         ),
@@ -95,7 +101,7 @@ module.exports = grammar({
             "interface",
             field("name", $.identifier),
             "{",
-            repeat($.interface_items),
+            field("items", repeat($.interface_items)),
             "}",
         ),
         interface_items: $ => choice($.typedef_item, $.use_item, $.func_item),
@@ -124,7 +130,7 @@ module.exports = grammar({
                 )
             ),
         ),
-        param_list: $ => seq("(", optional($._param_list_inner), ")"),
+        param_list: $ => seq("(", field("params", optional($._param_list_inner)), ")"),
         _param_list_inner: $ => seq(punctuated($._named_type_list, ","), optional(",")),
         result_list: $ => choice($.ty, seq("(", optional($._named_type_list), ")")),
         _named_type_list: $ => prec.left(punctuated($.named_type, ",")),
@@ -155,7 +161,7 @@ module.exports = grammar({
             field("name", $.identifier),
             choice(
                 ";",
-                seq("{", repeat($.resource_method), "}")
+                seq("{", field("methods", repeat($.resource_method)), "}")
             ),
         ),
         resource_method: $ => choice(
@@ -183,7 +189,7 @@ module.exports = grammar({
             "variant",
             field("name", $.identifier),
             "{",
-            cases($.variant_case),
+            field("cases", cases($.variant_case)),
             "}",
         ),
         variant_case: $ => seq(
@@ -203,7 +209,7 @@ module.exports = grammar({
             "record",
             field("name", $.identifier),
             "{",
-            cases($.record_field),
+            field("fields", cases($.record_field)),
             "}",
         ),
         record_field: $ => seq(
@@ -218,10 +224,10 @@ module.exports = grammar({
             "flags",
             field("name", $.identifier),
             "{",
-            cases($.flags_field),
+            field("cases", cases($.flags_case)),
             "}",
         ),
-        flags_field: $ => seq(
+        flags_case: $ => seq(
             field("attributes", repeat($.attribute)),
             field("name", $.identifier),
         ),
@@ -231,10 +237,10 @@ module.exports = grammar({
             "enum",
             field("name", $.identifier),
             "{",
-            cases($.enum_field),
+            field("cases", cases($.enum_case)),
             "}",
         ),
-        enum_field: $ => seq(
+        enum_case: $ => seq(
             field("attributes", repeat($.attribute)),
             field("name", $.identifier),
         ),

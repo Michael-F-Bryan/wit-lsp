@@ -59,7 +59,6 @@ where
 /// Quintessential implementation of [`Cursor`] for tree-sitter's [`TreeCursor`]
 ///
 /// [`TreeCursor`]: tree_sitter::TreeCursor
-/// [`Cursor`]: crate::Cursor
 impl<'a> Cursor for tree_sitter::TreeCursor<'a> {
     type Node = tree_sitter::Node<'a>;
 

@@ -107,8 +107,9 @@ fn generate_ast_node(node: &NodeType) -> TokenStream {
 }
 
 fn field_getter(field: &Field, name: &str) -> TokenStream {
-    assert_eq!(field.types.len(), 1, "{field:?}");
-    let item_ty = field.types[0].type_name();
+    let item_types: Vec<_> = field.types.iter().filter(|ty| ty.named).collect();
+    assert_eq!(item_types.len(), 1, "The \"{name}\" getter can't be generated when there are multiple named types (item_types: {item_types:?})");
+    let item_ty = item_types[0].type_name();
 
     if field.multiple {
         let method_name = if name.ends_with('s') {

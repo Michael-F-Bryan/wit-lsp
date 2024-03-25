@@ -199,13 +199,13 @@ interface wasi {
             (identifier)
             (slash_comment)
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
             (slash_comment)
             (slash_comment)
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier)))))
       (slash_comment)
       (interface_items
@@ -222,233 +222,233 @@ interface wasi {
           (enum_item
             (identifier)
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))
             (slash_comment)
-            (enum_field
+            (enum_case
               (identifier))))))))

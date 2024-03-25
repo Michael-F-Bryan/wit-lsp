@@ -41,7 +41,7 @@
     "fields": {}
   },
   {
-    "type": "enum_field",
+    "type": "enum_case",
     "named": true,
     "fields": {
       "attributes": {
@@ -80,6 +80,20 @@
           }
         ]
       },
+      "cases": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": ",",
+            "named": false
+          },
+          {
+            "type": "enum_case",
+            "named": true
+          }
+        ]
+      },
       "name": {
         "multiple": false,
         "required": true,
@@ -90,16 +104,6 @@
           }
         ]
       }
-    },
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "enum_field",
-          "named": true
-        }
-      ]
     }
   },
   {
@@ -203,7 +207,7 @@
     }
   },
   {
-    "type": "flags_field",
+    "type": "flags_case",
     "named": true,
     "fields": {
       "attributes": {
@@ -242,6 +246,20 @@
           }
         ]
       },
+      "cases": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": ",",
+            "named": false
+          },
+          {
+            "type": "flags_case",
+            "named": true
+          }
+        ]
+      },
       "name": {
         "multiple": false,
         "required": true,
@@ -252,16 +270,6 @@
           }
         ]
       }
-    },
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "flags_field",
-          "named": true
-        }
-      ]
     }
   },
   {
@@ -522,6 +530,16 @@
           }
         ]
       },
+      "items": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "interface_items",
+            "named": true
+          }
+        ]
+      },
       "name": {
         "multiple": false,
         "required": true,
@@ -532,16 +550,6 @@
           }
         ]
       }
-    },
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "interface_items",
-          "named": true
-        }
-      ]
     }
   },
   {
@@ -698,16 +706,21 @@
   {
     "type": "param_list",
     "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "named_type",
-          "named": true
-        }
-      ]
+    "fields": {
+      "params": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": ",",
+            "named": false
+          },
+          {
+            "type": "named_type",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
@@ -760,6 +773,20 @@
           }
         ]
       },
+      "fields": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": ",",
+            "named": false
+          },
+          {
+            "type": "record_field",
+            "named": true
+          }
+        ]
+      },
       "name": {
         "multiple": false,
         "required": true,
@@ -770,16 +797,6 @@
           }
         ]
       }
-    },
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "record_field",
-          "named": true
-        }
-      ]
     }
   },
   {
@@ -822,6 +839,16 @@
           }
         ]
       },
+      "methods": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "resource_method",
+            "named": true
+          }
+        ]
+      },
       "name": {
         "multiple": false,
         "required": true,
@@ -832,16 +859,6 @@
           }
         ]
       }
-    },
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "resource_method",
-          "named": true
-        }
-      ]
     }
   },
   {
@@ -1292,6 +1309,20 @@
           }
         ]
       },
+      "cases": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": ",",
+            "named": false
+          },
+          {
+            "type": "variant_case",
+            "named": true
+          }
+        ]
+      },
       "name": {
         "multiple": false,
         "required": true,
@@ -1302,22 +1333,22 @@
           }
         ]
       }
-    },
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "variant_case",
-          "named": true
-        }
-      ]
     }
   },
   {
     "type": "world_item",
     "named": true,
     "fields": {
+      "items": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "world_items",
+            "named": true
+          }
+        ]
+      },
       "name": {
         "multiple": false,
         "required": true,
@@ -1328,16 +1359,6 @@
           }
         ]
       }
-    },
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "world_items",
-          "named": true
-        }
-      ]
     }
   },
   {

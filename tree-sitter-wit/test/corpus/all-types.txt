@@ -278,21 +278,21 @@ interface types {
         (typedef_item
           (flags_item
             (identifier)
-            (flags_field
+            (flags_case
               (identifier))
-            (flags_field
+            (flags_case
               (identifier))
-            (flags_field
+            (flags_case
               (identifier)))))
       (interface_items
         (typedef_item
           (flags_item
             (identifier)
-            (flags_field
+            (flags_case
               (identifier))
-            (flags_field
+            (flags_case
               (identifier))
-            (flags_field
+            (flags_case
               (identifier)))))
       (interface_items
         (typedef_item
@@ -340,21 +340,21 @@ interface types {
         (typedef_item
           (enum_item
             (identifier)
-            (enum_field
+            (enum_case
               (identifier))
-            (enum_field
+            (enum_case
               (identifier))
-            (enum_field
+            (enum_case
               (identifier)))))
       (interface_items
         (typedef_item
           (enum_item
             (identifier)
-            (enum_field
+            (enum_case
               (identifier))
-            (enum_field
+            (enum_case
               (identifier))
-            (enum_field
+            (enum_case
               (identifier)))))
       (interface_items
         (typedef_item

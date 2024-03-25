@@ -73,10 +73,10 @@ impl<'tree> super::AstNode<'tree> for DocComment<'tree> {
         self.0
     }
 }
-///The `enum_field` node.
+///The `enum_case` node.
 #[derive(Debug, Clone, PartialEq)]
-pub struct EnumField<'tree>(tree_sitter::Node<'tree>);
-impl<'tree> EnumField<'tree> {
+pub struct EnumCase<'tree>(tree_sitter::Node<'tree>);
+impl<'tree> EnumCase<'tree> {
     pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
         Vec::new().into_iter()
     }
@@ -84,13 +84,13 @@ impl<'tree> EnumField<'tree> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
-impl<'tree> super::AstNode<'tree> for EnumField<'tree> {
-    const NAME: &'static str = "enum_field";
+impl<'tree> super::AstNode<'tree> for EnumCase<'tree> {
+    const NAME: &'static str = "enum_case";
     fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
     where
         Self: Sized,
     {
-        if node.kind() == Self::NAME { Some(EnumField(node)) } else { None }
+        if node.kind() == Self::NAME { Some(EnumCase(node)) } else { None }
     }
     fn syntax(&self) -> tree_sitter::Node<'tree> {
         self.0
@@ -103,11 +103,11 @@ impl<'tree> EnumItem<'tree> {
     pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
         Vec::new().into_iter()
     }
+    pub fn iter_cases(&self) -> impl Iterator<Item = EnumCase> {
+        Vec::new().into_iter()
+    }
     pub fn name(&self) -> Option<Identifier> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
-    }
-    pub fn iter_enum_fields(&self) -> impl Iterator<Item = EnumField> {
-        Vec::new().into_iter()
     }
 }
 impl<'tree> super::AstNode<'tree> for EnumItem<'tree> {
@@ -227,10 +227,10 @@ impl<'tree> super::AstNode<'tree> for ExternType<'tree> {
         self.0
     }
 }
-///The `flags_field` node.
+///The `flags_case` node.
 #[derive(Debug, Clone, PartialEq)]
-pub struct FlagsField<'tree>(tree_sitter::Node<'tree>);
-impl<'tree> FlagsField<'tree> {
+pub struct FlagsCase<'tree>(tree_sitter::Node<'tree>);
+impl<'tree> FlagsCase<'tree> {
     pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
         Vec::new().into_iter()
     }
@@ -238,13 +238,13 @@ impl<'tree> FlagsField<'tree> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
-impl<'tree> super::AstNode<'tree> for FlagsField<'tree> {
-    const NAME: &'static str = "flags_field";
+impl<'tree> super::AstNode<'tree> for FlagsCase<'tree> {
+    const NAME: &'static str = "flags_case";
     fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
     where
         Self: Sized,
     {
-        if node.kind() == Self::NAME { Some(FlagsField(node)) } else { None }
+        if node.kind() == Self::NAME { Some(FlagsCase(node)) } else { None }
     }
     fn syntax(&self) -> tree_sitter::Node<'tree> {
         self.0
@@ -257,11 +257,11 @@ impl<'tree> FlagsItem<'tree> {
     pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
         Vec::new().into_iter()
     }
+    pub fn iter_cases(&self) -> impl Iterator<Item = FlagsCase> {
+        Vec::new().into_iter()
+    }
     pub fn name(&self) -> Option<Identifier> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
-    }
-    pub fn iter_flags_fields(&self) -> impl Iterator<Item = FlagsField> {
-        Vec::new().into_iter()
     }
 }
 impl<'tree> super::AstNode<'tree> for FlagsItem<'tree> {
@@ -537,11 +537,11 @@ impl<'tree> InterfaceItem<'tree> {
     pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
         Vec::new().into_iter()
     }
+    pub fn iter_items(&self) -> impl Iterator<Item = InterfaceItems> {
+        Vec::new().into_iter()
+    }
     pub fn name(&self) -> Option<Identifier> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
-    }
-    pub fn iter_interface_items(&self) -> impl Iterator<Item = InterfaceItems> {
-        Vec::new().into_iter()
     }
 }
 impl<'tree> super::AstNode<'tree> for InterfaceItem<'tree> {
@@ -742,7 +742,7 @@ impl<'tree> super::AstNode<'tree> for PackagePath<'tree> {
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParamList<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> ParamList<'tree> {
-    pub fn iter_named_types(&self) -> impl Iterator<Item = NamedType> {
+    pub fn iter_params(&self) -> impl Iterator<Item = NamedType> {
         Vec::new().into_iter()
     }
 }
@@ -791,11 +791,11 @@ impl<'tree> RecordItem<'tree> {
     pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
         Vec::new().into_iter()
     }
+    pub fn iter_fields(&self) -> impl Iterator<Item = RecordField> {
+        Vec::new().into_iter()
+    }
     pub fn name(&self) -> Option<Identifier> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
-    }
-    pub fn iter_record_fields(&self) -> impl Iterator<Item = RecordField> {
-        Vec::new().into_iter()
     }
 }
 impl<'tree> super::AstNode<'tree> for RecordItem<'tree> {
@@ -842,11 +842,11 @@ impl<'tree> ResourceItem<'tree> {
     pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
         Vec::new().into_iter()
     }
+    pub fn iter_methods(&self) -> impl Iterator<Item = ResourceMethod> {
+        Vec::new().into_iter()
+    }
     pub fn name(&self) -> Option<Identifier> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
-    }
-    pub fn iter_resource_methods(&self) -> impl Iterator<Item = ResourceMethod> {
-        Vec::new().into_iter()
     }
 }
 impl<'tree> super::AstNode<'tree> for ResourceItem<'tree> {
@@ -1283,11 +1283,11 @@ impl<'tree> VariantItem<'tree> {
     pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
         Vec::new().into_iter()
     }
+    pub fn iter_cases(&self) -> impl Iterator<Item = VariantCase> {
+        Vec::new().into_iter()
+    }
     pub fn name(&self) -> Option<Identifier> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
-    }
-    pub fn iter_variant_cases(&self) -> impl Iterator<Item = VariantCase> {
-        Vec::new().into_iter()
     }
 }
 impl<'tree> super::AstNode<'tree> for VariantItem<'tree> {
@@ -1306,11 +1306,11 @@ impl<'tree> super::AstNode<'tree> for VariantItem<'tree> {
 #[derive(Debug, Clone, PartialEq)]
 pub struct WorldItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> WorldItem<'tree> {
+    pub fn iter_items(&self) -> impl Iterator<Item = WorldItems> {
+        Vec::new().into_iter()
+    }
     pub fn name(&self) -> Option<Identifier> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
-    }
-    pub fn iter_world_items(&self) -> impl Iterator<Item = WorldItems> {
-        Vec::new().into_iter()
     }
 }
 impl<'tree> super::AstNode<'tree> for WorldItem<'tree> {
