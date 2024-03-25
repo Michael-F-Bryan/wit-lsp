@@ -43,6 +43,11 @@ at your option.
 It is recommended to always use [`cargo crev`][crev] to verify the
 trustworthiness of each of your dependencies, including this one.
 
+> **Note:** The language configuration, code snippets, and TextMate grammar for
+> the VS Code extension have been copied from
+> [`bytecodealliance/vscode-wit`][vscode-wit] and are made available under the
+> same Apache-2.0 license.
+
 ### Contribution
 
 Unless you explicitly state otherwise, any contribution intentionally
@@ -56,3 +61,4 @@ do their best to avoid them, and welcome help in analysing and fixing them.
 [api-docs]: https://michael-f-bryan.github.io/wit-lsp
 [crev]: https://github.com/crev-dev/cargo-crev
 [wit]: https://github.com/WebAssembly/component-model/blob/main/design/mvp/WIT.md
+[vscode-wit]: https://github.com/bytecodealliance/vscode-wit
