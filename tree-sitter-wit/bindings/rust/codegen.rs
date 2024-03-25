@@ -120,7 +120,11 @@ fn field_getter(field: &Field, name: &str) -> TokenStream {
 
         quote! {
             pub fn #method_name(&self) -> impl Iterator<Item=#item_ty> {
-                Vec::new().into_iter()
+                let mut cursor = self.0.walk();
+                let children: Vec<_> = self.0.children_by_field_name(#name, &mut cursor)
+                    .filter_map(<#item_ty as super::AstNode>::cast)
+                    .collect();
+                children.into_iter()
             }
         }
     } else if !field.required {
@@ -128,7 +132,7 @@ fn field_getter(field: &Field, name: &str) -> TokenStream {
 
         quote! {
             pub fn #method_name(&self) -> Option<#item_ty> {
-                todo!()
+                self.0.child_by_field_name(#name).and_then(<#item_ty as super::AstNode>::cast)
             }
         }
     } else {

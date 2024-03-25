@@ -1,3 +1,5 @@
+//! Various operations used by the compiler and language server.
+
 mod parsing;
 mod selection;
 

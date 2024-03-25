@@ -29,6 +29,7 @@ jobs:
           - macos-latest
     runs-on: ${{ matrix.os }}
     steps:
+      # This is a workaround for https://github.com/actions/checkout/issues/135
       - name: Set git to use LF
         run: |
           git config --global core.autocrlf false

@@ -254,7 +254,7 @@ module.exports = grammar({
             ";",
         ),
 
-        ty: $ => choice($._builtins, $.tuple, $.list, $.option, $.result, $.identifier, $.handle),
+        ty: $ => choice($._builtins, $.tuple, $.list, $.option, $.result, $.user_defined_type, $.handle),
         _builtins: $ => choice(
             "u8", "u16", "u32", "u64", "s8", "s16", "s32", "s64", "float32", "float64", "char", "bool", "string"
         ),
@@ -270,6 +270,7 @@ module.exports = grammar({
             ),
             ">",
         ),
+        user_defined_type: $ => $.identifier,
 
         handle: $ => choice($.borrowed_handle, $.owned_handle),
         borrowed_handle: $ => seq("borrow", "<", field("name", $.identifier), ">"),

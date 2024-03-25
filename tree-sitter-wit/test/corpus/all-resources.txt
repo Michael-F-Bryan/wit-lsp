@@ -168,7 +168,8 @@ interface i {
           (type_item
             (identifier)
             (ty
-              (identifier)))))
+              (user_defined_type
+                (identifier))))))
       (interface_items
         (typedef_item
           (type_item

@@ -1,5 +1,9 @@
-// This file was copied from the
-// [`tree-sitter-traversal`](https://lib.rs/tree-sitter-traversal) crate.
+//! Utilities for traversing a [`tree_sitter::Tree`].
+//!
+//! Originally copied from the [`tree-sitter-traversal`][gh] crate under the
+//! MIT license.
+//!
+//! [gh]: https://github.com/skmendez/tree-sitter-traversal/
 
 use core::iter::FusedIterator;
 

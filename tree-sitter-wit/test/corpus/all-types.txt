@@ -122,25 +122,29 @@ interface types {
           (type_item
             (identifier)
             (ty
-              (identifier)))))
+              (user_defined_type
+                (identifier))))))
       (interface_items
         (typedef_item
           (type_item
             (identifier)
             (ty
-              (identifier)))))
+              (user_defined_type
+                (identifier))))))
       (interface_items
         (typedef_item
           (type_item
             (identifier)
             (ty
-              (identifier)))))
+              (user_defined_type
+                (identifier))))))
       (interface_items
         (typedef_item
           (type_item
             (identifier)
             (ty
-              (identifier)))))
+              (user_defined_type
+                (identifier))))))
       (interface_items
         (typedef_item
           (type_item
@@ -377,19 +381,22 @@ interface types {
                     (ty
                       (list
                         (ty
-                          (identifier)))))))))))
+                          (user_defined_type
+                            (identifier))))))))))))
       (interface_items
         (typedef_item
           (type_item
             (identifier)
             (ty
-              (identifier)))))
+              (user_defined_type
+                (identifier))))))
       (interface_items
         (typedef_item
           (type_item
             (identifier)
             (ty
-              (identifier)))))
+              (user_defined_type
+                (identifier))))))
       (block_comment)
       (slash_comment)
       (interface_items
@@ -397,7 +404,8 @@ interface types {
           (type_item
             (identifier)
             (ty
-              (identifier)))))
+              (user_defined_type
+                (identifier))))))
       (interface_items
         (typedef_item
           (type_item

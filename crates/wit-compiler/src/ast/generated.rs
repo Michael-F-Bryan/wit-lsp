@@ -78,7 +78,13 @@ impl<'tree> super::AstNode<'tree> for DocComment<'tree> {
 pub struct EnumCase<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> EnumCase<'tree> {
     pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
-        Vec::new().into_iter()
+        let mut cursor = self.0.walk();
+        let children: Vec<_> = self
+            .0
+            .children_by_field_name("attributes", &mut cursor)
+            .filter_map(<Attribute as super::AstNode>::cast)
+            .collect();
+        children.into_iter()
     }
     pub fn name(&self) -> Option<Identifier> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
@@ -101,10 +107,22 @@ impl<'tree> super::AstNode<'tree> for EnumCase<'tree> {
 pub struct EnumItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> EnumItem<'tree> {
     pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
-        Vec::new().into_iter()
+        let mut cursor = self.0.walk();
+        let children: Vec<_> = self
+            .0
+            .children_by_field_name("attributes", &mut cursor)
+            .filter_map(<Attribute as super::AstNode>::cast)
+            .collect();
+        children.into_iter()
     }
     pub fn iter_cases(&self) -> impl Iterator<Item = EnumCase> {
-        Vec::new().into_iter()
+        let mut cursor = self.0.walk();
+        let children: Vec<_> = self
+            .0
+            .children_by_field_name("cases", &mut cursor)
+            .filter_map(<EnumCase as super::AstNode>::cast)
+            .collect();
+        children.into_iter()
     }
     pub fn name(&self) -> Option<Identifier> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
@@ -189,7 +207,7 @@ impl<'tree> ExportedPath<'tree> {
             .and_then(<PackagePath as super::AstNode>::cast)
     }
     pub fn version_opt(&self) -> Option<Semver> {
-        todo!()
+        self.0.child_by_field_name("version").and_then(<Semver as super::AstNode>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for ExportedPath<'tree> {
@@ -232,7 +250,13 @@ impl<'tree> super::AstNode<'tree> for ExternType<'tree> {
 pub struct FlagsCase<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> FlagsCase<'tree> {
     pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
-        Vec::new().into_iter()
+        let mut cursor = self.0.walk();
+        let children: Vec<_> = self
+            .0
+            .children_by_field_name("attributes", &mut cursor)
+            .filter_map(<Attribute as super::AstNode>::cast)
+            .collect();
+        children.into_iter()
     }
     pub fn name(&self) -> Option<Identifier> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
@@ -255,10 +279,22 @@ impl<'tree> super::AstNode<'tree> for FlagsCase<'tree> {
 pub struct FlagsItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> FlagsItem<'tree> {
     pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
-        Vec::new().into_iter()
+        let mut cursor = self.0.walk();
+        let children: Vec<_> = self
+            .0
+            .children_by_field_name("attributes", &mut cursor)
+            .filter_map(<Attribute as super::AstNode>::cast)
+            .collect();
+        children.into_iter()
     }
     pub fn iter_cases(&self) -> impl Iterator<Item = FlagsCase> {
-        Vec::new().into_iter()
+        let mut cursor = self.0.walk();
+        let children: Vec<_> = self
+            .0
+            .children_by_field_name("cases", &mut cursor)
+            .filter_map(<FlagsCase as super::AstNode>::cast)
+            .collect();
+        children.into_iter()
     }
     pub fn name(&self) -> Option<Identifier> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
@@ -291,7 +327,7 @@ impl<'tree> FullyQualifiedPackageName<'tree> {
             .and_then(<PackagePath as super::AstNode>::cast)
     }
     pub fn version_opt(&self) -> Option<Semver> {
-        todo!()
+        self.0.child_by_field_name("version").and_then(<Semver as super::AstNode>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for FullyQualifiedPackageName<'tree> {
@@ -315,7 +351,13 @@ impl<'tree> super::AstNode<'tree> for FullyQualifiedPackageName<'tree> {
 pub struct FuncItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> FuncItem<'tree> {
     pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
-        Vec::new().into_iter()
+        let mut cursor = self.0.walk();
+        let children: Vec<_> = self
+            .0
+            .children_by_field_name("attributes", &mut cursor)
+            .filter_map(<Attribute as super::AstNode>::cast)
+            .collect();
+        children.into_iter()
     }
     pub fn name(&self) -> Option<Identifier> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
@@ -346,7 +388,9 @@ impl<'tree> FuncType<'tree> {
             .and_then(<ParamList as super::AstNode>::cast)
     }
     pub fn result_opt(&self) -> Option<ResultList> {
-        todo!()
+        self.0
+            .child_by_field_name("result")
+            .and_then(<ResultList as super::AstNode>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for FuncType<'tree> {
@@ -467,7 +511,9 @@ impl<'tree> super::AstNode<'tree> for ImportedPath<'tree> {
 pub struct IncludeItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> IncludeItem<'tree> {
     pub fn names_opt(&self) -> Option<IncludeNamesList> {
-        todo!()
+        self.0
+            .child_by_field_name("names")
+            .and_then(<IncludeNamesList as super::AstNode>::cast)
     }
     pub fn path(&self) -> Option<UsePath> {
         self.0.child_by_field_name("path").and_then(<UsePath as super::AstNode>::cast)
@@ -535,10 +581,22 @@ impl<'tree> super::AstNode<'tree> for IncludeNamesList<'tree> {
 pub struct InterfaceItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> InterfaceItem<'tree> {
     pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
-        Vec::new().into_iter()
+        let mut cursor = self.0.walk();
+        let children: Vec<_> = self
+            .0
+            .children_by_field_name("attributes", &mut cursor)
+            .filter_map(<Attribute as super::AstNode>::cast)
+            .collect();
+        children.into_iter()
     }
     pub fn iter_items(&self) -> impl Iterator<Item = InterfaceItems> {
-        Vec::new().into_iter()
+        let mut cursor = self.0.walk();
+        let children: Vec<_> = self
+            .0
+            .children_by_field_name("items", &mut cursor)
+            .filter_map(<InterfaceItems as super::AstNode>::cast)
+            .collect();
+        children.into_iter()
     }
     pub fn name(&self) -> Option<Identifier> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
@@ -676,7 +734,13 @@ impl<'tree> super::AstNode<'tree> for OwnedHandle<'tree> {
 pub struct PackageDecl<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> PackageDecl<'tree> {
     pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
-        Vec::new().into_iter()
+        let mut cursor = self.0.walk();
+        let children: Vec<_> = self
+            .0
+            .children_by_field_name("attributes", &mut cursor)
+            .filter_map(<Attribute as super::AstNode>::cast)
+            .collect();
+        children.into_iter()
     }
     pub fn fully_qualified_package_name(&self) -> Option<FullyQualifiedPackageName> {
         self.0
@@ -743,7 +807,13 @@ impl<'tree> super::AstNode<'tree> for PackagePath<'tree> {
 pub struct ParamList<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> ParamList<'tree> {
     pub fn iter_params(&self) -> impl Iterator<Item = NamedType> {
-        Vec::new().into_iter()
+        let mut cursor = self.0.walk();
+        let children: Vec<_> = self
+            .0
+            .children_by_field_name("params", &mut cursor)
+            .filter_map(<NamedType as super::AstNode>::cast)
+            .collect();
+        children.into_iter()
     }
 }
 impl<'tree> super::AstNode<'tree> for ParamList<'tree> {
@@ -763,7 +833,13 @@ impl<'tree> super::AstNode<'tree> for ParamList<'tree> {
 pub struct RecordField<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> RecordField<'tree> {
     pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
-        Vec::new().into_iter()
+        let mut cursor = self.0.walk();
+        let children: Vec<_> = self
+            .0
+            .children_by_field_name("attributes", &mut cursor)
+            .filter_map(<Attribute as super::AstNode>::cast)
+            .collect();
+        children.into_iter()
     }
     pub fn name(&self) -> Option<Identifier> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
@@ -789,10 +865,22 @@ impl<'tree> super::AstNode<'tree> for RecordField<'tree> {
 pub struct RecordItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> RecordItem<'tree> {
     pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
-        Vec::new().into_iter()
+        let mut cursor = self.0.walk();
+        let children: Vec<_> = self
+            .0
+            .children_by_field_name("attributes", &mut cursor)
+            .filter_map(<Attribute as super::AstNode>::cast)
+            .collect();
+        children.into_iter()
     }
     pub fn iter_fields(&self) -> impl Iterator<Item = RecordField> {
-        Vec::new().into_iter()
+        let mut cursor = self.0.walk();
+        let children: Vec<_> = self
+            .0
+            .children_by_field_name("fields", &mut cursor)
+            .filter_map(<RecordField as super::AstNode>::cast)
+            .collect();
+        children.into_iter()
     }
     pub fn name(&self) -> Option<Identifier> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
@@ -815,7 +903,13 @@ impl<'tree> super::AstNode<'tree> for RecordItem<'tree> {
 pub struct ResourceConstructor<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> ResourceConstructor<'tree> {
     pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
-        Vec::new().into_iter()
+        let mut cursor = self.0.walk();
+        let children: Vec<_> = self
+            .0
+            .children_by_field_name("attributes", &mut cursor)
+            .filter_map(<Attribute as super::AstNode>::cast)
+            .collect();
+        children.into_iter()
     }
     pub fn params(&self) -> Option<ParamList> {
         self.0
@@ -840,10 +934,22 @@ impl<'tree> super::AstNode<'tree> for ResourceConstructor<'tree> {
 pub struct ResourceItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> ResourceItem<'tree> {
     pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
-        Vec::new().into_iter()
+        let mut cursor = self.0.walk();
+        let children: Vec<_> = self
+            .0
+            .children_by_field_name("attributes", &mut cursor)
+            .filter_map(<Attribute as super::AstNode>::cast)
+            .collect();
+        children.into_iter()
     }
     pub fn iter_methods(&self) -> impl Iterator<Item = ResourceMethod> {
-        Vec::new().into_iter()
+        let mut cursor = self.0.walk();
+        let children: Vec<_> = self
+            .0
+            .children_by_field_name("methods", &mut cursor)
+            .filter_map(<ResourceMethod as super::AstNode>::cast)
+            .collect();
+        children.into_iter()
     }
     pub fn name(&self) -> Option<Identifier> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
@@ -898,10 +1004,10 @@ impl<'tree> super::AstNode<'tree> for ResourceMethod<'tree> {
 pub struct Result_<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> Result_<'tree> {
     pub fn err_opt(&self) -> Option<Ty> {
-        todo!()
+        self.0.child_by_field_name("err").and_then(<Ty as super::AstNode>::cast)
     }
     pub fn ok_opt(&self) -> Option<Ty> {
-        todo!()
+        self.0.child_by_field_name("ok").and_then(<Ty as super::AstNode>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for Result_<'tree> {
@@ -944,7 +1050,9 @@ impl<'tree> super::AstNode<'tree> for ResultList<'tree> {
 pub struct SourceFile<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> SourceFile<'tree> {
     pub fn package_opt(&self) -> Option<PackageDecl> {
-        todo!()
+        self.0
+            .child_by_field_name("package")
+            .and_then(<PackageDecl as super::AstNode>::cast)
     }
     pub fn iter_top_level_items(&self) -> impl Iterator<Item = TopLevelItem> {
         Vec::new().into_iter()
@@ -967,7 +1075,13 @@ impl<'tree> super::AstNode<'tree> for SourceFile<'tree> {
 pub struct StaticMethod<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> StaticMethod<'tree> {
     pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
-        Vec::new().into_iter()
+        let mut cursor = self.0.walk();
+        let children: Vec<_> = self
+            .0
+            .children_by_field_name("attributes", &mut cursor)
+            .filter_map(<Attribute as super::AstNode>::cast)
+            .collect();
+        children.into_iter()
     }
     pub fn name(&self) -> Option<Identifier> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
@@ -1027,7 +1141,9 @@ impl<'tree> super::AstNode<'tree> for TopLevelItem<'tree> {
 pub struct TopLevelUseItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> TopLevelUseItem<'tree> {
     pub fn alias_opt(&self) -> Option<Identifier> {
-        todo!()
+        self.0
+            .child_by_field_name("alias")
+            .and_then(<Identifier as super::AstNode>::cast)
     }
     pub fn use_path(&self) -> Option<UsePath> {
         self.0
@@ -1074,9 +1190,6 @@ impl<'tree> Ty<'tree> {
     pub fn handle_opt(&self) -> Option<Handle> {
         todo!()
     }
-    pub fn identifier_opt(&self) -> Option<Identifier> {
-        todo!()
-    }
     pub fn list_opt(&self) -> Option<List> {
         todo!()
     }
@@ -1087,6 +1200,9 @@ impl<'tree> Ty<'tree> {
         todo!()
     }
     pub fn tuple_opt(&self) -> Option<Tuple> {
+        todo!()
+    }
+    pub fn user_defined_type_opt(&self) -> Option<UserDefinedType> {
         todo!()
     }
 }
@@ -1107,7 +1223,13 @@ impl<'tree> super::AstNode<'tree> for Ty<'tree> {
 pub struct TypeItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> TypeItem<'tree> {
     pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
-        Vec::new().into_iter()
+        let mut cursor = self.0.walk();
+        let children: Vec<_> = self
+            .0
+            .children_by_field_name("attributes", &mut cursor)
+            .filter_map(<Attribute as super::AstNode>::cast)
+            .collect();
+        children.into_iter()
     }
     pub fn name(&self) -> Option<Identifier> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
@@ -1203,7 +1325,9 @@ impl<'tree> super::AstNode<'tree> for UseItem<'tree> {
 pub struct UseNamesItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> UseNamesItem<'tree> {
     pub fn alias_opt(&self) -> Option<Identifier> {
-        todo!()
+        self.0
+            .child_by_field_name("alias")
+            .and_then(<Identifier as super::AstNode>::cast)
     }
     pub fn name(&self) -> Option<Identifier> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
@@ -1226,13 +1350,17 @@ impl<'tree> super::AstNode<'tree> for UseNamesItem<'tree> {
 pub struct UsePath<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> UsePath<'tree> {
     pub fn package_opt(&self) -> Option<PackageName> {
-        todo!()
+        self.0
+            .child_by_field_name("package")
+            .and_then(<PackageName as super::AstNode>::cast)
     }
     pub fn path_opt(&self) -> Option<PackagePath> {
-        todo!()
+        self.0
+            .child_by_field_name("path")
+            .and_then(<PackagePath as super::AstNode>::cast)
     }
     pub fn version_opt(&self) -> Option<Semver> {
-        todo!()
+        self.0.child_by_field_name("version").and_then(<Semver as super::AstNode>::cast)
     }
     pub fn identifier_opt(&self) -> Option<Identifier> {
         todo!()
@@ -1250,18 +1378,46 @@ impl<'tree> super::AstNode<'tree> for UsePath<'tree> {
         self.0
     }
 }
+///The `user_defined_type` node.
+#[derive(Debug, Clone, PartialEq)]
+pub struct UserDefinedType<'tree>(tree_sitter::Node<'tree>);
+impl<'tree> UserDefinedType<'tree> {
+    pub fn identifier(&self) -> Option<Identifier> {
+        self.0
+            .child_by_field_name("identifier")
+            .and_then(<Identifier as super::AstNode>::cast)
+    }
+}
+impl<'tree> super::AstNode<'tree> for UserDefinedType<'tree> {
+    const NAME: &'static str = "user_defined_type";
+    fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        if node.kind() == Self::NAME { Some(UserDefinedType(node)) } else { None }
+    }
+    fn syntax(&self) -> tree_sitter::Node<'tree> {
+        self.0
+    }
+}
 ///The `variant_case` node.
 #[derive(Debug, Clone, PartialEq)]
 pub struct VariantCase<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> VariantCase<'tree> {
     pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
-        Vec::new().into_iter()
+        let mut cursor = self.0.walk();
+        let children: Vec<_> = self
+            .0
+            .children_by_field_name("attributes", &mut cursor)
+            .filter_map(<Attribute as super::AstNode>::cast)
+            .collect();
+        children.into_iter()
     }
     pub fn name(&self) -> Option<Identifier> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
     pub fn ty_opt(&self) -> Option<Ty> {
-        todo!()
+        self.0.child_by_field_name("ty").and_then(<Ty as super::AstNode>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for VariantCase<'tree> {
@@ -1281,10 +1437,22 @@ impl<'tree> super::AstNode<'tree> for VariantCase<'tree> {
 pub struct VariantItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> VariantItem<'tree> {
     pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
-        Vec::new().into_iter()
+        let mut cursor = self.0.walk();
+        let children: Vec<_> = self
+            .0
+            .children_by_field_name("attributes", &mut cursor)
+            .filter_map(<Attribute as super::AstNode>::cast)
+            .collect();
+        children.into_iter()
     }
     pub fn iter_cases(&self) -> impl Iterator<Item = VariantCase> {
-        Vec::new().into_iter()
+        let mut cursor = self.0.walk();
+        let children: Vec<_> = self
+            .0
+            .children_by_field_name("cases", &mut cursor)
+            .filter_map(<VariantCase as super::AstNode>::cast)
+            .collect();
+        children.into_iter()
     }
     pub fn name(&self) -> Option<Identifier> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
@@ -1307,7 +1475,13 @@ impl<'tree> super::AstNode<'tree> for VariantItem<'tree> {
 pub struct WorldItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> WorldItem<'tree> {
     pub fn iter_items(&self) -> impl Iterator<Item = WorldItems> {
-        Vec::new().into_iter()
+        let mut cursor = self.0.walk();
+        let children: Vec<_> = self
+            .0
+            .children_by_field_name("items", &mut cursor)
+            .filter_map(<WorldItems as super::AstNode>::cast)
+            .collect();
+        children.into_iter()
     }
     pub fn name(&self) -> Option<Identifier> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)

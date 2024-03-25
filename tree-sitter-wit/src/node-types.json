@@ -1068,10 +1068,6 @@
           "named": true
         },
         {
-          "type": "identifier",
-          "named": true
-        },
-        {
           "type": "list",
           "named": true
         },
@@ -1085,6 +1081,10 @@
         },
         {
           "type": "tuple",
+          "named": true
+        },
+        {
+          "type": "user_defined_type",
           "named": true
         }
       ]
@@ -1251,6 +1251,21 @@
     "children": {
       "multiple": false,
       "required": false,
+      "types": [
+        {
+          "type": "identifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "user_defined_type",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
       "types": [
         {
           "type": "identifier",

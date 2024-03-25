@@ -75,11 +75,13 @@ interface functions {
               (named_type
                 (identifier)
                 (ty
-                  (identifier)))
+                  (user_defined_type
+                    (identifier))))
               (named_type
                 (identifier)
                 (ty
-                  (identifier))))
+                  (user_defined_type
+                    (identifier)))))
             (result_list
               (ty
                 (tuple
@@ -100,7 +102,8 @@ interface functions {
                 (result
                   (ty)
                   (ty
-                    (identifier))))))))
+                    (user_defined_type
+                      (identifier)))))))))
       (interface_items
         (func_item
           (identifier)
@@ -113,7 +116,8 @@ interface functions {
               (named_type
                 (identifier)
                 (ty
-                  (identifier)))))))
+                  (user_defined_type
+                    (identifier))))))))
       (interface_items
         (func_item
           (identifier)

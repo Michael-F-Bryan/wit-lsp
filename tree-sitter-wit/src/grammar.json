@@ -1748,7 +1748,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "identifier"
+          "name": "user_defined_type"
         },
         {
           "type": "SYMBOL",
@@ -1997,6 +1997,10 @@
           "value": ">"
         }
       ]
+    },
+    "user_defined_type": {
+      "type": "SYMBOL",
+      "name": "identifier"
     },
     "handle": {
       "type": "CHOICE",
