@@ -1,5 +1,6 @@
 pub mod ast;
 mod compiler;
+pub mod diagnostics;
 pub mod queries;
 mod text;
 pub mod traverse;
@@ -16,6 +17,7 @@ pub struct Jar(
     crate::queries::Ast,
     crate::queries::parse,
     crate::queries::selection_ranges,
+    crate::diagnostics::Diagnostics,
 );
 
 /// The trait that all [`salsa::Database`] implementations must implement to

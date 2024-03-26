@@ -1,13 +1,27 @@
 use im::OrdMap;
 
-use crate::{ast::AstNode, Db, Text, Tree};
+use crate::{
+    ast::AstNode,
+    diagnostics::{Diagnostic, Diagnostics},
+    traverse::Order,
+    Db, Text, Tree,
+};
 
 #[salsa::tracked]
 pub fn parse(db: &dyn Db, ws: Workspace, path: Text) -> Option<Ast> {
     let files = ws.files(db);
     let src = files.get(&path)?;
+    let tree = Tree::parse(src);
 
-    Some(Ast::new(db, Tree::parse(src), src.clone()))
+    let root = tree.root_node();
+
+    if root.has_error() {
+        for error_node in crate::traverse::tree(&tree, Order::Pre).filter(|node| node.is_error()) {
+            Diagnostics::push(db, Diagnostic::parse_error(error_node));
+        }
+    }
+
+    Some(Ast::new(db, tree, src.clone()))
 }
 
 /// A workspace keeps track of all files known to the compiler.
