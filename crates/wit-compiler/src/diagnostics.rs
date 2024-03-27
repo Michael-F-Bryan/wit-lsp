@@ -1,7 +1,7 @@
 //! Errors and user-facing messages that may be generated as the result of
 //! analysis.
 
-use tree_sitter::{Node, Range};
+use tree_sitter::Range;
 
 use crate::Text;
 
