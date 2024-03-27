@@ -17,7 +17,12 @@ pub fn parse(db: &dyn Db, ws: Workspace, path: Text) -> Option<Ast> {
 
     if root.has_error() {
         for error_node in crate::traverse::tree(&tree, Order::Pre).filter(|node| node.is_error()) {
-            Diagnostics::push(db, Diagnostic::parse_error(error_node));
+            if let Some(parent) = error_node.parent() {
+                Diagnostics::push(
+                    db,
+                    Diagnostic::parse_error(parent.kind(), error_node.range()),
+                );
+            }
         }
     }
 

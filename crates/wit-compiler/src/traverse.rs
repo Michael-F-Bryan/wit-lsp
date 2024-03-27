@@ -301,23 +301,17 @@ where
     }
 }
 
-// Used for visibility purposes, in case this struct becomes public
-struct Traverse<C> {
-    inner: TraverseInner<C>,
-}
-
-enum TraverseInner<C> {
+enum Traverse<C> {
     Post(PostorderTraverse<C>),
     Pre(PreorderTraverse<C>),
 }
 
 impl<C> Traverse<C> {
     pub fn new(c: C, order: Order) -> Self {
-        let inner = match order {
-            Order::Pre => TraverseInner::Pre(PreorderTraverse::new(c)),
-            Order::Post => TraverseInner::Post(PostorderTraverse::new(c)),
-        };
-        Self { inner }
+        match order {
+            Order::Pre => Traverse::Pre(PreorderTraverse::new(c)),
+            Order::Post => Traverse::Post(PostorderTraverse::new(c)),
+        }
     }
 }
 
@@ -355,9 +349,9 @@ where
     type Item = C::Node;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.inner {
-            TraverseInner::Post(ref mut i) => i.next(),
-            TraverseInner::Pre(ref mut i) => i.next(),
+        match self {
+            Traverse::Post(ref mut i) => i.next(),
+            Traverse::Pre(ref mut i) => i.next(),
         }
     }
 }

@@ -13,18 +13,17 @@ pub struct Diagnostics(Diagnostic);
 #[non_exhaustive]
 pub enum Diagnostic {
     DuplicateName(DuplicateName),
-    Parse { range: Range },
+    Parse(SyntaxError),
     Unimplemented(Unimplemented),
     UnknownName(UnknownName),
 }
 
 impl Diagnostic {
-    pub fn parse_error(node: Node<'_>) -> Self {
-        debug_assert!(node.is_error());
-
-        Diagnostic::Parse {
-            range: node.range(),
-        }
+    pub fn parse_error(rule: impl Into<String>, range: Range) -> Self {
+        Diagnostic::Parse(SyntaxError {
+            rule: rule.into(),
+            range,
+        })
     }
 
     pub fn duplicate_name(
@@ -39,21 +38,27 @@ impl Diagnostic {
         })
     }
 
-    pub fn unimplemented(message: Text, filename: Text, span: Range) -> Self {
+    pub fn unimplemented(message: Text, filename: Text, range: Range) -> Self {
         Diagnostic::Unimplemented(Unimplemented {
             message,
             filename,
-            span,
+            range,
         })
     }
 
-    pub fn unknown_name(name: Text, filename: Text, span: Range) -> Self {
+    pub fn unknown_name(name: Text, filename: Text, range: Range) -> Self {
         Diagnostic::UnknownName(UnknownName {
             name,
             filename,
-            span,
+            range,
         })
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SyntaxError {
+    pub rule: String,
+    pub range: Range,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -74,7 +79,7 @@ impl From<DuplicateName> for Diagnostic {
 pub struct Unimplemented {
     pub message: Text,
     pub filename: Text,
-    pub span: Range,
+    pub range: Range,
 }
 
 impl From<Unimplemented> for Diagnostic {
@@ -91,7 +96,7 @@ pub struct UnknownName {
     /// The file this error came from.
     pub filename: Text,
     /// Where in the file we are referencing this name.
-    pub span: Range,
+    pub range: Range,
 }
 
 impl From<UnknownName> for Diagnostic {
