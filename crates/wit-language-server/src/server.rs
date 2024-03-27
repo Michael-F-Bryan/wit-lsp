@@ -4,15 +4,21 @@ use tokio::sync::{Mutex, MutexGuard};
 use tower_lsp::{
     jsonrpc::Error,
     lsp_types::{
-        DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
-        DidSaveTextDocumentParams, FoldingRange, FoldingRangeParams, InitializeParams,
-        InitializeResult, SelectionRange, SelectionRangeParams, ServerCapabilities, ServerInfo,
-        TextDocumentContentChangeEvent, TextDocumentItem, TextDocumentSyncCapability,
+        DiagnosticOptions, DiagnosticRelatedInformation, DiagnosticServerCapabilities,
+        DiagnosticSeverity, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
+        DidOpenTextDocumentParams, DidSaveTextDocumentParams, DocumentDiagnosticParams,
+        DocumentDiagnosticReportResult, FoldingRange, FoldingRangeParams, InitializeParams,
+        InitializeResult, Location, SelectionRange, SelectionRangeParams, ServerCapabilities,
+        ServerInfo, TextDocumentContentChangeEvent, TextDocumentItem, TextDocumentSyncCapability,
         TextDocumentSyncKind, Url,
     },
     Client, ClientSocket, LspService,
 };
-use wit_compiler::{queries::Workspace, Text};
+use wit_compiler::{
+    diagnostics::{Diagnostics, DuplicateName, SyntaxError, Unimplemented, UnknownName},
+    queries::Workspace,
+    Text,
+};
 
 use crate::{Database, Db};
 
@@ -98,6 +104,14 @@ impl tower_lsp::LanguageServer for LanguageServer {
                 )),
                 folding_range_provider: Some(true.into()),
                 selection_range_provider: Some(true.into()),
+                diagnostic_provider: Some(DiagnosticServerCapabilities::Options(
+                    DiagnosticOptions {
+                        // TODO: Enable this when we can generate diagnostics
+                        // for the entire workspace.
+                        inter_file_dependencies: false,
+                        ..Default::default()
+                    },
+                )),
                 ..Default::default()
             },
             server_info: Some(ServerInfo {
@@ -232,6 +246,101 @@ impl tower_lsp::LanguageServer for LanguageServer {
         }
 
         Ok(Some(ranges))
+    }
+
+    async fn diagnostic(
+        &self,
+        params: DocumentDiagnosticParams,
+    ) -> Result<DocumentDiagnosticReportResult, Error> {
+        let snap = self.snapshot().await;
+        let db = snap.wit_db();
+        let path = &params.text_document.uri;
+
+        let diags = wit_compiler::queries::parse::accumulated::<Diagnostics>(
+            db,
+            snap.ws,
+            path.as_str().into(),
+        );
+        let items = diags
+            .into_iter()
+            .filter_map(|diag| lsp_diagnostic(diag, path))
+            .collect();
+
+        Ok(DocumentDiagnosticReportResult::Report(
+            tower_lsp::lsp_types::DocumentDiagnosticReport::Full(
+                tower_lsp::lsp_types::RelatedFullDocumentDiagnosticReport {
+                    full_document_diagnostic_report:
+                        tower_lsp::lsp_types::FullDocumentDiagnosticReport {
+                            items,
+                            ..Default::default()
+                        },
+                    ..Default::default()
+                },
+            ),
+        ))
+    }
+}
+
+/// Convert a [`wai::diagnostics::Diagnostic`] to a
+/// [`tower_lsp::lsp_types::Diagnostic`].
+fn lsp_diagnostic(
+    diag: wit_compiler::diagnostics::Diagnostic,
+    uri: &Url,
+) -> Option<tower_lsp::lsp_types::Diagnostic> {
+    match diag {
+        wit_compiler::diagnostics::Diagnostic::DuplicateName(DuplicateName {
+            name,
+            duplicate_definition,
+            original_definition,
+        }) => {
+            let diagnostic = tower_lsp::lsp_types::Diagnostic {
+                range: ts_to_range(duplicate_definition),
+                message: format!("\"{name}\" is already defined"),
+                related_information: Some(vec![DiagnosticRelatedInformation {
+                    location: Location {
+                        uri: uri.clone(),
+                        range: ts_to_range(original_definition),
+                    },
+                    message: "Original definition".into(),
+                }]),
+                severity: Some(DiagnosticSeverity::ERROR),
+                ..Default::default()
+            };
+            Some(diagnostic)
+        }
+        wit_compiler::diagnostics::Diagnostic::Parse(SyntaxError { range, rule }) => {
+            let msg = format!("Syntax error while parsing \"{rule}\"");
+            let diagnostic = tower_lsp::lsp_types::Diagnostic {
+                range: ts_to_range(range),
+                message: msg,
+                severity: Some(DiagnosticSeverity::ERROR),
+                ..Default::default()
+            };
+            Some(diagnostic)
+        }
+        wit_compiler::diagnostics::Diagnostic::Unimplemented(Unimplemented {
+            message,
+            range,
+            ..
+        }) => {
+            let diagnostic = tower_lsp::lsp_types::Diagnostic {
+                range: ts_to_range(range),
+                message: message.to_string(),
+                severity: Some(DiagnosticSeverity::ERROR),
+                ..Default::default()
+            };
+            Some(diagnostic)
+        }
+        wit_compiler::diagnostics::Diagnostic::UnknownName(UnknownName { name, range, .. }) => {
+            let diagnostic = tower_lsp::lsp_types::Diagnostic {
+                range: ts_to_range(range),
+                message: format!("Attempted to reference unknown item, \"{name}\""),
+                severity: Some(DiagnosticSeverity::ERROR),
+                ..Default::default()
+            };
+            Some(diagnostic)
+        }
+        _ => None,
     }
 }
 

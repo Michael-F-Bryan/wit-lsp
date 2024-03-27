@@ -12,6 +12,7 @@ An alternative Language Server implementation for [WIT][wit].
 - [x] Code Folding
 - [x] Show Syntax Tree
 - [x] Selection range
+- [x] Diagnostic reporting
 - [ ] Semantic Syntax Highlighting
 - [ ] Semantic Autocomplete
 - [ ] Jump to Definition
