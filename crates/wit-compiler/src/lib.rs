@@ -13,11 +13,14 @@ pub use crate::{compiler::Compiler, text::Text, tree::Tree};
 /// crate.
 #[salsa::jar(db = Db)]
 pub struct Jar(
-    crate::queries::Workspace,
+    crate::diagnostics::Diagnostics,
     crate::queries::Ast,
+    crate::queries::Items,
     crate::queries::parse,
     crate::queries::selection_ranges,
-    crate::diagnostics::Diagnostics,
+    crate::queries::SourceFile,
+    crate::queries::top_level_items,
+    crate::queries::Workspace,
 );
 
 /// The trait that all [`salsa::Database`] implementations must implement to

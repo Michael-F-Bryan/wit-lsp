@@ -20,7 +20,7 @@ use wit_compiler::{
     Text,
 };
 
-use crate::{Database, Db};
+use crate::Database;
 
 /// The language server implementation.
 #[derive(Debug)]
@@ -53,19 +53,20 @@ impl LanguageServer {
         let ws = snap.ws;
         let db = snap.wit_db();
 
-        match wit_compiler::queries::parse(db, ws, path.clone()) {
-            Some(ast) => Ok(DumpAstResponse {
-                ast: ast.tree(db).to_string(),
-            }),
-            None => {
-                let msg = format!("\"{path}\" isn't in the workspace");
-                tracing::warn!(%path, "File not found in database");
-                tracing::debug!(
-                    tracked_files = ?ws.files(db).keys().collect::<Vec<_>>(),
-                );
-                Err(Error::invalid_params(msg))
-            }
-        }
+        let Some(file) = snap.ws.lookup(db, &path) else {
+            let msg = format!("\"{path}\" isn't in the workspace");
+            tracing::warn!(%path, "File not found in database");
+            tracing::debug!(
+                tracked_files = ?ws.files(db).keys().collect::<Vec<_>>(),
+            );
+            return Err(Error::invalid_params(msg));
+        };
+
+        let ast = wit_compiler::queries::parse(db, file);
+
+        Ok(DumpAstResponse {
+            ast: ast.tree(db).to_string(),
+        })
     }
 
     #[tracing::instrument(level = "debug", skip_all)]
@@ -194,10 +195,13 @@ impl tower_lsp::LanguageServer for LanguageServer {
 
         let path = params.text_document.uri.as_str();
         let snap = self.snapshot().await;
+        let db = snap.wit_db();
 
-        let Some(ast) = wit_compiler::queries::parse(snap.db.as_wit(), snap.ws, path.into()) else {
+        let Some(file) = snap.ws.lookup(db, path) else {
             return Ok(None);
         };
+
+        let ast = wit_compiler::queries::parse(db, file);
 
         let ranges = crate::ops::folding_range(&*snap.db, ast)
             .into_iter()
@@ -217,10 +221,11 @@ impl tower_lsp::LanguageServer for LanguageServer {
         let snap = self.snapshot().await;
 
         let db = snap.wit_db();
-
-        let Some(ast) = wit_compiler::queries::parse(db, snap.ws, path.into()) else {
+        let Some(file) = snap.ws.lookup(db, path) else {
             return Ok(None);
         };
+
+        let ast = wit_compiler::queries::parse(db, file);
 
         let mut ranges = Vec::new();
 
@@ -255,12 +260,13 @@ impl tower_lsp::LanguageServer for LanguageServer {
         let snap = self.snapshot().await;
         let db = snap.wit_db();
         let path = &params.text_document.uri;
+        let Some(file) = snap.ws.lookup(db, path.as_str()) else {
+            return Err(Error::invalid_params(format!(
+                "\"{path}\" isn't tracked by the workspace"
+            )));
+        };
 
-        let diags = wit_compiler::queries::parse::accumulated::<Diagnostics>(
-            db,
-            snap.ws,
-            path.as_str().into(),
-        );
+        let diags = wit_compiler::queries::parse::accumulated::<Diagnostics>(db, file);
         let items = diags
             .into_iter()
             .filter_map(|diag| lsp_diagnostic(diag, path))
@@ -281,7 +287,7 @@ impl tower_lsp::LanguageServer for LanguageServer {
     }
 }
 
-/// Convert a [`wai::diagnostics::Diagnostic`] to a
+/// Convert a [`wit_compiler::diagnostics::Diagnostic`] to a
 /// [`tower_lsp::lsp_types::Diagnostic`].
 fn lsp_diagnostic(
     diag: wit_compiler::diagnostics::Diagnostic,

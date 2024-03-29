@@ -8,10 +8,9 @@ use crate::{
 };
 
 #[salsa::tracked]
-pub fn parse(db: &dyn Db, ws: Workspace, path: Text) -> Option<Ast> {
-    let files = ws.files(db);
-    let src = files.get(&path)?;
-    let tree = Tree::parse(src);
+pub fn parse(db: &dyn Db, file: SourceFile) -> Ast {
+    let src = file.contents(db);
+    let tree = Tree::parse(&src);
 
     let root = tree.root_node();
 
@@ -26,23 +25,36 @@ pub fn parse(db: &dyn Db, ws: Workspace, path: Text) -> Option<Ast> {
         }
     }
 
-    Some(Ast::new(db, tree, src.clone()))
+    Ast::new(db, tree, src.clone())
 }
 
 /// A workspace keeps track of all files known to the compiler.
 #[salsa::input]
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Workspace {
-    pub files: OrdMap<Text, Text>,
+    pub files: OrdMap<Text, SourceFile>,
 }
 
 impl Workspace {
     /// Update a file's contents.
     pub fn update(&self, db: &mut dyn Db, path: impl Into<Text>, text: impl Into<Text>) {
         let mut files = self.files(db);
-        files.insert(path.into(), text.into());
+        let path = path.into();
+        let file = SourceFile::new(db, path.clone(), text.into());
+        files.insert(path, file);
         self.set_files(db).to(files);
     }
+
+    pub fn lookup(&self, db: &dyn Db, path: &str) -> Option<SourceFile> {
+        let files = self.files(db);
+        files.get(path).cloned()
+    }
+}
+
+#[salsa::input]
+pub struct SourceFile {
+    pub path: Text,
+    pub contents: Text,
 }
 
 #[salsa::tracked]

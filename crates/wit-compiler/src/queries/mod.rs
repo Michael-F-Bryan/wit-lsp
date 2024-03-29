@@ -4,6 +4,6 @@ mod parsing;
 mod selection;
 
 pub use self::{
-    parsing::{parse, Ast, Workspace},
+    parsing::{parse, Ast, SourceFile, Workspace},
     selection::selection_ranges,
 };
