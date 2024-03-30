@@ -15,4 +15,5 @@ world foo {
       (world_items
         (include_item
           (use_path
-            (identifier)))))))
+            (local_use_path
+              (identifier))))))))

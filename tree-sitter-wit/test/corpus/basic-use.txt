@@ -10,4 +10,5 @@ use error;
   (top_level_item
     (top_level_use_item
       (use_path
-        (identifier)))))
+        (local_use_path
+          (identifier))))))

@@ -154,37 +154,16 @@
   {
     "type": "exported_path",
     "named": true,
-    "fields": {
-      "package": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "package_name",
-            "named": true
-          }
-        ]
-      },
-      "path": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "package_path",
-            "named": true
-          }
-        ]
-      },
-      "version": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "semver",
-            "named": true
-          }
-        ]
-      }
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "fully_qualified_use_path",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -274,6 +253,42 @@
   },
   {
     "type": "fully_qualified_package_name",
+    "named": true,
+    "fields": {
+      "package": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "package_name",
+            "named": true
+          }
+        ]
+      },
+      "path": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "package_path",
+            "named": true
+          }
+        ]
+      },
+      "version": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "semver",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "fully_qualified_use_path",
     "named": true,
     "fields": {
       "package": {
@@ -585,6 +600,21 @@
       "types": [
         {
           "type": "ty",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "local_use_path",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier",
           "named": true
         }
       ]
@@ -1216,44 +1246,17 @@
   {
     "type": "use_path",
     "named": true,
-    "fields": {
-      "package": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "package_name",
-            "named": true
-          }
-        ]
-      },
-      "path": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "package_path",
-            "named": true
-          }
-        ]
-      },
-      "version": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "semver",
-            "named": true
-          }
-        ]
-      }
-    },
+    "fields": {},
     "children": {
       "multiple": false,
-      "required": false,
+      "required": true,
       "types": [
         {
-          "type": "identifier",
+          "type": "fully_qualified_use_path",
+          "named": true
+        },
+        {
+          "type": "local_use_path",
           "named": true
         }
       ]

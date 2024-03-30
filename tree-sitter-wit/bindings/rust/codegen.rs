@@ -46,7 +46,7 @@ fn _generate_token(token: &NodeType) -> TokenStream {
 
     quote! {
         #[doc = #doc]
-        #[derive(Debug, Clone, PartialEq)]
+        #[derive(Debug, Copy, Clone, PartialEq)]
         pub struct #ident<'tree>(tree_sitter::Node<'tree>);
 
         #ast_node_impl
@@ -94,7 +94,7 @@ fn generate_ast_node(node: &NodeType) -> TokenStream {
 
     quote! {
         #[doc = #doc]
-        #[derive(Debug, Clone, PartialEq)]
+        #[derive(Debug, Copy, Clone, PartialEq)]
         pub struct #ident<'tree>(tree_sitter::Node<'tree>);
 
         impl<'tree> #ident<'tree> {
@@ -119,7 +119,7 @@ fn field_getter(field: &Field, name: &str) -> TokenStream {
         };
 
         quote! {
-            pub fn #method_name(&self) -> impl Iterator<Item=#item_ty> {
+            pub fn #method_name(&self) -> impl Iterator<Item=#item_ty<'tree>> {
                 let mut cursor = self.0.walk();
                 let children: Vec<_> = self.0.children_by_field_name(#name, &mut cursor)
                     .filter_map(<#item_ty as super::AstNode>::cast)
@@ -131,7 +131,7 @@ fn field_getter(field: &Field, name: &str) -> TokenStream {
         let method_name = format_ident!("{name}_opt");
 
         quote! {
-            pub fn #method_name(&self) -> Option<#item_ty> {
+            pub fn #method_name(&self) -> Option<#item_ty<'tree>> {
                 self.0.child_by_field_name(#name).and_then(<#item_ty as super::AstNode>::cast)
             }
         }
@@ -139,7 +139,7 @@ fn field_getter(field: &Field, name: &str) -> TokenStream {
         let method_name = format_ident!("{name}");
 
         quote! {
-            pub fn #method_name(&self) -> Option<#item_ty> {
+            pub fn #method_name(&self) -> Option<#item_ty<'tree>> {
                 self.0.child_by_field_name(#name).and_then(<#item_ty as super::AstNode>::cast)
             }
         }
@@ -158,7 +158,7 @@ fn child_getter(item_ty: &FieldType, multiple: bool, required: bool) -> TokenStr
         };
 
         quote! {
-            pub fn #method_name(&self) -> impl Iterator<Item=#item_ty> {
+            pub fn #method_name(&self) -> impl Iterator<Item=#item_ty<'tree>> {
                 Vec::new().into_iter()
             }
         }
@@ -166,7 +166,7 @@ fn child_getter(item_ty: &FieldType, multiple: bool, required: bool) -> TokenStr
         let method_name = format_ident!("{name}_opt");
 
         quote! {
-            pub fn #method_name(&self) -> Option<#item_ty> {
+            pub fn #method_name(&self) -> Option<#item_ty<'tree>> {
                 todo!()
             }
         }
@@ -174,8 +174,8 @@ fn child_getter(item_ty: &FieldType, multiple: bool, required: bool) -> TokenStr
         let method_name = format_ident!("{name}");
 
         quote! {
-            pub fn #method_name(&self) -> Option<#item_ty> {
-                self.0.child_by_field_name(#name).and_then(<#item_ty as super::AstNode>::cast)
+            pub fn #method_name(&self) -> Option<#item_ty<'tree>> {
+                self.0.child_by_field_name(#name).and_then(<#item_ty<'_> as super::AstNode>::cast)
             }
         }
     }

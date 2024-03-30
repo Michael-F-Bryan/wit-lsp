@@ -1,12 +1,12 @@
 //! Automatically generated code. DO NOT EDIT!
 ///The `attribute` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Attribute<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> Attribute<'tree> {
-    pub fn doc_comment(&self) -> Option<DocComment> {
+    pub fn doc_comment(&self) -> Option<DocComment<'tree>> {
         self.0
             .child_by_field_name("doc_comment")
-            .and_then(<DocComment as super::AstNode>::cast)
+            .and_then(<DocComment<'_> as super::AstNode>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for Attribute<'tree> {
@@ -22,7 +22,7 @@ impl<'tree> super::AstNode<'tree> for Attribute<'tree> {
     }
 }
 ///The `block_comment` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct BlockComment<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> BlockComment<'tree> {}
 impl<'tree> super::AstNode<'tree> for BlockComment<'tree> {
@@ -38,10 +38,10 @@ impl<'tree> super::AstNode<'tree> for BlockComment<'tree> {
     }
 }
 ///The `borrowed_handle` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct BorrowedHandle<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> BorrowedHandle<'tree> {
-    pub fn name(&self) -> Option<Identifier> {
+    pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
@@ -58,7 +58,7 @@ impl<'tree> super::AstNode<'tree> for BorrowedHandle<'tree> {
     }
 }
 ///The `doc_comment` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct DocComment<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> DocComment<'tree> {}
 impl<'tree> super::AstNode<'tree> for DocComment<'tree> {
@@ -74,10 +74,10 @@ impl<'tree> super::AstNode<'tree> for DocComment<'tree> {
     }
 }
 ///The `enum_case` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct EnumCase<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> EnumCase<'tree> {
-    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
+    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -86,7 +86,7 @@ impl<'tree> EnumCase<'tree> {
             .collect();
         children.into_iter()
     }
-    pub fn name(&self) -> Option<Identifier> {
+    pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
@@ -103,10 +103,10 @@ impl<'tree> super::AstNode<'tree> for EnumCase<'tree> {
     }
 }
 ///The `enum_item` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct EnumItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> EnumItem<'tree> {
-    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
+    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -115,7 +115,7 @@ impl<'tree> EnumItem<'tree> {
             .collect();
         children.into_iter()
     }
-    pub fn iter_cases(&self) -> impl Iterator<Item = EnumCase> {
+    pub fn iter_cases(&self) -> impl Iterator<Item = EnumCase<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -124,7 +124,7 @@ impl<'tree> EnumItem<'tree> {
             .collect();
         children.into_iter()
     }
-    pub fn name(&self) -> Option<Identifier> {
+    pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
@@ -141,18 +141,18 @@ impl<'tree> super::AstNode<'tree> for EnumItem<'tree> {
     }
 }
 ///The `export_item` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ExportItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> ExportItem<'tree> {
-    pub fn exported_item(&self) -> Option<ExportedItem> {
+    pub fn exported_item(&self) -> Option<ExportedItem<'tree>> {
         self.0
             .child_by_field_name("exported_item")
-            .and_then(<ExportedItem as super::AstNode>::cast)
+            .and_then(<ExportedItem<'_> as super::AstNode>::cast)
     }
-    pub fn exported_path(&self) -> Option<ExportedPath> {
+    pub fn exported_path(&self) -> Option<ExportedPath<'tree>> {
         self.0
             .child_by_field_name("exported_path")
-            .and_then(<ExportedPath as super::AstNode>::cast)
+            .and_then(<ExportedPath<'_> as super::AstNode>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for ExportItem<'tree> {
@@ -168,16 +168,16 @@ impl<'tree> super::AstNode<'tree> for ExportItem<'tree> {
     }
 }
 ///The `exported_item` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ExportedItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> ExportedItem<'tree> {
-    pub fn name(&self) -> Option<Identifier> {
+    pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
-    pub fn extern_type(&self) -> Option<ExternType> {
+    pub fn extern_type(&self) -> Option<ExternType<'tree>> {
         self.0
             .child_by_field_name("extern_type")
-            .and_then(<ExternType as super::AstNode>::cast)
+            .and_then(<ExternType<'_> as super::AstNode>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for ExportedItem<'tree> {
@@ -193,21 +193,13 @@ impl<'tree> super::AstNode<'tree> for ExportedItem<'tree> {
     }
 }
 ///The `exported_path` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ExportedPath<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> ExportedPath<'tree> {
-    pub fn package(&self) -> Option<PackageName> {
+    pub fn fully_qualified_use_path(&self) -> Option<FullyQualifiedUsePath<'tree>> {
         self.0
-            .child_by_field_name("package")
-            .and_then(<PackageName as super::AstNode>::cast)
-    }
-    pub fn path(&self) -> Option<PackagePath> {
-        self.0
-            .child_by_field_name("path")
-            .and_then(<PackagePath as super::AstNode>::cast)
-    }
-    pub fn version_opt(&self) -> Option<Semver> {
-        self.0.child_by_field_name("version").and_then(<Semver as super::AstNode>::cast)
+            .child_by_field_name("fully_qualified_use_path")
+            .and_then(<FullyQualifiedUsePath<'_> as super::AstNode>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for ExportedPath<'tree> {
@@ -223,13 +215,13 @@ impl<'tree> super::AstNode<'tree> for ExportedPath<'tree> {
     }
 }
 ///The `extern_type` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ExternType<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> ExternType<'tree> {
-    pub fn iter_func_types(&self) -> impl Iterator<Item = FuncType> {
+    pub fn iter_func_types(&self) -> impl Iterator<Item = FuncType<'tree>> {
         Vec::new().into_iter()
     }
-    pub fn iter_interface_items(&self) -> impl Iterator<Item = InterfaceItems> {
+    pub fn iter_interface_items(&self) -> impl Iterator<Item = InterfaceItems<'tree>> {
         Vec::new().into_iter()
     }
 }
@@ -246,10 +238,10 @@ impl<'tree> super::AstNode<'tree> for ExternType<'tree> {
     }
 }
 ///The `flags_case` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct FlagsCase<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> FlagsCase<'tree> {
-    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
+    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -258,7 +250,7 @@ impl<'tree> FlagsCase<'tree> {
             .collect();
         children.into_iter()
     }
-    pub fn name(&self) -> Option<Identifier> {
+    pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
@@ -275,10 +267,10 @@ impl<'tree> super::AstNode<'tree> for FlagsCase<'tree> {
     }
 }
 ///The `flags_item` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct FlagsItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> FlagsItem<'tree> {
-    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
+    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -287,7 +279,7 @@ impl<'tree> FlagsItem<'tree> {
             .collect();
         children.into_iter()
     }
-    pub fn iter_cases(&self) -> impl Iterator<Item = FlagsCase> {
+    pub fn iter_cases(&self) -> impl Iterator<Item = FlagsCase<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -296,7 +288,7 @@ impl<'tree> FlagsItem<'tree> {
             .collect();
         children.into_iter()
     }
-    pub fn name(&self) -> Option<Identifier> {
+    pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
@@ -313,20 +305,20 @@ impl<'tree> super::AstNode<'tree> for FlagsItem<'tree> {
     }
 }
 ///The `fully_qualified_package_name` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct FullyQualifiedPackageName<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> FullyQualifiedPackageName<'tree> {
-    pub fn package(&self) -> Option<PackageName> {
+    pub fn package(&self) -> Option<PackageName<'tree>> {
         self.0
             .child_by_field_name("package")
             .and_then(<PackageName as super::AstNode>::cast)
     }
-    pub fn path(&self) -> Option<PackagePath> {
+    pub fn path(&self) -> Option<PackagePath<'tree>> {
         self.0
             .child_by_field_name("path")
             .and_then(<PackagePath as super::AstNode>::cast)
     }
-    pub fn version_opt(&self) -> Option<Semver> {
+    pub fn version_opt(&self) -> Option<Semver<'tree>> {
         self.0.child_by_field_name("version").and_then(<Semver as super::AstNode>::cast)
     }
 }
@@ -346,11 +338,41 @@ impl<'tree> super::AstNode<'tree> for FullyQualifiedPackageName<'tree> {
         self.0
     }
 }
+///The `fully_qualified_use_path` node.
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct FullyQualifiedUsePath<'tree>(tree_sitter::Node<'tree>);
+impl<'tree> FullyQualifiedUsePath<'tree> {
+    pub fn package(&self) -> Option<PackageName<'tree>> {
+        self.0
+            .child_by_field_name("package")
+            .and_then(<PackageName as super::AstNode>::cast)
+    }
+    pub fn path(&self) -> Option<PackagePath<'tree>> {
+        self.0
+            .child_by_field_name("path")
+            .and_then(<PackagePath as super::AstNode>::cast)
+    }
+    pub fn version_opt(&self) -> Option<Semver<'tree>> {
+        self.0.child_by_field_name("version").and_then(<Semver as super::AstNode>::cast)
+    }
+}
+impl<'tree> super::AstNode<'tree> for FullyQualifiedUsePath<'tree> {
+    const NAME: &'static str = "fully_qualified_use_path";
+    fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        if node.kind() == Self::NAME { Some(FullyQualifiedUsePath(node)) } else { None }
+    }
+    fn syntax(&self) -> tree_sitter::Node<'tree> {
+        self.0
+    }
+}
 ///The `func_item` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct FuncItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> FuncItem<'tree> {
-    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
+    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -359,10 +381,10 @@ impl<'tree> FuncItem<'tree> {
             .collect();
         children.into_iter()
     }
-    pub fn name(&self) -> Option<Identifier> {
+    pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
-    pub fn ty(&self) -> Option<FuncType> {
+    pub fn ty(&self) -> Option<FuncType<'tree>> {
         self.0.child_by_field_name("ty").and_then(<FuncType as super::AstNode>::cast)
     }
 }
@@ -379,15 +401,15 @@ impl<'tree> super::AstNode<'tree> for FuncItem<'tree> {
     }
 }
 ///The `func_type` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct FuncType<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> FuncType<'tree> {
-    pub fn params(&self) -> Option<ParamList> {
+    pub fn params(&self) -> Option<ParamList<'tree>> {
         self.0
             .child_by_field_name("params")
             .and_then(<ParamList as super::AstNode>::cast)
     }
-    pub fn result_opt(&self) -> Option<ResultList> {
+    pub fn result_opt(&self) -> Option<ResultList<'tree>> {
         self.0
             .child_by_field_name("result")
             .and_then(<ResultList as super::AstNode>::cast)
@@ -406,18 +428,18 @@ impl<'tree> super::AstNode<'tree> for FuncType<'tree> {
     }
 }
 ///The `handle` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Handle<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> Handle<'tree> {
-    pub fn borrowed_handle(&self) -> Option<BorrowedHandle> {
+    pub fn borrowed_handle(&self) -> Option<BorrowedHandle<'tree>> {
         self.0
             .child_by_field_name("borrowed_handle")
-            .and_then(<BorrowedHandle as super::AstNode>::cast)
+            .and_then(<BorrowedHandle<'_> as super::AstNode>::cast)
     }
-    pub fn owned_handle(&self) -> Option<OwnedHandle> {
+    pub fn owned_handle(&self) -> Option<OwnedHandle<'tree>> {
         self.0
             .child_by_field_name("owned_handle")
-            .and_then(<OwnedHandle as super::AstNode>::cast)
+            .and_then(<OwnedHandle<'_> as super::AstNode>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for Handle<'tree> {
@@ -433,18 +455,18 @@ impl<'tree> super::AstNode<'tree> for Handle<'tree> {
     }
 }
 ///The `import_item` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ImportItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> ImportItem<'tree> {
-    pub fn imported_item(&self) -> Option<ImportedItem> {
+    pub fn imported_item(&self) -> Option<ImportedItem<'tree>> {
         self.0
             .child_by_field_name("imported_item")
-            .and_then(<ImportedItem as super::AstNode>::cast)
+            .and_then(<ImportedItem<'_> as super::AstNode>::cast)
     }
-    pub fn imported_path(&self) -> Option<ImportedPath> {
+    pub fn imported_path(&self) -> Option<ImportedPath<'tree>> {
         self.0
             .child_by_field_name("imported_path")
-            .and_then(<ImportedPath as super::AstNode>::cast)
+            .and_then(<ImportedPath<'_> as super::AstNode>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for ImportItem<'tree> {
@@ -460,16 +482,16 @@ impl<'tree> super::AstNode<'tree> for ImportItem<'tree> {
     }
 }
 ///The `imported_item` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ImportedItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> ImportedItem<'tree> {
-    pub fn name(&self) -> Option<Identifier> {
+    pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
-    pub fn extern_type(&self) -> Option<ExternType> {
+    pub fn extern_type(&self) -> Option<ExternType<'tree>> {
         self.0
             .child_by_field_name("extern_type")
-            .and_then(<ExternType as super::AstNode>::cast)
+            .and_then(<ExternType<'_> as super::AstNode>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for ImportedItem<'tree> {
@@ -485,13 +507,13 @@ impl<'tree> super::AstNode<'tree> for ImportedItem<'tree> {
     }
 }
 ///The `imported_path` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ImportedPath<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> ImportedPath<'tree> {
-    pub fn use_path(&self) -> Option<UsePath> {
+    pub fn use_path(&self) -> Option<UsePath<'tree>> {
         self.0
             .child_by_field_name("use_path")
-            .and_then(<UsePath as super::AstNode>::cast)
+            .and_then(<UsePath<'_> as super::AstNode>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for ImportedPath<'tree> {
@@ -507,15 +529,15 @@ impl<'tree> super::AstNode<'tree> for ImportedPath<'tree> {
     }
 }
 ///The `include_item` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct IncludeItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> IncludeItem<'tree> {
-    pub fn names_opt(&self) -> Option<IncludeNamesList> {
+    pub fn names_opt(&self) -> Option<IncludeNamesList<'tree>> {
         self.0
             .child_by_field_name("names")
             .and_then(<IncludeNamesList as super::AstNode>::cast)
     }
-    pub fn path(&self) -> Option<UsePath> {
+    pub fn path(&self) -> Option<UsePath<'tree>> {
         self.0.child_by_field_name("path").and_then(<UsePath as super::AstNode>::cast)
     }
 }
@@ -532,15 +554,15 @@ impl<'tree> super::AstNode<'tree> for IncludeItem<'tree> {
     }
 }
 ///The `include_names_item` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct IncludeNamesItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> IncludeNamesItem<'tree> {
-    pub fn alias(&self) -> Option<Identifier> {
+    pub fn alias(&self) -> Option<Identifier<'tree>> {
         self.0
             .child_by_field_name("alias")
             .and_then(<Identifier as super::AstNode>::cast)
     }
-    pub fn name(&self) -> Option<Identifier> {
+    pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
@@ -557,10 +579,12 @@ impl<'tree> super::AstNode<'tree> for IncludeNamesItem<'tree> {
     }
 }
 ///The `include_names_list` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct IncludeNamesList<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> IncludeNamesList<'tree> {
-    pub fn iter_include_names_items(&self) -> impl Iterator<Item = IncludeNamesItem> {
+    pub fn iter_include_names_items(
+        &self,
+    ) -> impl Iterator<Item = IncludeNamesItem<'tree>> {
         Vec::new().into_iter()
     }
 }
@@ -577,10 +601,10 @@ impl<'tree> super::AstNode<'tree> for IncludeNamesList<'tree> {
     }
 }
 ///The `interface_item` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct InterfaceItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> InterfaceItem<'tree> {
-    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
+    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -589,7 +613,7 @@ impl<'tree> InterfaceItem<'tree> {
             .collect();
         children.into_iter()
     }
-    pub fn iter_items(&self) -> impl Iterator<Item = InterfaceItems> {
+    pub fn iter_items(&self) -> impl Iterator<Item = InterfaceItems<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -598,7 +622,7 @@ impl<'tree> InterfaceItem<'tree> {
             .collect();
         children.into_iter()
     }
-    pub fn name(&self) -> Option<Identifier> {
+    pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
@@ -615,23 +639,23 @@ impl<'tree> super::AstNode<'tree> for InterfaceItem<'tree> {
     }
 }
 ///The `interface_items` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct InterfaceItems<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> InterfaceItems<'tree> {
-    pub fn func_item(&self) -> Option<FuncItem> {
+    pub fn func_item(&self) -> Option<FuncItem<'tree>> {
         self.0
             .child_by_field_name("func_item")
-            .and_then(<FuncItem as super::AstNode>::cast)
+            .and_then(<FuncItem<'_> as super::AstNode>::cast)
     }
-    pub fn typedef_item(&self) -> Option<TypedefItem> {
+    pub fn typedef_item(&self) -> Option<TypedefItem<'tree>> {
         self.0
             .child_by_field_name("typedef_item")
-            .and_then(<TypedefItem as super::AstNode>::cast)
+            .and_then(<TypedefItem<'_> as super::AstNode>::cast)
     }
-    pub fn use_item(&self) -> Option<UseItem> {
+    pub fn use_item(&self) -> Option<UseItem<'tree>> {
         self.0
             .child_by_field_name("use_item")
-            .and_then(<UseItem as super::AstNode>::cast)
+            .and_then(<UseItem<'_> as super::AstNode>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for InterfaceItems<'tree> {
@@ -647,11 +671,11 @@ impl<'tree> super::AstNode<'tree> for InterfaceItems<'tree> {
     }
 }
 ///The `list` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct List<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> List<'tree> {
-    pub fn ty(&self) -> Option<Ty> {
-        self.0.child_by_field_name("ty").and_then(<Ty as super::AstNode>::cast)
+    pub fn ty(&self) -> Option<Ty<'tree>> {
+        self.0.child_by_field_name("ty").and_then(<Ty<'_> as super::AstNode>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for List<'tree> {
@@ -666,14 +690,36 @@ impl<'tree> super::AstNode<'tree> for List<'tree> {
         self.0
     }
 }
+///The `local_use_path` node.
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct LocalUsePath<'tree>(tree_sitter::Node<'tree>);
+impl<'tree> LocalUsePath<'tree> {
+    pub fn identifier(&self) -> Option<Identifier<'tree>> {
+        self.0
+            .child_by_field_name("identifier")
+            .and_then(<Identifier<'_> as super::AstNode>::cast)
+    }
+}
+impl<'tree> super::AstNode<'tree> for LocalUsePath<'tree> {
+    const NAME: &'static str = "local_use_path";
+    fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        if node.kind() == Self::NAME { Some(LocalUsePath(node)) } else { None }
+    }
+    fn syntax(&self) -> tree_sitter::Node<'tree> {
+        self.0
+    }
+}
 ///The `named_type` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct NamedType<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> NamedType<'tree> {
-    pub fn name(&self) -> Option<Identifier> {
+    pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
-    pub fn ty(&self) -> Option<Ty> {
+    pub fn ty(&self) -> Option<Ty<'tree>> {
         self.0.child_by_field_name("ty").and_then(<Ty as super::AstNode>::cast)
     }
 }
@@ -690,11 +736,11 @@ impl<'tree> super::AstNode<'tree> for NamedType<'tree> {
     }
 }
 ///The `option` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Option_<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> Option_<'tree> {
-    pub fn ty(&self) -> Option<Ty> {
-        self.0.child_by_field_name("ty").and_then(<Ty as super::AstNode>::cast)
+    pub fn ty(&self) -> Option<Ty<'tree>> {
+        self.0.child_by_field_name("ty").and_then(<Ty<'_> as super::AstNode>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for Option_<'tree> {
@@ -710,10 +756,10 @@ impl<'tree> super::AstNode<'tree> for Option_<'tree> {
     }
 }
 ///The `owned_handle` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct OwnedHandle<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> OwnedHandle<'tree> {
-    pub fn name(&self) -> Option<Identifier> {
+    pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
@@ -730,10 +776,10 @@ impl<'tree> super::AstNode<'tree> for OwnedHandle<'tree> {
     }
 }
 ///The `package_decl` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct PackageDecl<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> PackageDecl<'tree> {
-    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
+    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -742,10 +788,12 @@ impl<'tree> PackageDecl<'tree> {
             .collect();
         children.into_iter()
     }
-    pub fn fully_qualified_package_name(&self) -> Option<FullyQualifiedPackageName> {
+    pub fn fully_qualified_package_name(
+        &self,
+    ) -> Option<FullyQualifiedPackageName<'tree>> {
         self.0
             .child_by_field_name("fully_qualified_package_name")
-            .and_then(<FullyQualifiedPackageName as super::AstNode>::cast)
+            .and_then(<FullyQualifiedPackageName<'_> as super::AstNode>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for PackageDecl<'tree> {
@@ -761,13 +809,13 @@ impl<'tree> super::AstNode<'tree> for PackageDecl<'tree> {
     }
 }
 ///The `package_name` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct PackageName<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> PackageName<'tree> {
-    pub fn identifier(&self) -> Option<Identifier> {
+    pub fn identifier(&self) -> Option<Identifier<'tree>> {
         self.0
             .child_by_field_name("identifier")
-            .and_then(<Identifier as super::AstNode>::cast)
+            .and_then(<Identifier<'_> as super::AstNode>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for PackageName<'tree> {
@@ -783,10 +831,10 @@ impl<'tree> super::AstNode<'tree> for PackageName<'tree> {
     }
 }
 ///The `package_path` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct PackagePath<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> PackagePath<'tree> {
-    pub fn iter_identifiers(&self) -> impl Iterator<Item = Identifier> {
+    pub fn iter_identifiers(&self) -> impl Iterator<Item = Identifier<'tree>> {
         Vec::new().into_iter()
     }
 }
@@ -803,10 +851,10 @@ impl<'tree> super::AstNode<'tree> for PackagePath<'tree> {
     }
 }
 ///The `param_list` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ParamList<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> ParamList<'tree> {
-    pub fn iter_params(&self) -> impl Iterator<Item = NamedType> {
+    pub fn iter_params(&self) -> impl Iterator<Item = NamedType<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -829,10 +877,10 @@ impl<'tree> super::AstNode<'tree> for ParamList<'tree> {
     }
 }
 ///The `record_field` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct RecordField<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> RecordField<'tree> {
-    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
+    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -841,10 +889,10 @@ impl<'tree> RecordField<'tree> {
             .collect();
         children.into_iter()
     }
-    pub fn name(&self) -> Option<Identifier> {
+    pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
-    pub fn ty(&self) -> Option<Ty> {
+    pub fn ty(&self) -> Option<Ty<'tree>> {
         self.0.child_by_field_name("ty").and_then(<Ty as super::AstNode>::cast)
     }
 }
@@ -861,10 +909,10 @@ impl<'tree> super::AstNode<'tree> for RecordField<'tree> {
     }
 }
 ///The `record_item` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct RecordItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> RecordItem<'tree> {
-    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
+    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -873,7 +921,7 @@ impl<'tree> RecordItem<'tree> {
             .collect();
         children.into_iter()
     }
-    pub fn iter_fields(&self) -> impl Iterator<Item = RecordField> {
+    pub fn iter_fields(&self) -> impl Iterator<Item = RecordField<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -882,7 +930,7 @@ impl<'tree> RecordItem<'tree> {
             .collect();
         children.into_iter()
     }
-    pub fn name(&self) -> Option<Identifier> {
+    pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
@@ -899,10 +947,10 @@ impl<'tree> super::AstNode<'tree> for RecordItem<'tree> {
     }
 }
 ///The `resource_constructor` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ResourceConstructor<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> ResourceConstructor<'tree> {
-    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
+    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -911,7 +959,7 @@ impl<'tree> ResourceConstructor<'tree> {
             .collect();
         children.into_iter()
     }
-    pub fn params(&self) -> Option<ParamList> {
+    pub fn params(&self) -> Option<ParamList<'tree>> {
         self.0
             .child_by_field_name("params")
             .and_then(<ParamList as super::AstNode>::cast)
@@ -930,10 +978,10 @@ impl<'tree> super::AstNode<'tree> for ResourceConstructor<'tree> {
     }
 }
 ///The `resource_item` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ResourceItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> ResourceItem<'tree> {
-    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
+    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -942,7 +990,7 @@ impl<'tree> ResourceItem<'tree> {
             .collect();
         children.into_iter()
     }
-    pub fn iter_methods(&self) -> impl Iterator<Item = ResourceMethod> {
+    pub fn iter_methods(&self) -> impl Iterator<Item = ResourceMethod<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -951,7 +999,7 @@ impl<'tree> ResourceItem<'tree> {
             .collect();
         children.into_iter()
     }
-    pub fn name(&self) -> Option<Identifier> {
+    pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
@@ -968,23 +1016,23 @@ impl<'tree> super::AstNode<'tree> for ResourceItem<'tree> {
     }
 }
 ///The `resource_method` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ResourceMethod<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> ResourceMethod<'tree> {
-    pub fn func_item(&self) -> Option<FuncItem> {
+    pub fn func_item(&self) -> Option<FuncItem<'tree>> {
         self.0
             .child_by_field_name("func_item")
-            .and_then(<FuncItem as super::AstNode>::cast)
+            .and_then(<FuncItem<'_> as super::AstNode>::cast)
     }
-    pub fn resource_constructor(&self) -> Option<ResourceConstructor> {
+    pub fn resource_constructor(&self) -> Option<ResourceConstructor<'tree>> {
         self.0
             .child_by_field_name("resource_constructor")
-            .and_then(<ResourceConstructor as super::AstNode>::cast)
+            .and_then(<ResourceConstructor<'_> as super::AstNode>::cast)
     }
-    pub fn static_method(&self) -> Option<StaticMethod> {
+    pub fn static_method(&self) -> Option<StaticMethod<'tree>> {
         self.0
             .child_by_field_name("static_method")
-            .and_then(<StaticMethod as super::AstNode>::cast)
+            .and_then(<StaticMethod<'_> as super::AstNode>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for ResourceMethod<'tree> {
@@ -1000,13 +1048,13 @@ impl<'tree> super::AstNode<'tree> for ResourceMethod<'tree> {
     }
 }
 ///The `result` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Result_<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> Result_<'tree> {
-    pub fn err_opt(&self) -> Option<Ty> {
+    pub fn err_opt(&self) -> Option<Ty<'tree>> {
         self.0.child_by_field_name("err").and_then(<Ty as super::AstNode>::cast)
     }
-    pub fn ok_opt(&self) -> Option<Ty> {
+    pub fn ok_opt(&self) -> Option<Ty<'tree>> {
         self.0.child_by_field_name("ok").and_then(<Ty as super::AstNode>::cast)
     }
 }
@@ -1023,13 +1071,13 @@ impl<'tree> super::AstNode<'tree> for Result_<'tree> {
     }
 }
 ///The `result_list` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ResultList<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> ResultList<'tree> {
-    pub fn iter_named_types(&self) -> impl Iterator<Item = NamedType> {
+    pub fn iter_named_types(&self) -> impl Iterator<Item = NamedType<'tree>> {
         Vec::new().into_iter()
     }
-    pub fn iter_tys(&self) -> impl Iterator<Item = Ty> {
+    pub fn iter_tys(&self) -> impl Iterator<Item = Ty<'tree>> {
         Vec::new().into_iter()
     }
 }
@@ -1046,15 +1094,15 @@ impl<'tree> super::AstNode<'tree> for ResultList<'tree> {
     }
 }
 ///The `source_file` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct SourceFile<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> SourceFile<'tree> {
-    pub fn package_opt(&self) -> Option<PackageDecl> {
+    pub fn package_opt(&self) -> Option<PackageDecl<'tree>> {
         self.0
             .child_by_field_name("package")
             .and_then(<PackageDecl as super::AstNode>::cast)
     }
-    pub fn iter_top_level_items(&self) -> impl Iterator<Item = TopLevelItem> {
+    pub fn iter_top_level_items(&self) -> impl Iterator<Item = TopLevelItem<'tree>> {
         Vec::new().into_iter()
     }
 }
@@ -1071,10 +1119,10 @@ impl<'tree> super::AstNode<'tree> for SourceFile<'tree> {
     }
 }
 ///The `static_method` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct StaticMethod<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> StaticMethod<'tree> {
-    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
+    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -1083,13 +1131,13 @@ impl<'tree> StaticMethod<'tree> {
             .collect();
         children.into_iter()
     }
-    pub fn name(&self) -> Option<Identifier> {
+    pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
-    pub fn func_type(&self) -> Option<FuncType> {
+    pub fn func_type(&self) -> Option<FuncType<'tree>> {
         self.0
             .child_by_field_name("func_type")
-            .and_then(<FuncType as super::AstNode>::cast)
+            .and_then(<FuncType<'_> as super::AstNode>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for StaticMethod<'tree> {
@@ -1105,23 +1153,23 @@ impl<'tree> super::AstNode<'tree> for StaticMethod<'tree> {
     }
 }
 ///The `top_level_item` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct TopLevelItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> TopLevelItem<'tree> {
-    pub fn interface_item(&self) -> Option<InterfaceItem> {
+    pub fn interface_item(&self) -> Option<InterfaceItem<'tree>> {
         self.0
             .child_by_field_name("interface_item")
-            .and_then(<InterfaceItem as super::AstNode>::cast)
+            .and_then(<InterfaceItem<'_> as super::AstNode>::cast)
     }
-    pub fn top_level_use_item(&self) -> Option<TopLevelUseItem> {
+    pub fn top_level_use_item(&self) -> Option<TopLevelUseItem<'tree>> {
         self.0
             .child_by_field_name("top_level_use_item")
-            .and_then(<TopLevelUseItem as super::AstNode>::cast)
+            .and_then(<TopLevelUseItem<'_> as super::AstNode>::cast)
     }
-    pub fn world_item(&self) -> Option<WorldItem> {
+    pub fn world_item(&self) -> Option<WorldItem<'tree>> {
         self.0
             .child_by_field_name("world_item")
-            .and_then(<WorldItem as super::AstNode>::cast)
+            .and_then(<WorldItem<'_> as super::AstNode>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for TopLevelItem<'tree> {
@@ -1137,18 +1185,18 @@ impl<'tree> super::AstNode<'tree> for TopLevelItem<'tree> {
     }
 }
 ///The `top_level_use_item` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct TopLevelUseItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> TopLevelUseItem<'tree> {
-    pub fn alias_opt(&self) -> Option<Identifier> {
+    pub fn alias_opt(&self) -> Option<Identifier<'tree>> {
         self.0
             .child_by_field_name("alias")
             .and_then(<Identifier as super::AstNode>::cast)
     }
-    pub fn use_path(&self) -> Option<UsePath> {
+    pub fn use_path(&self) -> Option<UsePath<'tree>> {
         self.0
             .child_by_field_name("use_path")
-            .and_then(<UsePath as super::AstNode>::cast)
+            .and_then(<UsePath<'_> as super::AstNode>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for TopLevelUseItem<'tree> {
@@ -1164,10 +1212,10 @@ impl<'tree> super::AstNode<'tree> for TopLevelUseItem<'tree> {
     }
 }
 ///The `tuple` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Tuple<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> Tuple<'tree> {
-    pub fn iter_tys(&self) -> impl Iterator<Item = Ty> {
+    pub fn iter_tys(&self) -> impl Iterator<Item = Ty<'tree>> {
         Vec::new().into_iter()
     }
 }
@@ -1184,25 +1232,25 @@ impl<'tree> super::AstNode<'tree> for Tuple<'tree> {
     }
 }
 ///The `ty` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Ty<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> Ty<'tree> {
-    pub fn handle_opt(&self) -> Option<Handle> {
+    pub fn handle_opt(&self) -> Option<Handle<'tree>> {
         todo!()
     }
-    pub fn list_opt(&self) -> Option<List> {
+    pub fn list_opt(&self) -> Option<List<'tree>> {
         todo!()
     }
-    pub fn option_opt(&self) -> Option<Option_> {
+    pub fn option_opt(&self) -> Option<Option_<'tree>> {
         todo!()
     }
-    pub fn result_opt(&self) -> Option<Result_> {
+    pub fn result_opt(&self) -> Option<Result_<'tree>> {
         todo!()
     }
-    pub fn tuple_opt(&self) -> Option<Tuple> {
+    pub fn tuple_opt(&self) -> Option<Tuple<'tree>> {
         todo!()
     }
-    pub fn user_defined_type_opt(&self) -> Option<UserDefinedType> {
+    pub fn user_defined_type_opt(&self) -> Option<UserDefinedType<'tree>> {
         todo!()
     }
 }
@@ -1219,10 +1267,10 @@ impl<'tree> super::AstNode<'tree> for Ty<'tree> {
     }
 }
 ///The `type_item` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct TypeItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> TypeItem<'tree> {
-    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
+    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -1231,10 +1279,10 @@ impl<'tree> TypeItem<'tree> {
             .collect();
         children.into_iter()
     }
-    pub fn name(&self) -> Option<Identifier> {
+    pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
-    pub fn ty(&self) -> Option<Ty> {
+    pub fn ty(&self) -> Option<Ty<'tree>> {
         self.0.child_by_field_name("ty").and_then(<Ty as super::AstNode>::cast)
     }
 }
@@ -1251,38 +1299,38 @@ impl<'tree> super::AstNode<'tree> for TypeItem<'tree> {
     }
 }
 ///The `typedef_item` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct TypedefItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> TypedefItem<'tree> {
-    pub fn enum_item(&self) -> Option<EnumItem> {
+    pub fn enum_item(&self) -> Option<EnumItem<'tree>> {
         self.0
             .child_by_field_name("enum_item")
-            .and_then(<EnumItem as super::AstNode>::cast)
+            .and_then(<EnumItem<'_> as super::AstNode>::cast)
     }
-    pub fn flags_item(&self) -> Option<FlagsItem> {
+    pub fn flags_item(&self) -> Option<FlagsItem<'tree>> {
         self.0
             .child_by_field_name("flags_item")
-            .and_then(<FlagsItem as super::AstNode>::cast)
+            .and_then(<FlagsItem<'_> as super::AstNode>::cast)
     }
-    pub fn record_item(&self) -> Option<RecordItem> {
+    pub fn record_item(&self) -> Option<RecordItem<'tree>> {
         self.0
             .child_by_field_name("record_item")
-            .and_then(<RecordItem as super::AstNode>::cast)
+            .and_then(<RecordItem<'_> as super::AstNode>::cast)
     }
-    pub fn resource_item(&self) -> Option<ResourceItem> {
+    pub fn resource_item(&self) -> Option<ResourceItem<'tree>> {
         self.0
             .child_by_field_name("resource_item")
-            .and_then(<ResourceItem as super::AstNode>::cast)
+            .and_then(<ResourceItem<'_> as super::AstNode>::cast)
     }
-    pub fn type_item(&self) -> Option<TypeItem> {
+    pub fn type_item(&self) -> Option<TypeItem<'tree>> {
         self.0
             .child_by_field_name("type_item")
-            .and_then(<TypeItem as super::AstNode>::cast)
+            .and_then(<TypeItem<'_> as super::AstNode>::cast)
     }
-    pub fn variant_item(&self) -> Option<VariantItem> {
+    pub fn variant_item(&self) -> Option<VariantItem<'tree>> {
         self.0
             .child_by_field_name("variant_item")
-            .and_then(<VariantItem as super::AstNode>::cast)
+            .and_then(<VariantItem<'_> as super::AstNode>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for TypedefItem<'tree> {
@@ -1298,13 +1346,13 @@ impl<'tree> super::AstNode<'tree> for TypedefItem<'tree> {
     }
 }
 ///The `use_item` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct UseItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> UseItem<'tree> {
-    pub fn path(&self) -> Option<UsePath> {
+    pub fn path(&self) -> Option<UsePath<'tree>> {
         self.0.child_by_field_name("path").and_then(<UsePath as super::AstNode>::cast)
     }
-    pub fn iter_use_names_items(&self) -> impl Iterator<Item = UseNamesItem> {
+    pub fn iter_use_names_items(&self) -> impl Iterator<Item = UseNamesItem<'tree>> {
         Vec::new().into_iter()
     }
 }
@@ -1321,15 +1369,15 @@ impl<'tree> super::AstNode<'tree> for UseItem<'tree> {
     }
 }
 ///The `use_names_item` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct UseNamesItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> UseNamesItem<'tree> {
-    pub fn alias_opt(&self) -> Option<Identifier> {
+    pub fn alias_opt(&self) -> Option<Identifier<'tree>> {
         self.0
             .child_by_field_name("alias")
             .and_then(<Identifier as super::AstNode>::cast)
     }
-    pub fn name(&self) -> Option<Identifier> {
+    pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
@@ -1346,24 +1394,18 @@ impl<'tree> super::AstNode<'tree> for UseNamesItem<'tree> {
     }
 }
 ///The `use_path` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct UsePath<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> UsePath<'tree> {
-    pub fn package_opt(&self) -> Option<PackageName> {
+    pub fn fully_qualified_use_path(&self) -> Option<FullyQualifiedUsePath<'tree>> {
         self.0
-            .child_by_field_name("package")
-            .and_then(<PackageName as super::AstNode>::cast)
+            .child_by_field_name("fully_qualified_use_path")
+            .and_then(<FullyQualifiedUsePath<'_> as super::AstNode>::cast)
     }
-    pub fn path_opt(&self) -> Option<PackagePath> {
+    pub fn local_use_path(&self) -> Option<LocalUsePath<'tree>> {
         self.0
-            .child_by_field_name("path")
-            .and_then(<PackagePath as super::AstNode>::cast)
-    }
-    pub fn version_opt(&self) -> Option<Semver> {
-        self.0.child_by_field_name("version").and_then(<Semver as super::AstNode>::cast)
-    }
-    pub fn identifier_opt(&self) -> Option<Identifier> {
-        todo!()
+            .child_by_field_name("local_use_path")
+            .and_then(<LocalUsePath<'_> as super::AstNode>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for UsePath<'tree> {
@@ -1379,13 +1421,13 @@ impl<'tree> super::AstNode<'tree> for UsePath<'tree> {
     }
 }
 ///The `user_defined_type` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct UserDefinedType<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> UserDefinedType<'tree> {
-    pub fn identifier(&self) -> Option<Identifier> {
+    pub fn identifier(&self) -> Option<Identifier<'tree>> {
         self.0
             .child_by_field_name("identifier")
-            .and_then(<Identifier as super::AstNode>::cast)
+            .and_then(<Identifier<'_> as super::AstNode>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for UserDefinedType<'tree> {
@@ -1401,10 +1443,10 @@ impl<'tree> super::AstNode<'tree> for UserDefinedType<'tree> {
     }
 }
 ///The `variant_case` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct VariantCase<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> VariantCase<'tree> {
-    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
+    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -1413,10 +1455,10 @@ impl<'tree> VariantCase<'tree> {
             .collect();
         children.into_iter()
     }
-    pub fn name(&self) -> Option<Identifier> {
+    pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
-    pub fn ty_opt(&self) -> Option<Ty> {
+    pub fn ty_opt(&self) -> Option<Ty<'tree>> {
         self.0.child_by_field_name("ty").and_then(<Ty as super::AstNode>::cast)
     }
 }
@@ -1433,10 +1475,10 @@ impl<'tree> super::AstNode<'tree> for VariantCase<'tree> {
     }
 }
 ///The `variant_item` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct VariantItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> VariantItem<'tree> {
-    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute> {
+    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -1445,7 +1487,7 @@ impl<'tree> VariantItem<'tree> {
             .collect();
         children.into_iter()
     }
-    pub fn iter_cases(&self) -> impl Iterator<Item = VariantCase> {
+    pub fn iter_cases(&self) -> impl Iterator<Item = VariantCase<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -1454,7 +1496,7 @@ impl<'tree> VariantItem<'tree> {
             .collect();
         children.into_iter()
     }
-    pub fn name(&self) -> Option<Identifier> {
+    pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
@@ -1471,10 +1513,10 @@ impl<'tree> super::AstNode<'tree> for VariantItem<'tree> {
     }
 }
 ///The `world_item` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct WorldItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> WorldItem<'tree> {
-    pub fn iter_items(&self) -> impl Iterator<Item = WorldItems> {
+    pub fn iter_items(&self) -> impl Iterator<Item = WorldItems<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -1483,7 +1525,7 @@ impl<'tree> WorldItem<'tree> {
             .collect();
         children.into_iter()
     }
-    pub fn name(&self) -> Option<Identifier> {
+    pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
@@ -1500,33 +1542,33 @@ impl<'tree> super::AstNode<'tree> for WorldItem<'tree> {
     }
 }
 ///The `world_items` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct WorldItems<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> WorldItems<'tree> {
-    pub fn export_item(&self) -> Option<ExportItem> {
+    pub fn export_item(&self) -> Option<ExportItem<'tree>> {
         self.0
             .child_by_field_name("export_item")
-            .and_then(<ExportItem as super::AstNode>::cast)
+            .and_then(<ExportItem<'_> as super::AstNode>::cast)
     }
-    pub fn import_item(&self) -> Option<ImportItem> {
+    pub fn import_item(&self) -> Option<ImportItem<'tree>> {
         self.0
             .child_by_field_name("import_item")
-            .and_then(<ImportItem as super::AstNode>::cast)
+            .and_then(<ImportItem<'_> as super::AstNode>::cast)
     }
-    pub fn include_item(&self) -> Option<IncludeItem> {
+    pub fn include_item(&self) -> Option<IncludeItem<'tree>> {
         self.0
             .child_by_field_name("include_item")
-            .and_then(<IncludeItem as super::AstNode>::cast)
+            .and_then(<IncludeItem<'_> as super::AstNode>::cast)
     }
-    pub fn typedef_item(&self) -> Option<TypedefItem> {
+    pub fn typedef_item(&self) -> Option<TypedefItem<'tree>> {
         self.0
             .child_by_field_name("typedef_item")
-            .and_then(<TypedefItem as super::AstNode>::cast)
+            .and_then(<TypedefItem<'_> as super::AstNode>::cast)
     }
-    pub fn use_item(&self) -> Option<UseItem> {
+    pub fn use_item(&self) -> Option<UseItem<'tree>> {
         self.0
             .child_by_field_name("use_item")
-            .and_then(<UseItem as super::AstNode>::cast)
+            .and_then(<UseItem<'_> as super::AstNode>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for WorldItems<'tree> {
@@ -1542,7 +1584,7 @@ impl<'tree> super::AstNode<'tree> for WorldItems<'tree> {
     }
 }
 ///The `identifier` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Identifier<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> Identifier<'tree> {}
 impl<'tree> super::AstNode<'tree> for Identifier<'tree> {
@@ -1558,7 +1600,7 @@ impl<'tree> super::AstNode<'tree> for Identifier<'tree> {
     }
 }
 ///The `semver` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Semver<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> Semver<'tree> {}
 impl<'tree> super::AstNode<'tree> for Semver<'tree> {
@@ -1574,7 +1616,7 @@ impl<'tree> super::AstNode<'tree> for Semver<'tree> {
     }
 }
 ///The `slash_comment` node.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct SlashComment<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> SlashComment<'tree> {}
 impl<'tree> super::AstNode<'tree> for SlashComment<'tree> {

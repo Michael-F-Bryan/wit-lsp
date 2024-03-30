@@ -51,8 +51,9 @@ module.exports = grammar({
             optional(seq("as", field("alias", $.identifier))),
             ";",
         ),
-        use_path: $ => choice($.identifier, $._use_path),
-        _use_path: $ => seq(
+        use_path: $ => choice($.local_use_path, $.fully_qualified_use_path),
+        local_use_path: $ => $.identifier,
+        fully_qualified_use_path: $ => seq(
             field("package", $.package_name),
             token.immediate(":"),
             field("path", $.package_path),
@@ -71,7 +72,7 @@ module.exports = grammar({
         ),
         export_item: $ => choice($.exported_item, $.exported_path),
         exported_item: $ => seq("export", field("name", $.identifier), ":", $.extern_type),
-        exported_path: $ => seq("export", $._use_path, ";"),
+        exported_path: $ => seq("export", $.fully_qualified_use_path, ";"),
         import_item: $ => choice($.imported_item, $.imported_path),
         imported_item: $ => seq("import", field("name", $.identifier), ":", $.extern_type),
         imported_path: $ => seq("import", $.use_path, ";"),

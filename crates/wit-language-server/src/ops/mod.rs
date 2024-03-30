@@ -1,3 +1,4 @@
+mod diagnostics;
 mod fold;
 
-pub use self::fold::folding_range;
+pub use self::{diagnostics::file_diagnostics, fold::folding_range};

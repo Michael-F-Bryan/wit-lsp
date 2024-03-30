@@ -1,6 +1,7 @@
 mod database;
 mod ops;
 mod server;
+mod utils;
 
 pub use crate::{
     database::{Database, Db, Jar},
