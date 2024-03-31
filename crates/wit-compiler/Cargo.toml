@@ -15,6 +15,7 @@ rust-version.workspace = true
 [dependencies]
 im = { workspace = true }
 salsa = { workspace = true }
+tracing = { workspace = true, features = ["attributes"] }
 tree-sitter = { workspace = true }
 tree-sitter-wit = { version = "0.1.0", path = "../../tree-sitter-wit" }
 

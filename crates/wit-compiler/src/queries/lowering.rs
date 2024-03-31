@@ -15,6 +15,7 @@ use crate::{
 /// Nodes that contain syntactic or semantic errors will be ignored and a
 /// corresponding [`Diagnostic`] will be emitted.
 #[salsa::tracked]
+#[tracing::instrument(level = "debug", skip_all, fields(file = %file.path(db)))]
 pub fn lower(db: &dyn Db, _ws: Workspace, file: SourceFile) -> Items {
     let ast = crate::queries::parse(db, file);
     let src = file.contents(db);

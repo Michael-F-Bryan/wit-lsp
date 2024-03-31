@@ -5,6 +5,7 @@ use crate::{queries::Ast, Db, Tree};
 
 /// Calculate successively wider ranges of tokens.
 #[salsa::tracked]
+#[tracing::instrument(level = "debug", skip_all)]
 pub fn selection_ranges(db: &dyn Db, ast: Ast, cursor_location: Point) -> Option<Vector<Range>> {
     selection_ranges_impl(ast.tree(db), cursor_location)
 }

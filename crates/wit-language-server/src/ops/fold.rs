@@ -40,6 +40,7 @@ const QUERY: &str = r"
 ///
 /// [spec]: https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_foldingRange
 #[salsa::tracked]
+#[tracing::instrument(level = "debug", skip_all)]
 pub fn folding_range(db: &dyn Db, ast: Ast) -> Vector<FoldingRange> {
     let db = db.as_wit();
     let root = ast.root_node(db);

@@ -8,6 +8,7 @@ use crate::{
 };
 
 #[salsa::tracked]
+#[tracing::instrument(level = "debug", skip_all, fields(file = %file.path(db)))]
 pub fn parse(db: &dyn Db, file: SourceFile) -> Ast {
     let src = file.contents(db);
     let tree = Tree::parse(&src);
