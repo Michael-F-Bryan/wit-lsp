@@ -38,7 +38,18 @@
   {
     "type": "doc_comment",
     "named": true,
-    "fields": {}
+    "fields": {
+      "docs": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "docs",
+            "named": true
+          }
+        ]
+      }
+    }
   },
   {
     "type": "enum_case",
@@ -1357,6 +1368,16 @@
     "type": "world_item",
     "named": true,
     "fields": {
+      "attributes": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "attribute",
+            "named": true
+          }
+        ]
+      },
       "items": {
         "multiple": true,
         "required": false,
@@ -1489,6 +1510,10 @@
   {
     "type": "constructor",
     "named": false
+  },
+  {
+    "type": "docs",
+    "named": true
   },
   {
     "type": "enum",

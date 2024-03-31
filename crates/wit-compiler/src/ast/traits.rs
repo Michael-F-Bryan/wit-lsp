@@ -11,12 +11,30 @@ pub trait AstNode<'tree>: 'tree {
     fn syntax(&self) -> Node<'tree>;
 }
 
-pub trait HasIdent {
-    fn identifier(&self) -> Option<Node<'_>>;
+pub trait HasIdent<'tree> {
+    fn identifier(self) -> Option<super::Identifier<'tree>>;
 }
 
-pub trait HasAttr {
-    fn attributes(&self) -> impl Iterator<Item = Attribute<'_>> + '_;
+impl<'tree, A> HasIdent<'tree> for &A
+where
+    A: HasIdent<'tree> + Clone,
+{
+    fn identifier(self) -> Option<super::Identifier<'tree>> {
+        self.clone().identifier()
+    }
+}
+
+pub trait HasAttr<'tree> {
+    fn attributes(self) -> impl Iterator<Item = Attribute<'tree>> + 'tree;
+}
+
+impl<'tree, A> HasAttr<'tree> for &A
+where
+    A: HasAttr<'tree> + Clone,
+{
+    fn attributes(self) -> impl Iterator<Item = Attribute<'tree>> + 'tree {
+        A::clone(self).attributes()
+    }
 }
 
 pub trait NodeExt<'tree> {}

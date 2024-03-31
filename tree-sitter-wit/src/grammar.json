@@ -211,15 +211,19 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "identifier"
+          "name": "local_use_path"
         },
         {
           "type": "SYMBOL",
-          "name": "_use_path"
+          "name": "fully_qualified_use_path"
         }
       ]
     },
-    "_use_path": {
+    "local_use_path": {
+      "type": "SYMBOL",
+      "name": "identifier"
+    },
+    "fully_qualified_use_path": {
       "type": "SEQ",
       "members": [
         {
@@ -278,6 +282,17 @@
     "world_item": {
       "type": "SEQ",
       "members": [
+        {
+          "type": "FIELD",
+          "name": "attributes",
+          "content": {
+            "type": "REPEAT",
+            "content": {
+              "type": "SYMBOL",
+              "name": "attribute"
+            }
+          }
+        },
         {
           "type": "STRING",
           "value": "world"
@@ -383,7 +398,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "_use_path"
+          "name": "fully_qualified_use_path"
         },
         {
           "type": "STRING",
@@ -2086,22 +2101,35 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "STRING",
-          "value": "///"
+          "type": "IMMEDIATE_TOKEN",
+          "content": {
+            "type": "STRING",
+            "value": "///"
+          }
         },
         {
-          "type": "PATTERN",
-          "value": "[ \\t\\v]*"
+          "type": "IMMEDIATE_TOKEN",
+          "content": {
+            "type": "PATTERN",
+            "value": "[ \\t\\v]*"
+          }
         },
         {
           "type": "FIELD",
-          "name": "doc",
+          "name": "docs",
           "content": {
-            "type": "PATTERN",
-            "value": "[^n]*"
+            "type": "SYMBOL",
+            "name": "docs"
           }
         }
       ]
+    },
+    "docs": {
+      "type": "IMMEDIATE_TOKEN",
+      "content": {
+        "type": "PATTERN",
+        "value": "[^n]*"
+      }
     },
     "block_comment": {
       "type": "SEQ",

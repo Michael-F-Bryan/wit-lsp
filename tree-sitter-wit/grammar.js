@@ -61,6 +61,7 @@ module.exports = grammar({
         ),
 
         world_item: $ => seq(
+            field("attributes", repeat($.attribute)),
             "world",
             field("name", $.identifier),
             "{",
@@ -281,7 +282,12 @@ module.exports = grammar({
 
         semver: $ => /(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?/,
         identifier: $ => /%?\w[\w\d_-]*/,
-        doc_comment: $ => seq("///", /[ \t\v]*/, field("doc", /[^n]*/)),
+        doc_comment: $ => seq(
+            token.immediate("///"),
+            token.immediate(/[ \t\v]*/),
+            field("docs", $.docs),
+        ),
+        docs: $ => token.immediate(/[^n]*/),
         block_comment: $ => seq("/*", /[^*]*\*+([^/*][^*]*\*+)*/, "/"),
         slash_comment: $ => /\/\/[^\n]*/,
     },

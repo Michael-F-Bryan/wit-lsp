@@ -45,6 +45,11 @@ impl<'tree> BorrowedHandle<'tree> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
+impl<'tree> super::HasIdent<'tree> for BorrowedHandle<'tree> {
+    fn identifier(self) -> Option<Identifier<'tree>> {
+        self.name()
+    }
+}
 impl<'tree> super::AstNode<'tree> for BorrowedHandle<'tree> {
     const NAME: &'static str = "borrowed_handle";
     fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
@@ -60,7 +65,11 @@ impl<'tree> super::AstNode<'tree> for BorrowedHandle<'tree> {
 ///The `doc_comment` node.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct DocComment<'tree>(tree_sitter::Node<'tree>);
-impl<'tree> DocComment<'tree> {}
+impl<'tree> DocComment<'tree> {
+    pub fn docs(&self) -> Option<Docs<'tree>> {
+        self.0.child_by_field_name("docs").and_then(<Docs as super::AstNode>::cast)
+    }
+}
 impl<'tree> super::AstNode<'tree> for DocComment<'tree> {
     const NAME: &'static str = "doc_comment";
     fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
@@ -88,6 +97,16 @@ impl<'tree> EnumCase<'tree> {
     }
     pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
+    }
+}
+impl<'tree> super::HasIdent<'tree> for EnumCase<'tree> {
+    fn identifier(self) -> Option<Identifier<'tree>> {
+        self.name()
+    }
+}
+impl<'tree> super::HasAttr<'tree> for EnumCase<'tree> {
+    fn attributes(self) -> impl Iterator<Item = Attribute<'tree>> + 'tree {
+        self.iter_attributes()
     }
 }
 impl<'tree> super::AstNode<'tree> for EnumCase<'tree> {
@@ -126,6 +145,16 @@ impl<'tree> EnumItem<'tree> {
     }
     pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
+    }
+}
+impl<'tree> super::HasIdent<'tree> for EnumItem<'tree> {
+    fn identifier(self) -> Option<Identifier<'tree>> {
+        self.name()
+    }
+}
+impl<'tree> super::HasAttr<'tree> for EnumItem<'tree> {
+    fn attributes(self) -> impl Iterator<Item = Attribute<'tree>> + 'tree {
+        self.iter_attributes()
     }
 }
 impl<'tree> super::AstNode<'tree> for EnumItem<'tree> {
@@ -178,6 +207,11 @@ impl<'tree> ExportedItem<'tree> {
         self.0
             .child_by_field_name("extern_type")
             .and_then(<ExternType<'_> as super::AstNode>::cast)
+    }
+}
+impl<'tree> super::HasIdent<'tree> for ExportedItem<'tree> {
+    fn identifier(self) -> Option<Identifier<'tree>> {
+        self.name()
     }
 }
 impl<'tree> super::AstNode<'tree> for ExportedItem<'tree> {
@@ -254,6 +288,16 @@ impl<'tree> FlagsCase<'tree> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
+impl<'tree> super::HasIdent<'tree> for FlagsCase<'tree> {
+    fn identifier(self) -> Option<Identifier<'tree>> {
+        self.name()
+    }
+}
+impl<'tree> super::HasAttr<'tree> for FlagsCase<'tree> {
+    fn attributes(self) -> impl Iterator<Item = Attribute<'tree>> + 'tree {
+        self.iter_attributes()
+    }
+}
 impl<'tree> super::AstNode<'tree> for FlagsCase<'tree> {
     const NAME: &'static str = "flags_case";
     fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
@@ -290,6 +334,16 @@ impl<'tree> FlagsItem<'tree> {
     }
     pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
+    }
+}
+impl<'tree> super::HasIdent<'tree> for FlagsItem<'tree> {
+    fn identifier(self) -> Option<Identifier<'tree>> {
+        self.name()
+    }
+}
+impl<'tree> super::HasAttr<'tree> for FlagsItem<'tree> {
+    fn attributes(self) -> impl Iterator<Item = Attribute<'tree>> + 'tree {
+        self.iter_attributes()
     }
 }
 impl<'tree> super::AstNode<'tree> for FlagsItem<'tree> {
@@ -386,6 +440,16 @@ impl<'tree> FuncItem<'tree> {
     }
     pub fn ty(&self) -> Option<FuncType<'tree>> {
         self.0.child_by_field_name("ty").and_then(<FuncType as super::AstNode>::cast)
+    }
+}
+impl<'tree> super::HasIdent<'tree> for FuncItem<'tree> {
+    fn identifier(self) -> Option<Identifier<'tree>> {
+        self.name()
+    }
+}
+impl<'tree> super::HasAttr<'tree> for FuncItem<'tree> {
+    fn attributes(self) -> impl Iterator<Item = Attribute<'tree>> + 'tree {
+        self.iter_attributes()
     }
 }
 impl<'tree> super::AstNode<'tree> for FuncItem<'tree> {
@@ -494,6 +558,11 @@ impl<'tree> ImportedItem<'tree> {
             .and_then(<ExternType<'_> as super::AstNode>::cast)
     }
 }
+impl<'tree> super::HasIdent<'tree> for ImportedItem<'tree> {
+    fn identifier(self) -> Option<Identifier<'tree>> {
+        self.name()
+    }
+}
 impl<'tree> super::AstNode<'tree> for ImportedItem<'tree> {
     const NAME: &'static str = "imported_item";
     fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
@@ -566,6 +635,11 @@ impl<'tree> IncludeNamesItem<'tree> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
+impl<'tree> super::HasIdent<'tree> for IncludeNamesItem<'tree> {
+    fn identifier(self) -> Option<Identifier<'tree>> {
+        self.name()
+    }
+}
 impl<'tree> super::AstNode<'tree> for IncludeNamesItem<'tree> {
     const NAME: &'static str = "include_names_item";
     fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
@@ -624,6 +698,16 @@ impl<'tree> InterfaceItem<'tree> {
     }
     pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
+    }
+}
+impl<'tree> super::HasIdent<'tree> for InterfaceItem<'tree> {
+    fn identifier(self) -> Option<Identifier<'tree>> {
+        self.name()
+    }
+}
+impl<'tree> super::HasAttr<'tree> for InterfaceItem<'tree> {
+    fn attributes(self) -> impl Iterator<Item = Attribute<'tree>> + 'tree {
+        self.iter_attributes()
     }
 }
 impl<'tree> super::AstNode<'tree> for InterfaceItem<'tree> {
@@ -723,6 +807,11 @@ impl<'tree> NamedType<'tree> {
         self.0.child_by_field_name("ty").and_then(<Ty as super::AstNode>::cast)
     }
 }
+impl<'tree> super::HasIdent<'tree> for NamedType<'tree> {
+    fn identifier(self) -> Option<Identifier<'tree>> {
+        self.name()
+    }
+}
 impl<'tree> super::AstNode<'tree> for NamedType<'tree> {
     const NAME: &'static str = "named_type";
     fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
@@ -763,6 +852,11 @@ impl<'tree> OwnedHandle<'tree> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
+impl<'tree> super::HasIdent<'tree> for OwnedHandle<'tree> {
+    fn identifier(self) -> Option<Identifier<'tree>> {
+        self.name()
+    }
+}
 impl<'tree> super::AstNode<'tree> for OwnedHandle<'tree> {
     const NAME: &'static str = "owned_handle";
     fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
@@ -794,6 +888,11 @@ impl<'tree> PackageDecl<'tree> {
         self.0
             .child_by_field_name("fully_qualified_package_name")
             .and_then(<FullyQualifiedPackageName<'_> as super::AstNode>::cast)
+    }
+}
+impl<'tree> super::HasAttr<'tree> for PackageDecl<'tree> {
+    fn attributes(self) -> impl Iterator<Item = Attribute<'tree>> + 'tree {
+        self.iter_attributes()
     }
 }
 impl<'tree> super::AstNode<'tree> for PackageDecl<'tree> {
@@ -896,6 +995,16 @@ impl<'tree> RecordField<'tree> {
         self.0.child_by_field_name("ty").and_then(<Ty as super::AstNode>::cast)
     }
 }
+impl<'tree> super::HasIdent<'tree> for RecordField<'tree> {
+    fn identifier(self) -> Option<Identifier<'tree>> {
+        self.name()
+    }
+}
+impl<'tree> super::HasAttr<'tree> for RecordField<'tree> {
+    fn attributes(self) -> impl Iterator<Item = Attribute<'tree>> + 'tree {
+        self.iter_attributes()
+    }
+}
 impl<'tree> super::AstNode<'tree> for RecordField<'tree> {
     const NAME: &'static str = "record_field";
     fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
@@ -934,6 +1043,16 @@ impl<'tree> RecordItem<'tree> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
+impl<'tree> super::HasIdent<'tree> for RecordItem<'tree> {
+    fn identifier(self) -> Option<Identifier<'tree>> {
+        self.name()
+    }
+}
+impl<'tree> super::HasAttr<'tree> for RecordItem<'tree> {
+    fn attributes(self) -> impl Iterator<Item = Attribute<'tree>> + 'tree {
+        self.iter_attributes()
+    }
+}
 impl<'tree> super::AstNode<'tree> for RecordItem<'tree> {
     const NAME: &'static str = "record_item";
     fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
@@ -963,6 +1082,11 @@ impl<'tree> ResourceConstructor<'tree> {
         self.0
             .child_by_field_name("params")
             .and_then(<ParamList as super::AstNode>::cast)
+    }
+}
+impl<'tree> super::HasAttr<'tree> for ResourceConstructor<'tree> {
+    fn attributes(self) -> impl Iterator<Item = Attribute<'tree>> + 'tree {
+        self.iter_attributes()
     }
 }
 impl<'tree> super::AstNode<'tree> for ResourceConstructor<'tree> {
@@ -1001,6 +1125,16 @@ impl<'tree> ResourceItem<'tree> {
     }
     pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
+    }
+}
+impl<'tree> super::HasIdent<'tree> for ResourceItem<'tree> {
+    fn identifier(self) -> Option<Identifier<'tree>> {
+        self.name()
+    }
+}
+impl<'tree> super::HasAttr<'tree> for ResourceItem<'tree> {
+    fn attributes(self) -> impl Iterator<Item = Attribute<'tree>> + 'tree {
+        self.iter_attributes()
     }
 }
 impl<'tree> super::AstNode<'tree> for ResourceItem<'tree> {
@@ -1138,6 +1272,16 @@ impl<'tree> StaticMethod<'tree> {
         self.0
             .child_by_field_name("func_type")
             .and_then(<FuncType<'_> as super::AstNode>::cast)
+    }
+}
+impl<'tree> super::HasIdent<'tree> for StaticMethod<'tree> {
+    fn identifier(self) -> Option<Identifier<'tree>> {
+        self.name()
+    }
+}
+impl<'tree> super::HasAttr<'tree> for StaticMethod<'tree> {
+    fn attributes(self) -> impl Iterator<Item = Attribute<'tree>> + 'tree {
+        self.iter_attributes()
     }
 }
 impl<'tree> super::AstNode<'tree> for StaticMethod<'tree> {
@@ -1286,6 +1430,16 @@ impl<'tree> TypeItem<'tree> {
         self.0.child_by_field_name("ty").and_then(<Ty as super::AstNode>::cast)
     }
 }
+impl<'tree> super::HasIdent<'tree> for TypeItem<'tree> {
+    fn identifier(self) -> Option<Identifier<'tree>> {
+        self.name()
+    }
+}
+impl<'tree> super::HasAttr<'tree> for TypeItem<'tree> {
+    fn attributes(self) -> impl Iterator<Item = Attribute<'tree>> + 'tree {
+        self.iter_attributes()
+    }
+}
 impl<'tree> super::AstNode<'tree> for TypeItem<'tree> {
     const NAME: &'static str = "type_item";
     fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
@@ -1381,6 +1535,11 @@ impl<'tree> UseNamesItem<'tree> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
+impl<'tree> super::HasIdent<'tree> for UseNamesItem<'tree> {
+    fn identifier(self) -> Option<Identifier<'tree>> {
+        self.name()
+    }
+}
 impl<'tree> super::AstNode<'tree> for UseNamesItem<'tree> {
     const NAME: &'static str = "use_names_item";
     fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
@@ -1462,6 +1621,16 @@ impl<'tree> VariantCase<'tree> {
         self.0.child_by_field_name("ty").and_then(<Ty as super::AstNode>::cast)
     }
 }
+impl<'tree> super::HasIdent<'tree> for VariantCase<'tree> {
+    fn identifier(self) -> Option<Identifier<'tree>> {
+        self.name()
+    }
+}
+impl<'tree> super::HasAttr<'tree> for VariantCase<'tree> {
+    fn attributes(self) -> impl Iterator<Item = Attribute<'tree>> + 'tree {
+        self.iter_attributes()
+    }
+}
 impl<'tree> super::AstNode<'tree> for VariantCase<'tree> {
     const NAME: &'static str = "variant_case";
     fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
@@ -1500,6 +1669,16 @@ impl<'tree> VariantItem<'tree> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
+impl<'tree> super::HasIdent<'tree> for VariantItem<'tree> {
+    fn identifier(self) -> Option<Identifier<'tree>> {
+        self.name()
+    }
+}
+impl<'tree> super::HasAttr<'tree> for VariantItem<'tree> {
+    fn attributes(self) -> impl Iterator<Item = Attribute<'tree>> + 'tree {
+        self.iter_attributes()
+    }
+}
 impl<'tree> super::AstNode<'tree> for VariantItem<'tree> {
     const NAME: &'static str = "variant_item";
     fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
@@ -1516,6 +1695,15 @@ impl<'tree> super::AstNode<'tree> for VariantItem<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct WorldItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> WorldItem<'tree> {
+    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
+        let mut cursor = self.0.walk();
+        let children: Vec<_> = self
+            .0
+            .children_by_field_name("attributes", &mut cursor)
+            .filter_map(<Attribute as super::AstNode>::cast)
+            .collect();
+        children.into_iter()
+    }
     pub fn iter_items(&self) -> impl Iterator<Item = WorldItems<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
@@ -1527,6 +1715,16 @@ impl<'tree> WorldItem<'tree> {
     }
     pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
+    }
+}
+impl<'tree> super::HasIdent<'tree> for WorldItem<'tree> {
+    fn identifier(self) -> Option<Identifier<'tree>> {
+        self.name()
+    }
+}
+impl<'tree> super::HasAttr<'tree> for WorldItem<'tree> {
+    fn attributes(self) -> impl Iterator<Item = Attribute<'tree>> + 'tree {
+        self.iter_attributes()
     }
 }
 impl<'tree> super::AstNode<'tree> for WorldItem<'tree> {
@@ -1578,6 +1776,22 @@ impl<'tree> super::AstNode<'tree> for WorldItems<'tree> {
         Self: Sized,
     {
         if node.kind() == Self::NAME { Some(WorldItems(node)) } else { None }
+    }
+    fn syntax(&self) -> tree_sitter::Node<'tree> {
+        self.0
+    }
+}
+///The `docs` node.
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct Docs<'tree>(tree_sitter::Node<'tree>);
+impl<'tree> Docs<'tree> {}
+impl<'tree> super::AstNode<'tree> for Docs<'tree> {
+    const NAME: &'static str = "docs";
+    fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        if node.kind() == Self::NAME { Some(Docs(node)) } else { None }
     }
     fn syntax(&self) -> tree_sitter::Node<'tree> {
         self.0

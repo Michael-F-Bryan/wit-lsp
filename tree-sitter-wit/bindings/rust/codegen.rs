@@ -12,7 +12,6 @@ pub(crate) fn generate_ast(node_types: &str) -> TokenStream {
     let (nodes, _tokens): (Vec<_>, Vec<_>) = node_types.iter().partition(|n| n.named);
 
     let ast_nodes = nodes.iter().map(|n| generate_ast_node(n));
-    // let tokens = tokens.iter().map(|t| generate_token(t));
 
     quote! {
         //! Automatically generated code. DO NOT EDIT!
@@ -92,6 +91,8 @@ fn generate_ast_node(node: &NodeType) -> TokenStream {
             .map(|ty| child_getter(ty, field.multiple, field.required))
     });
 
+    let helper_trait_impls = generate_helper_trait_impls(&ident, node);
+
     quote! {
         #[doc = #doc]
         #[derive(Debug, Copy, Clone, PartialEq)]
@@ -102,8 +103,36 @@ fn generate_ast_node(node: &NodeType) -> TokenStream {
             #(#child_getters)*
         }
 
+        #helper_trait_impls
+
         #ast_node_impl
     }
+}
+
+fn generate_helper_trait_impls(ident: &Ident, node: &NodeType) -> TokenStream {
+    let mut tokens = TokenStream::new();
+
+    if node.fields.contains_key("name") {
+        tokens.extend(quote! {
+            impl<'tree> super::HasIdent<'tree> for #ident<'tree> {
+                fn identifier(self) -> Option<Identifier<'tree>> {
+                    self.name()
+                }
+            }
+        });
+    }
+
+    if node.fields.contains_key("attributes") {
+        tokens.extend(quote! {
+            impl<'tree> super::HasAttr<'tree> for #ident<'tree> {
+                fn attributes(self) -> impl Iterator<Item = Attribute<'tree>> + 'tree {
+                    self.iter_attributes()
+                }
+            }
+        });
+    }
+
+    tokens
 }
 
 fn field_getter(field: &Field, name: &str) -> TokenStream {
