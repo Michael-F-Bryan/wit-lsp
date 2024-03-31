@@ -187,24 +187,29 @@ fn child_getter(item_ty: &FieldType, multiple: bool, required: bool) -> TokenStr
         };
 
         quote! {
-            pub fn #method_name(&self) -> impl Iterator<Item=#item_ty<'tree>> {
-                Vec::new().into_iter()
+            pub fn #method_name(self) -> impl Iterator<Item=#item_ty<'tree>> {
+                super::children(self.0)
+                    .filter_map(<#item_ty as super::AstNode<'_>>::cast)
             }
         }
     } else if !required {
         let method_name = format_ident!("{name}_opt");
 
         quote! {
-            pub fn #method_name(&self) -> Option<#item_ty<'tree>> {
-                todo!()
+            pub fn #method_name(self) -> Option<#item_ty<'tree>> {
+                super::children(self.0)
+                    .filter_map(<#item_ty as super::AstNode<'_>>::cast)
+                    .next()
             }
         }
     } else {
         let method_name = format_ident!("{name}");
 
         quote! {
-            pub fn #method_name(&self) -> Option<#item_ty<'tree>> {
-                self.0.child_by_field_name(#name).and_then(<#item_ty<'_> as super::AstNode>::cast)
+            pub fn #method_name(self) -> Option<#item_ty<'tree>> {
+                super::children(self.0)
+                    .filter_map(<#item_ty as super::AstNode<'_>>::cast)
+                    .next()
             }
         }
     }

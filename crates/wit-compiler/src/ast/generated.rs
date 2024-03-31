@@ -3,10 +3,10 @@
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Attribute<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> Attribute<'tree> {
-    pub fn doc_comment(&self) -> Option<DocComment<'tree>> {
-        self.0
-            .child_by_field_name("doc_comment")
-            .and_then(<DocComment<'_> as super::AstNode>::cast)
+    pub fn doc_comment(self) -> Option<DocComment<'tree>> {
+        super::children(self.0)
+            .filter_map(<DocComment as super::AstNode<'_>>::cast)
+            .next()
     }
 }
 impl<'tree> super::AstNode<'tree> for Attribute<'tree> {
@@ -173,15 +173,15 @@ impl<'tree> super::AstNode<'tree> for EnumItem<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ExportItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> ExportItem<'tree> {
-    pub fn exported_item(&self) -> Option<ExportedItem<'tree>> {
-        self.0
-            .child_by_field_name("exported_item")
-            .and_then(<ExportedItem<'_> as super::AstNode>::cast)
+    pub fn exported_item(self) -> Option<ExportedItem<'tree>> {
+        super::children(self.0)
+            .filter_map(<ExportedItem as super::AstNode<'_>>::cast)
+            .next()
     }
-    pub fn exported_path(&self) -> Option<ExportedPath<'tree>> {
-        self.0
-            .child_by_field_name("exported_path")
-            .and_then(<ExportedPath<'_> as super::AstNode>::cast)
+    pub fn exported_path(self) -> Option<ExportedPath<'tree>> {
+        super::children(self.0)
+            .filter_map(<ExportedPath as super::AstNode<'_>>::cast)
+            .next()
     }
 }
 impl<'tree> super::AstNode<'tree> for ExportItem<'tree> {
@@ -203,10 +203,10 @@ impl<'tree> ExportedItem<'tree> {
     pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
-    pub fn extern_type(&self) -> Option<ExternType<'tree>> {
-        self.0
-            .child_by_field_name("extern_type")
-            .and_then(<ExternType<'_> as super::AstNode>::cast)
+    pub fn extern_type(self) -> Option<ExternType<'tree>> {
+        super::children(self.0)
+            .filter_map(<ExternType as super::AstNode<'_>>::cast)
+            .next()
     }
 }
 impl<'tree> super::HasIdent<'tree> for ExportedItem<'tree> {
@@ -230,10 +230,10 @@ impl<'tree> super::AstNode<'tree> for ExportedItem<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ExportedPath<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> ExportedPath<'tree> {
-    pub fn fully_qualified_use_path(&self) -> Option<FullyQualifiedUsePath<'tree>> {
-        self.0
-            .child_by_field_name("fully_qualified_use_path")
-            .and_then(<FullyQualifiedUsePath<'_> as super::AstNode>::cast)
+    pub fn fully_qualified_use_path(self) -> Option<FullyQualifiedUsePath<'tree>> {
+        super::children(self.0)
+            .filter_map(<FullyQualifiedUsePath as super::AstNode<'_>>::cast)
+            .next()
     }
 }
 impl<'tree> super::AstNode<'tree> for ExportedPath<'tree> {
@@ -252,11 +252,11 @@ impl<'tree> super::AstNode<'tree> for ExportedPath<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ExternType<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> ExternType<'tree> {
-    pub fn iter_func_types(&self) -> impl Iterator<Item = FuncType<'tree>> {
-        Vec::new().into_iter()
+    pub fn iter_func_types(self) -> impl Iterator<Item = FuncType<'tree>> {
+        super::children(self.0).filter_map(<FuncType as super::AstNode<'_>>::cast)
     }
-    pub fn iter_interface_items(&self) -> impl Iterator<Item = InterfaceItems<'tree>> {
-        Vec::new().into_iter()
+    pub fn iter_interface_items(self) -> impl Iterator<Item = InterfaceItems<'tree>> {
+        super::children(self.0).filter_map(<InterfaceItems as super::AstNode<'_>>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for ExternType<'tree> {
@@ -495,15 +495,15 @@ impl<'tree> super::AstNode<'tree> for FuncType<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Handle<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> Handle<'tree> {
-    pub fn borrowed_handle(&self) -> Option<BorrowedHandle<'tree>> {
-        self.0
-            .child_by_field_name("borrowed_handle")
-            .and_then(<BorrowedHandle<'_> as super::AstNode>::cast)
+    pub fn borrowed_handle(self) -> Option<BorrowedHandle<'tree>> {
+        super::children(self.0)
+            .filter_map(<BorrowedHandle as super::AstNode<'_>>::cast)
+            .next()
     }
-    pub fn owned_handle(&self) -> Option<OwnedHandle<'tree>> {
-        self.0
-            .child_by_field_name("owned_handle")
-            .and_then(<OwnedHandle<'_> as super::AstNode>::cast)
+    pub fn owned_handle(self) -> Option<OwnedHandle<'tree>> {
+        super::children(self.0)
+            .filter_map(<OwnedHandle as super::AstNode<'_>>::cast)
+            .next()
     }
 }
 impl<'tree> super::AstNode<'tree> for Handle<'tree> {
@@ -522,15 +522,15 @@ impl<'tree> super::AstNode<'tree> for Handle<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ImportItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> ImportItem<'tree> {
-    pub fn imported_item(&self) -> Option<ImportedItem<'tree>> {
-        self.0
-            .child_by_field_name("imported_item")
-            .and_then(<ImportedItem<'_> as super::AstNode>::cast)
+    pub fn imported_item(self) -> Option<ImportedItem<'tree>> {
+        super::children(self.0)
+            .filter_map(<ImportedItem as super::AstNode<'_>>::cast)
+            .next()
     }
-    pub fn imported_path(&self) -> Option<ImportedPath<'tree>> {
-        self.0
-            .child_by_field_name("imported_path")
-            .and_then(<ImportedPath<'_> as super::AstNode>::cast)
+    pub fn imported_path(self) -> Option<ImportedPath<'tree>> {
+        super::children(self.0)
+            .filter_map(<ImportedPath as super::AstNode<'_>>::cast)
+            .next()
     }
 }
 impl<'tree> super::AstNode<'tree> for ImportItem<'tree> {
@@ -552,10 +552,10 @@ impl<'tree> ImportedItem<'tree> {
     pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
-    pub fn extern_type(&self) -> Option<ExternType<'tree>> {
-        self.0
-            .child_by_field_name("extern_type")
-            .and_then(<ExternType<'_> as super::AstNode>::cast)
+    pub fn extern_type(self) -> Option<ExternType<'tree>> {
+        super::children(self.0)
+            .filter_map(<ExternType as super::AstNode<'_>>::cast)
+            .next()
     }
 }
 impl<'tree> super::HasIdent<'tree> for ImportedItem<'tree> {
@@ -579,10 +579,8 @@ impl<'tree> super::AstNode<'tree> for ImportedItem<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ImportedPath<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> ImportedPath<'tree> {
-    pub fn use_path(&self) -> Option<UsePath<'tree>> {
-        self.0
-            .child_by_field_name("use_path")
-            .and_then(<UsePath<'_> as super::AstNode>::cast)
+    pub fn use_path(self) -> Option<UsePath<'tree>> {
+        super::children(self.0).filter_map(<UsePath as super::AstNode<'_>>::cast).next()
     }
 }
 impl<'tree> super::AstNode<'tree> for ImportedPath<'tree> {
@@ -657,9 +655,10 @@ impl<'tree> super::AstNode<'tree> for IncludeNamesItem<'tree> {
 pub struct IncludeNamesList<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> IncludeNamesList<'tree> {
     pub fn iter_include_names_items(
-        &self,
+        self,
     ) -> impl Iterator<Item = IncludeNamesItem<'tree>> {
-        Vec::new().into_iter()
+        super::children(self.0)
+            .filter_map(<IncludeNamesItem as super::AstNode<'_>>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for IncludeNamesList<'tree> {
@@ -726,20 +725,16 @@ impl<'tree> super::AstNode<'tree> for InterfaceItem<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct InterfaceItems<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> InterfaceItems<'tree> {
-    pub fn func_item(&self) -> Option<FuncItem<'tree>> {
-        self.0
-            .child_by_field_name("func_item")
-            .and_then(<FuncItem<'_> as super::AstNode>::cast)
+    pub fn func_item(self) -> Option<FuncItem<'tree>> {
+        super::children(self.0).filter_map(<FuncItem as super::AstNode<'_>>::cast).next()
     }
-    pub fn typedef_item(&self) -> Option<TypedefItem<'tree>> {
-        self.0
-            .child_by_field_name("typedef_item")
-            .and_then(<TypedefItem<'_> as super::AstNode>::cast)
+    pub fn typedef_item(self) -> Option<TypedefItem<'tree>> {
+        super::children(self.0)
+            .filter_map(<TypedefItem as super::AstNode<'_>>::cast)
+            .next()
     }
-    pub fn use_item(&self) -> Option<UseItem<'tree>> {
-        self.0
-            .child_by_field_name("use_item")
-            .and_then(<UseItem<'_> as super::AstNode>::cast)
+    pub fn use_item(self) -> Option<UseItem<'tree>> {
+        super::children(self.0).filter_map(<UseItem as super::AstNode<'_>>::cast).next()
     }
 }
 impl<'tree> super::AstNode<'tree> for InterfaceItems<'tree> {
@@ -758,8 +753,8 @@ impl<'tree> super::AstNode<'tree> for InterfaceItems<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct List<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> List<'tree> {
-    pub fn ty(&self) -> Option<Ty<'tree>> {
-        self.0.child_by_field_name("ty").and_then(<Ty<'_> as super::AstNode>::cast)
+    pub fn ty(self) -> Option<Ty<'tree>> {
+        super::children(self.0).filter_map(<Ty as super::AstNode<'_>>::cast).next()
     }
 }
 impl<'tree> super::AstNode<'tree> for List<'tree> {
@@ -778,10 +773,10 @@ impl<'tree> super::AstNode<'tree> for List<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct LocalUsePath<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> LocalUsePath<'tree> {
-    pub fn identifier(&self) -> Option<Identifier<'tree>> {
-        self.0
-            .child_by_field_name("identifier")
-            .and_then(<Identifier<'_> as super::AstNode>::cast)
+    pub fn identifier(self) -> Option<Identifier<'tree>> {
+        super::children(self.0)
+            .filter_map(<Identifier as super::AstNode<'_>>::cast)
+            .next()
     }
 }
 impl<'tree> super::AstNode<'tree> for LocalUsePath<'tree> {
@@ -828,8 +823,8 @@ impl<'tree> super::AstNode<'tree> for NamedType<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Option_<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> Option_<'tree> {
-    pub fn ty(&self) -> Option<Ty<'tree>> {
-        self.0.child_by_field_name("ty").and_then(<Ty<'_> as super::AstNode>::cast)
+    pub fn ty(self) -> Option<Ty<'tree>> {
+        super::children(self.0).filter_map(<Ty as super::AstNode<'_>>::cast).next()
     }
 }
 impl<'tree> super::AstNode<'tree> for Option_<'tree> {
@@ -883,11 +878,11 @@ impl<'tree> PackageDecl<'tree> {
         children.into_iter()
     }
     pub fn fully_qualified_package_name(
-        &self,
+        self,
     ) -> Option<FullyQualifiedPackageName<'tree>> {
-        self.0
-            .child_by_field_name("fully_qualified_package_name")
-            .and_then(<FullyQualifiedPackageName<'_> as super::AstNode>::cast)
+        super::children(self.0)
+            .filter_map(<FullyQualifiedPackageName as super::AstNode<'_>>::cast)
+            .next()
     }
 }
 impl<'tree> super::HasAttr<'tree> for PackageDecl<'tree> {
@@ -911,10 +906,10 @@ impl<'tree> super::AstNode<'tree> for PackageDecl<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct PackageName<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> PackageName<'tree> {
-    pub fn identifier(&self) -> Option<Identifier<'tree>> {
-        self.0
-            .child_by_field_name("identifier")
-            .and_then(<Identifier<'_> as super::AstNode>::cast)
+    pub fn identifier(self) -> Option<Identifier<'tree>> {
+        super::children(self.0)
+            .filter_map(<Identifier as super::AstNode<'_>>::cast)
+            .next()
     }
 }
 impl<'tree> super::AstNode<'tree> for PackageName<'tree> {
@@ -933,8 +928,8 @@ impl<'tree> super::AstNode<'tree> for PackageName<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct PackagePath<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> PackagePath<'tree> {
-    pub fn iter_identifiers(&self) -> impl Iterator<Item = Identifier<'tree>> {
-        Vec::new().into_iter()
+    pub fn iter_identifiers(self) -> impl Iterator<Item = Identifier<'tree>> {
+        super::children(self.0).filter_map(<Identifier as super::AstNode<'_>>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for PackagePath<'tree> {
@@ -1153,20 +1148,18 @@ impl<'tree> super::AstNode<'tree> for ResourceItem<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ResourceMethod<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> ResourceMethod<'tree> {
-    pub fn func_item(&self) -> Option<FuncItem<'tree>> {
-        self.0
-            .child_by_field_name("func_item")
-            .and_then(<FuncItem<'_> as super::AstNode>::cast)
+    pub fn func_item(self) -> Option<FuncItem<'tree>> {
+        super::children(self.0).filter_map(<FuncItem as super::AstNode<'_>>::cast).next()
     }
-    pub fn resource_constructor(&self) -> Option<ResourceConstructor<'tree>> {
-        self.0
-            .child_by_field_name("resource_constructor")
-            .and_then(<ResourceConstructor<'_> as super::AstNode>::cast)
+    pub fn resource_constructor(self) -> Option<ResourceConstructor<'tree>> {
+        super::children(self.0)
+            .filter_map(<ResourceConstructor as super::AstNode<'_>>::cast)
+            .next()
     }
-    pub fn static_method(&self) -> Option<StaticMethod<'tree>> {
-        self.0
-            .child_by_field_name("static_method")
-            .and_then(<StaticMethod<'_> as super::AstNode>::cast)
+    pub fn static_method(self) -> Option<StaticMethod<'tree>> {
+        super::children(self.0)
+            .filter_map(<StaticMethod as super::AstNode<'_>>::cast)
+            .next()
     }
 }
 impl<'tree> super::AstNode<'tree> for ResourceMethod<'tree> {
@@ -1208,11 +1201,11 @@ impl<'tree> super::AstNode<'tree> for Result_<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ResultList<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> ResultList<'tree> {
-    pub fn iter_named_types(&self) -> impl Iterator<Item = NamedType<'tree>> {
-        Vec::new().into_iter()
+    pub fn iter_named_types(self) -> impl Iterator<Item = NamedType<'tree>> {
+        super::children(self.0).filter_map(<NamedType as super::AstNode<'_>>::cast)
     }
-    pub fn iter_tys(&self) -> impl Iterator<Item = Ty<'tree>> {
-        Vec::new().into_iter()
+    pub fn iter_tys(self) -> impl Iterator<Item = Ty<'tree>> {
+        super::children(self.0).filter_map(<Ty as super::AstNode<'_>>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for ResultList<'tree> {
@@ -1236,8 +1229,8 @@ impl<'tree> SourceFile<'tree> {
             .child_by_field_name("package")
             .and_then(<PackageDecl as super::AstNode>::cast)
     }
-    pub fn iter_top_level_items(&self) -> impl Iterator<Item = TopLevelItem<'tree>> {
-        Vec::new().into_iter()
+    pub fn iter_top_level_items(self) -> impl Iterator<Item = TopLevelItem<'tree>> {
+        super::children(self.0).filter_map(<TopLevelItem as super::AstNode<'_>>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for SourceFile<'tree> {
@@ -1268,10 +1261,8 @@ impl<'tree> StaticMethod<'tree> {
     pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
-    pub fn func_type(&self) -> Option<FuncType<'tree>> {
-        self.0
-            .child_by_field_name("func_type")
-            .and_then(<FuncType<'_> as super::AstNode>::cast)
+    pub fn func_type(self) -> Option<FuncType<'tree>> {
+        super::children(self.0).filter_map(<FuncType as super::AstNode<'_>>::cast).next()
     }
 }
 impl<'tree> super::HasIdent<'tree> for StaticMethod<'tree> {
@@ -1300,20 +1291,20 @@ impl<'tree> super::AstNode<'tree> for StaticMethod<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct TopLevelItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> TopLevelItem<'tree> {
-    pub fn interface_item(&self) -> Option<InterfaceItem<'tree>> {
-        self.0
-            .child_by_field_name("interface_item")
-            .and_then(<InterfaceItem<'_> as super::AstNode>::cast)
+    pub fn interface_item(self) -> Option<InterfaceItem<'tree>> {
+        super::children(self.0)
+            .filter_map(<InterfaceItem as super::AstNode<'_>>::cast)
+            .next()
     }
-    pub fn top_level_use_item(&self) -> Option<TopLevelUseItem<'tree>> {
-        self.0
-            .child_by_field_name("top_level_use_item")
-            .and_then(<TopLevelUseItem<'_> as super::AstNode>::cast)
+    pub fn top_level_use_item(self) -> Option<TopLevelUseItem<'tree>> {
+        super::children(self.0)
+            .filter_map(<TopLevelUseItem as super::AstNode<'_>>::cast)
+            .next()
     }
-    pub fn world_item(&self) -> Option<WorldItem<'tree>> {
-        self.0
-            .child_by_field_name("world_item")
-            .and_then(<WorldItem<'_> as super::AstNode>::cast)
+    pub fn world_item(self) -> Option<WorldItem<'tree>> {
+        super::children(self.0)
+            .filter_map(<WorldItem as super::AstNode<'_>>::cast)
+            .next()
     }
 }
 impl<'tree> super::AstNode<'tree> for TopLevelItem<'tree> {
@@ -1337,10 +1328,8 @@ impl<'tree> TopLevelUseItem<'tree> {
             .child_by_field_name("alias")
             .and_then(<Identifier as super::AstNode>::cast)
     }
-    pub fn use_path(&self) -> Option<UsePath<'tree>> {
-        self.0
-            .child_by_field_name("use_path")
-            .and_then(<UsePath<'_> as super::AstNode>::cast)
+    pub fn use_path(self) -> Option<UsePath<'tree>> {
+        super::children(self.0).filter_map(<UsePath as super::AstNode<'_>>::cast).next()
     }
 }
 impl<'tree> super::AstNode<'tree> for TopLevelUseItem<'tree> {
@@ -1359,8 +1348,8 @@ impl<'tree> super::AstNode<'tree> for TopLevelUseItem<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Tuple<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> Tuple<'tree> {
-    pub fn iter_tys(&self) -> impl Iterator<Item = Ty<'tree>> {
-        Vec::new().into_iter()
+    pub fn iter_tys(self) -> impl Iterator<Item = Ty<'tree>> {
+        super::children(self.0).filter_map(<Ty as super::AstNode<'_>>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for Tuple<'tree> {
@@ -1379,23 +1368,25 @@ impl<'tree> super::AstNode<'tree> for Tuple<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Ty<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> Ty<'tree> {
-    pub fn handle_opt(&self) -> Option<Handle<'tree>> {
-        todo!()
+    pub fn handle_opt(self) -> Option<Handle<'tree>> {
+        super::children(self.0).filter_map(<Handle as super::AstNode<'_>>::cast).next()
     }
-    pub fn list_opt(&self) -> Option<List<'tree>> {
-        todo!()
+    pub fn list_opt(self) -> Option<List<'tree>> {
+        super::children(self.0).filter_map(<List as super::AstNode<'_>>::cast).next()
     }
-    pub fn option_opt(&self) -> Option<Option_<'tree>> {
-        todo!()
+    pub fn option_opt(self) -> Option<Option_<'tree>> {
+        super::children(self.0).filter_map(<Option_ as super::AstNode<'_>>::cast).next()
     }
-    pub fn result_opt(&self) -> Option<Result_<'tree>> {
-        todo!()
+    pub fn result_opt(self) -> Option<Result_<'tree>> {
+        super::children(self.0).filter_map(<Result_ as super::AstNode<'_>>::cast).next()
     }
-    pub fn tuple_opt(&self) -> Option<Tuple<'tree>> {
-        todo!()
+    pub fn tuple_opt(self) -> Option<Tuple<'tree>> {
+        super::children(self.0).filter_map(<Tuple as super::AstNode<'_>>::cast).next()
     }
-    pub fn user_defined_type_opt(&self) -> Option<UserDefinedType<'tree>> {
-        todo!()
+    pub fn user_defined_type_opt(self) -> Option<UserDefinedType<'tree>> {
+        super::children(self.0)
+            .filter_map(<UserDefinedType as super::AstNode<'_>>::cast)
+            .next()
     }
 }
 impl<'tree> super::AstNode<'tree> for Ty<'tree> {
@@ -1456,35 +1447,31 @@ impl<'tree> super::AstNode<'tree> for TypeItem<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct TypedefItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> TypedefItem<'tree> {
-    pub fn enum_item(&self) -> Option<EnumItem<'tree>> {
-        self.0
-            .child_by_field_name("enum_item")
-            .and_then(<EnumItem<'_> as super::AstNode>::cast)
+    pub fn enum_item(self) -> Option<EnumItem<'tree>> {
+        super::children(self.0).filter_map(<EnumItem as super::AstNode<'_>>::cast).next()
     }
-    pub fn flags_item(&self) -> Option<FlagsItem<'tree>> {
-        self.0
-            .child_by_field_name("flags_item")
-            .and_then(<FlagsItem<'_> as super::AstNode>::cast)
+    pub fn flags_item(self) -> Option<FlagsItem<'tree>> {
+        super::children(self.0)
+            .filter_map(<FlagsItem as super::AstNode<'_>>::cast)
+            .next()
     }
-    pub fn record_item(&self) -> Option<RecordItem<'tree>> {
-        self.0
-            .child_by_field_name("record_item")
-            .and_then(<RecordItem<'_> as super::AstNode>::cast)
+    pub fn record_item(self) -> Option<RecordItem<'tree>> {
+        super::children(self.0)
+            .filter_map(<RecordItem as super::AstNode<'_>>::cast)
+            .next()
     }
-    pub fn resource_item(&self) -> Option<ResourceItem<'tree>> {
-        self.0
-            .child_by_field_name("resource_item")
-            .and_then(<ResourceItem<'_> as super::AstNode>::cast)
+    pub fn resource_item(self) -> Option<ResourceItem<'tree>> {
+        super::children(self.0)
+            .filter_map(<ResourceItem as super::AstNode<'_>>::cast)
+            .next()
     }
-    pub fn type_item(&self) -> Option<TypeItem<'tree>> {
-        self.0
-            .child_by_field_name("type_item")
-            .and_then(<TypeItem<'_> as super::AstNode>::cast)
+    pub fn type_item(self) -> Option<TypeItem<'tree>> {
+        super::children(self.0).filter_map(<TypeItem as super::AstNode<'_>>::cast).next()
     }
-    pub fn variant_item(&self) -> Option<VariantItem<'tree>> {
-        self.0
-            .child_by_field_name("variant_item")
-            .and_then(<VariantItem<'_> as super::AstNode>::cast)
+    pub fn variant_item(self) -> Option<VariantItem<'tree>> {
+        super::children(self.0)
+            .filter_map(<VariantItem as super::AstNode<'_>>::cast)
+            .next()
     }
 }
 impl<'tree> super::AstNode<'tree> for TypedefItem<'tree> {
@@ -1506,8 +1493,8 @@ impl<'tree> UseItem<'tree> {
     pub fn path(&self) -> Option<UsePath<'tree>> {
         self.0.child_by_field_name("path").and_then(<UsePath as super::AstNode>::cast)
     }
-    pub fn iter_use_names_items(&self) -> impl Iterator<Item = UseNamesItem<'tree>> {
-        Vec::new().into_iter()
+    pub fn iter_use_names_items(self) -> impl Iterator<Item = UseNamesItem<'tree>> {
+        super::children(self.0).filter_map(<UseNamesItem as super::AstNode<'_>>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for UseItem<'tree> {
@@ -1556,15 +1543,15 @@ impl<'tree> super::AstNode<'tree> for UseNamesItem<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct UsePath<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> UsePath<'tree> {
-    pub fn fully_qualified_use_path(&self) -> Option<FullyQualifiedUsePath<'tree>> {
-        self.0
-            .child_by_field_name("fully_qualified_use_path")
-            .and_then(<FullyQualifiedUsePath<'_> as super::AstNode>::cast)
+    pub fn fully_qualified_use_path(self) -> Option<FullyQualifiedUsePath<'tree>> {
+        super::children(self.0)
+            .filter_map(<FullyQualifiedUsePath as super::AstNode<'_>>::cast)
+            .next()
     }
-    pub fn local_use_path(&self) -> Option<LocalUsePath<'tree>> {
-        self.0
-            .child_by_field_name("local_use_path")
-            .and_then(<LocalUsePath<'_> as super::AstNode>::cast)
+    pub fn local_use_path(self) -> Option<LocalUsePath<'tree>> {
+        super::children(self.0)
+            .filter_map(<LocalUsePath as super::AstNode<'_>>::cast)
+            .next()
     }
 }
 impl<'tree> super::AstNode<'tree> for UsePath<'tree> {
@@ -1583,10 +1570,10 @@ impl<'tree> super::AstNode<'tree> for UsePath<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct UserDefinedType<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> UserDefinedType<'tree> {
-    pub fn identifier(&self) -> Option<Identifier<'tree>> {
-        self.0
-            .child_by_field_name("identifier")
-            .and_then(<Identifier<'_> as super::AstNode>::cast)
+    pub fn identifier(self) -> Option<Identifier<'tree>> {
+        super::children(self.0)
+            .filter_map(<Identifier as super::AstNode<'_>>::cast)
+            .next()
     }
 }
 impl<'tree> super::AstNode<'tree> for UserDefinedType<'tree> {
@@ -1743,30 +1730,28 @@ impl<'tree> super::AstNode<'tree> for WorldItem<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct WorldItems<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> WorldItems<'tree> {
-    pub fn export_item(&self) -> Option<ExportItem<'tree>> {
-        self.0
-            .child_by_field_name("export_item")
-            .and_then(<ExportItem<'_> as super::AstNode>::cast)
+    pub fn export_item(self) -> Option<ExportItem<'tree>> {
+        super::children(self.0)
+            .filter_map(<ExportItem as super::AstNode<'_>>::cast)
+            .next()
     }
-    pub fn import_item(&self) -> Option<ImportItem<'tree>> {
-        self.0
-            .child_by_field_name("import_item")
-            .and_then(<ImportItem<'_> as super::AstNode>::cast)
+    pub fn import_item(self) -> Option<ImportItem<'tree>> {
+        super::children(self.0)
+            .filter_map(<ImportItem as super::AstNode<'_>>::cast)
+            .next()
     }
-    pub fn include_item(&self) -> Option<IncludeItem<'tree>> {
-        self.0
-            .child_by_field_name("include_item")
-            .and_then(<IncludeItem<'_> as super::AstNode>::cast)
+    pub fn include_item(self) -> Option<IncludeItem<'tree>> {
+        super::children(self.0)
+            .filter_map(<IncludeItem as super::AstNode<'_>>::cast)
+            .next()
     }
-    pub fn typedef_item(&self) -> Option<TypedefItem<'tree>> {
-        self.0
-            .child_by_field_name("typedef_item")
-            .and_then(<TypedefItem<'_> as super::AstNode>::cast)
+    pub fn typedef_item(self) -> Option<TypedefItem<'tree>> {
+        super::children(self.0)
+            .filter_map(<TypedefItem as super::AstNode<'_>>::cast)
+            .next()
     }
-    pub fn use_item(&self) -> Option<UseItem<'tree>> {
-        self.0
-            .child_by_field_name("use_item")
-            .and_then(<UseItem<'_> as super::AstNode>::cast)
+    pub fn use_item(self) -> Option<UseItem<'tree>> {
+        super::children(self.0).filter_map(<UseItem as super::AstNode<'_>>::cast).next()
     }
 }
 impl<'tree> super::AstNode<'tree> for WorldItems<'tree> {
