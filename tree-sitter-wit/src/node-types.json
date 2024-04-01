@@ -36,6 +36,11 @@
     }
   },
   {
+    "type": "builtins",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "doc_comment",
     "named": true,
     "fields": {
@@ -1102,8 +1107,12 @@
     "fields": {},
     "children": {
       "multiple": false,
-      "required": false,
+      "required": true,
       "types": [
+        {
+          "type": "builtins",
+          "named": true
+        },
         {
           "type": "handle",
           "named": true

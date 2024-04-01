@@ -1496,6 +1496,7 @@ dependencies = [
  "tower-lsp",
  "tower-service",
  "tracing",
+ "tracing-error",
  "tracing-subscriber",
  "tree-sitter",
  "tree-sitter-wit",

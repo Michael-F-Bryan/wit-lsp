@@ -17,6 +17,8 @@ module.exports = grammar({
     extras: $ => [/[\s\n\t]/, $.slash_comment, $.block_comment],
     conficts: $ => [
         [$.package_name],
+        [$.exported_item, $.exported_path],
+        [$.imported_item, $.imported_path],
     ],
 
     rules: {
@@ -256,8 +258,8 @@ module.exports = grammar({
             ";",
         ),
 
-        ty: $ => choice($._builtins, $.tuple, $.list, $.option, $.result, $.user_defined_type, $.handle),
-        _builtins: $ => choice(
+        ty: $ => choice($.builtins, $.tuple, $.list, $.option, $.result, $.user_defined_type, $.handle),
+        builtins: $ => choice(
             "u8", "u16", "u32", "u64", "s8", "s16", "s32", "s64", "float32", "float64", "char", "bool", "string"
         ),
         tuple: $ => seq("tuple", "<", cases($.ty), ">"),

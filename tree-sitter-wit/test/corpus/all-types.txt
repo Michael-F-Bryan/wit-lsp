@@ -81,42 +81,50 @@ interface types {
         (typedef_item
           (type_item
             (identifier)
-            (ty))))
+            (ty
+              (builtins)))))
       (interface_items
         (typedef_item
           (type_item
             (identifier)
-            (ty))))
+            (ty
+              (builtins)))))
       (interface_items
         (typedef_item
           (type_item
             (identifier)
-            (ty))))
+            (ty
+              (builtins)))))
       (interface_items
         (typedef_item
           (type_item
             (identifier)
-            (ty))))
+            (ty
+              (builtins)))))
       (interface_items
         (typedef_item
           (type_item
             (identifier)
-            (ty))))
+            (ty
+              (builtins)))))
       (interface_items
         (typedef_item
           (type_item
             (identifier)
-            (ty))))
+            (ty
+              (builtins)))))
       (interface_items
         (typedef_item
           (type_item
             (identifier)
-            (ty))))
+            (ty
+              (builtins)))))
       (interface_items
         (typedef_item
           (type_item
             (identifier)
-            (ty))))
+            (ty
+              (builtins)))))
       (interface_items
         (typedef_item
           (type_item
@@ -149,48 +157,56 @@ interface types {
         (typedef_item
           (type_item
             (identifier)
-            (ty))))
+            (ty
+              (builtins)))))
       (interface_items
         (typedef_item
           (type_item
             (identifier)
             (ty
               (list
-                (ty))))))
+                (ty
+                  (builtins)))))))
       (interface_items
         (typedef_item
           (type_item
             (identifier)
-            (ty))))
+            (ty
+              (builtins)))))
       (interface_items
         (typedef_item
           (type_item
             (identifier)
             (ty
               (option
-                (ty))))))
+                (ty
+                  (builtins)))))))
       (interface_items
         (typedef_item
           (type_item
             (identifier)
             (ty
               (result
-                (ty)
-                (ty))))))
+                (ty
+                  (builtins))
+                (ty
+                  (builtins)))))))
       (interface_items
         (typedef_item
           (type_item
             (identifier)
             (ty
               (result
-                (ty))))))
+                (ty
+                  (builtins)))))))
       (interface_items
         (typedef_item
           (type_item
             (identifier)
             (ty
               (result
-                (ty))))))
+                (ty
+                  (builtins)))))))
       (interface_items
         (typedef_item
           (type_item
@@ -207,41 +223,48 @@ interface types {
             (identifier)
             (record_field
               (identifier)
-              (ty)))))
+              (ty
+                (builtins))))))
       (interface_items
         (typedef_item
           (record_item
             (identifier)
             (record_field
               (identifier)
-              (ty)))))
+              (ty
+                (builtins))))))
       (interface_items
         (typedef_item
           (record_item
             (identifier)
             (record_field
               (identifier)
-              (ty))
+              (ty
+                (builtins)))
             (record_field
               (identifier)
-              (ty)))))
+              (ty
+                (builtins))))))
       (interface_items
         (typedef_item
           (record_item
             (identifier)
             (record_field
               (identifier)
-              (ty))
+              (ty
+                (builtins)))
             (record_field
               (identifier)
-              (ty)))))
+              (ty
+                (builtins))))))
       (interface_items
         (typedef_item
           (record_item
             (identifier)
             (record_field
               (identifier)
-              (ty)))))
+              (ty
+                (builtins))))))
       (interface_items
         (typedef_item
           (record_item
@@ -258,22 +281,26 @@ interface types {
             (identifier)
             (ty
               (tuple
-                (ty))))))
+                (ty
+                  (builtins)))))))
       (interface_items
         (typedef_item
           (type_item
             (identifier)
             (ty
               (tuple
-                (ty))))))
+                (ty
+                  (builtins)))))))
       (interface_items
         (typedef_item
           (type_item
             (identifier)
             (ty
               (tuple
-                (ty)
-                (ty))))))
+                (ty
+                  (builtins))
+                (ty
+                  (builtins)))))))
       (interface_items
         (typedef_item
           (flags_item
@@ -328,7 +355,8 @@ interface types {
               (identifier))
             (variant_case
               (identifier)
-              (ty)))))
+              (ty
+                (builtins))))))
       (interface_items
         (typedef_item
           (variant_item
@@ -339,7 +367,8 @@ interface types {
               (identifier)
               (ty
                 (option
-                  (ty)))))))
+                  (ty
+                    (builtins))))))))
       (interface_items
         (typedef_item
           (enum_item
@@ -364,12 +393,14 @@ interface types {
         (typedef_item
           (type_item
             (identifier)
-            (ty))))
+            (ty
+              (builtins)))))
       (interface_items
         (typedef_item
           (type_item
             (identifier)
-            (ty))))
+            (ty
+              (builtins)))))
       (interface_items
         (typedef_item
           (type_item
@@ -410,4 +441,5 @@ interface types {
         (typedef_item
           (type_item
             (identifier)
-            (ty)))))))
+            (ty
+              (builtins))))))))

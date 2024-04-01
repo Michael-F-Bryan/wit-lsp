@@ -1,0 +1,9 @@
+===========================
+World with interface export
+:skip
+===========================
+world console {
+    export run: interface {}
+}
+
+---

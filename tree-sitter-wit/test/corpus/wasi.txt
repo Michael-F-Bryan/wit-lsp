@@ -212,7 +212,8 @@ interface wasi {
         (typedef_item
           (type_item
             (identifier)
-            (ty))))
+            (ty
+              (builtins)))))
       (slash_comment)
       (slash_comment)
       (slash_comment)

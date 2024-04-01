@@ -5,7 +5,10 @@ use color_eyre::config::Theme;
 use tower_lsp::Server;
 use tower_service::Service;
 use tracing::Instrument;
-use tracing_subscriber::{fmt::format::FmtSpan, EnvFilter};
+use tracing_error::ErrorLayer;
+use tracing_subscriber::{
+    fmt::format::FmtSpan, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter,
+};
 use uuid::Uuid;
 use wit_language_server::LanguageServer;
 
@@ -128,6 +131,8 @@ fn initialize_logging() -> Result<(), color_eyre::Report> {
         .with_writer(std::io::stderr)
         .with_ansi(isatty)
         .with_span_events(FmtSpan::CLOSE)
+        .finish()
+        .with(ErrorLayer::default())
         .init();
 
     Ok(())

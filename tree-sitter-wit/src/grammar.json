@@ -1743,7 +1743,7 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "_builtins"
+          "name": "builtins"
         },
         {
           "type": "SYMBOL",
@@ -1771,7 +1771,7 @@
         }
       ]
     },
-    "_builtins": {
+    "builtins": {
       "type": "CHOICE",
       "members": [
         {

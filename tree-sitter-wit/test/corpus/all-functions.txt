@@ -41,7 +41,8 @@ interface functions {
             (param_list
               (named_type
                 (identifier)
-                (ty))))))
+                (ty
+                  (builtins)))))))
       (interface_items
         (func_item
           (identifier)
@@ -49,14 +50,16 @@ interface functions {
             (param_list
               (named_type
                 (identifier)
-                (ty))))))
+                (ty
+                  (builtins)))))))
       (interface_items
         (func_item
           (identifier)
           (func_type
             (param_list)
             (result_list
-              (ty)))))
+              (ty
+                (builtins))))))
       (interface_items
         (func_item
           (identifier)
@@ -65,8 +68,10 @@ interface functions {
             (result_list
               (ty
                 (tuple
-                  (ty)
-                  (ty)))))))
+                  (ty
+                    (builtins))
+                  (ty
+                    (builtins))))))))
       (interface_items
         (func_item
           (identifier)
@@ -85,8 +90,10 @@ interface functions {
             (result_list
               (ty
                 (tuple
-                  (ty)
-                  (ty)))))))
+                  (ty
+                    (builtins))
+                  (ty
+                    (builtins))))))))
       (interface_items
         (func_item
           (identifier)
@@ -96,11 +103,13 @@ interface functions {
                 (identifier)
                 (ty
                   (option
-                    (ty)))))
+                    (ty
+                      (builtins))))))
             (result_list
               (ty
                 (result
-                  (ty)
+                  (ty
+                    (builtins))
                   (ty
                     (user_defined_type
                       (identifier)))))))))
@@ -112,7 +121,8 @@ interface functions {
             (result_list
               (named_type
                 (identifier)
-                (ty))
+                (ty
+                  (builtins)))
               (named_type
                 (identifier)
                 (ty
@@ -126,7 +136,8 @@ interface functions {
             (result_list
               (named_type
                 (identifier)
-                (ty))))))
+                (ty
+                  (builtins)))))))
       (interface_items
         (func_item
           (identifier)

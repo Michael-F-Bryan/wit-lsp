@@ -62,6 +62,22 @@ impl<'tree> super::AstNode<'tree> for BorrowedHandle<'tree> {
         self.0
     }
 }
+///The `builtins` node.
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct Builtins<'tree>(tree_sitter::Node<'tree>);
+impl<'tree> Builtins<'tree> {}
+impl<'tree> super::AstNode<'tree> for Builtins<'tree> {
+    const NAME: &'static str = "builtins";
+    fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        if node.kind() == Self::NAME { Some(Builtins(node)) } else { None }
+    }
+    fn syntax(&self) -> tree_sitter::Node<'tree> {
+        self.0
+    }
+}
 ///The `doc_comment` node.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct DocComment<'tree>(tree_sitter::Node<'tree>);
@@ -1368,22 +1384,25 @@ impl<'tree> super::AstNode<'tree> for Tuple<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Ty<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> Ty<'tree> {
-    pub fn handle_opt(self) -> Option<Handle<'tree>> {
+    pub fn builtins(self) -> Option<Builtins<'tree>> {
+        super::children(self.0).filter_map(<Builtins as super::AstNode<'_>>::cast).next()
+    }
+    pub fn handle(self) -> Option<Handle<'tree>> {
         super::children(self.0).filter_map(<Handle as super::AstNode<'_>>::cast).next()
     }
-    pub fn list_opt(self) -> Option<List<'tree>> {
+    pub fn list(self) -> Option<List<'tree>> {
         super::children(self.0).filter_map(<List as super::AstNode<'_>>::cast).next()
     }
-    pub fn option_opt(self) -> Option<Option_<'tree>> {
+    pub fn option(self) -> Option<Option_<'tree>> {
         super::children(self.0).filter_map(<Option_ as super::AstNode<'_>>::cast).next()
     }
-    pub fn result_opt(self) -> Option<Result_<'tree>> {
+    pub fn result(self) -> Option<Result_<'tree>> {
         super::children(self.0).filter_map(<Result_ as super::AstNode<'_>>::cast).next()
     }
-    pub fn tuple_opt(self) -> Option<Tuple<'tree>> {
+    pub fn tuple(self) -> Option<Tuple<'tree>> {
         super::children(self.0).filter_map(<Tuple as super::AstNode<'_>>::cast).next()
     }
-    pub fn user_defined_type_opt(self) -> Option<UserDefinedType<'tree>> {
+    pub fn user_defined_type(self) -> Option<UserDefinedType<'tree>> {
         super::children(self.0)
             .filter_map(<UserDefinedType as super::AstNode<'_>>::cast)
             .next()
