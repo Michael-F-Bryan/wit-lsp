@@ -29,3 +29,10 @@ pub fn location_to_lsp(
         range: ts_to_range(range),
     }
 }
+
+pub fn position_to_ts(position: tower_lsp::lsp_types::Position) -> tree_sitter::Point {
+    tree_sitter::Point {
+        row: position.line as usize,
+        column: position.character as usize,
+    }
+}

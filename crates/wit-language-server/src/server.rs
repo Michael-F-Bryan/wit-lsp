@@ -4,12 +4,7 @@ use tokio::sync::{Mutex, MutexGuard};
 use tower_lsp::{
     jsonrpc::Error,
     lsp_types::{
-        DiagnosticOptions, DiagnosticServerCapabilities, DidChangeTextDocumentParams,
-        DidCloseTextDocumentParams, DidOpenTextDocumentParams, DidSaveTextDocumentParams,
-        DocumentDiagnosticParams, DocumentDiagnosticReportResult, FoldingRange, FoldingRangeParams,
-        InitializeParams, InitializeResult, SelectionRange, SelectionRangeParams,
-        ServerCapabilities, ServerInfo, TextDocumentContentChangeEvent, TextDocumentItem,
-        TextDocumentSyncCapability, TextDocumentSyncKind, Url,
+        CompletionOptions, CompletionParams, CompletionResponse, DiagnosticOptions, DiagnosticServerCapabilities, DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams, DidSaveTextDocumentParams, DocumentDiagnosticParams, DocumentDiagnosticReportResult, FoldingRange, FoldingRangeParams, InitializeParams, InitializeResult, SelectionRange, SelectionRangeParams, ServerCapabilities, ServerInfo, TextDocumentContentChangeEvent, TextDocumentItem, TextDocumentSyncCapability, TextDocumentSyncKind, Url
     },
     Client, ClientSocket, LspService,
 };
@@ -108,6 +103,7 @@ impl tower_lsp::LanguageServer for LanguageServer {
                         ..Default::default()
                     },
                 )),
+                completion_provider: Some(CompletionOptions::default()),
                 ..Default::default()
             },
             server_info: Some(ServerInfo {
@@ -248,10 +244,13 @@ impl tower_lsp::LanguageServer for LanguageServer {
         Ok(Some(ranges))
     }
 
+    #[tracing::instrument(level = "debug", skip_all)]
     async fn diagnostic(
         &self,
         params: DocumentDiagnosticParams,
     ) -> Result<DocumentDiagnosticReportResult, Error> {
+        tracing::debug!(document.uri=%params.text_document.uri);
+
         let snap = self.snapshot().await;
         let db = snap.wit_db();
         let path = &params.text_document.uri;
@@ -262,6 +261,22 @@ impl tower_lsp::LanguageServer for LanguageServer {
         };
 
         Ok(crate::ops::file_diagnostics(db, snap.ws, file))
+    }
+
+    #[tracing::instrument(level = "debug", skip_all)]
+    async fn completion(
+        &self,
+        params: CompletionParams,
+    ) -> Result<Option<CompletionResponse>, Error> {
+        let path = &params.text_document_position.text_document.uri;
+        tracing::debug!(document.uri=%path);
+        let snap = self.snapshot().await;
+
+        let Some(file) = snap.ws.lookup(snap.wit_db(), path.as_str()) else {
+            return Ok(None);
+        };
+
+        Ok(crate::ops::complete(snap.wit_db(), snap.ws, file, params))
     }
 }
 
