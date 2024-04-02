@@ -2,8 +2,8 @@
 
 #[rustfmt::skip]
 mod generated;
-mod traits;
 mod hand_written;
+mod traits;
 
 use tree_sitter::Node;
 
