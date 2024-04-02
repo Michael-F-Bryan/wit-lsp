@@ -463,7 +463,7 @@ mod tests {
 
     use super::*;
 
-    macro_rules! lowering_test {
+    macro_rules! lowering_tests {
         (
             $(
                 $( #[$meta:meta] )*
@@ -511,7 +511,52 @@ mod tests {
         };
     }
 
-    lowering_test! {
+    macro_rules! lowering_error_tests {
+        (
+            $(
+                $( #[$meta:meta] )*
+                $name:ident : $contents:literal
+            ),* $(,)?
+        ) => {
+            $(
+                #[test]
+                #[allow(unused_mut, unused_variables)]
+                $( #[$meta] )*
+                fn $name() {
+                    let db = Compiler::default();
+
+                    let file = SourceFile::new(
+                        &db,
+                        format!("{}.wit", stringify!($name)).into(),
+                        $contents.into(),
+                    );
+                    let ws = Workspace::new(&db, [(file.path(&db), file)].into_iter().collect());
+
+                    let ast = crate::queries::parse(&db, file);
+                    let diags = super::lower::accumulated::<Diagnostics>(&db, ws, file);
+
+                    assert_ne!(diags.len(), 0, "No diagnostics emitted");
+
+                    #[derive(serde::Serialize)]
+                    struct Info<'a> {
+                        src: &'a str,
+                        ast: String,
+                    }
+
+                    let mut settings = insta::Settings::clone_current();
+                    settings.set_info(&Info {
+                        src: $contents,
+                        ast: ast.root_node(&db).to_sexp(),
+                    });
+                    settings.set_omit_expression(true);
+
+                    settings.bind(|| insta::assert_debug_snapshot!(diags));
+                }
+            )*
+        };
+    }
+
+    lowering_tests! {
         lower_an_empty_file: "",
         lower_package_with_docs: "/// This is a package.\npackage wasi:filesystem@1.2.3;",
         empty_interface: "interface empty {}" ,
@@ -538,5 +583,20 @@ mod tests {
         world_with_external_import: "world with-import {
             import wasi:filesystem/filesystem;
         }"
+    }
+
+    lowering_error_tests! {
+        syntax_errors_are_emitted: "#$",
+        #[ignore]
+        refer_to_unknown_type: "interface i { type x = this-does-not-exist; }",
+        #[ignore]
+        recursive_records_are_not_allowed: "interface i { record recursive { inner: recursive } }",
+        #[ignore]
+        reference_cycles_are_not_allowed: "interface i {
+            record first { second: second }
+            record second { first: first }
+        }",
+        #[ignore]
+        duplicate_identifiers: "interface i { record foo {} variant foo {} }",
     }
 }

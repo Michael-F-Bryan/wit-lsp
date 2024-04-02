@@ -9,6 +9,7 @@ mod text;
 pub mod traverse;
 mod tree;
 mod workspace;
+pub mod pointer;
 
 pub use crate::{compiler::Compiler, text::Text, tree::Tree};
 
@@ -19,6 +20,10 @@ pub struct Jar(
     crate::diagnostics::Diagnostics,
     crate::queries::Ast,
     crate::queries::parse,
+    crate::queries::file_items,
+    crate::queries::Items,
+    crate::queries::WorldMetadata,
+    crate::queries::InterfaceMetadata,
     crate::queries::selection_ranges,
     crate::queries::SourceFile,
     crate::queries::lower,

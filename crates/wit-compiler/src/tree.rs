@@ -1,8 +1,8 @@
 use std::fmt::Display;
 
-use tree_sitter::{Node, Parser, Point};
+use tree_sitter::{Node, Parser, Point, Range};
 
-use crate::traverse::Order;
+use crate::{ast::AstNode, traverse::Order};
 
 /// A wrapper around [`tree_sitter::Tree`] that is comparable.
 #[derive(Debug, Clone)]
@@ -55,6 +55,35 @@ impl Tree {
         });
 
         std::iter::once(innermost_node).chain(parents)
+    }
+
+    /// Iterate over all nodes in the tree, depth first.
+    pub fn iter(&self) -> impl Iterator<Item = Node<'_>> {
+        crate::traverse::tree(&self.0, Order::Pre)
+    }
+
+    pub fn find<'tree, N>(&'tree self, range: Range) -> N
+    where
+        N: AstNode<'tree>,
+    {
+        let mut cursor = self.walk();
+
+        loop {
+            let index = cursor.goto_first_child_for_point(range.start_point);
+            if index.is_none() {
+                break;
+            }
+            if let Some(strongly_typed) = N::cast(cursor.node()) {
+                return strongly_typed;
+            }
+        }
+
+        panic!(
+            "Unable to find a {} node at {}..{}",
+            N::NAME,
+            range.start_point,
+            range.end_point
+        )
     }
 }
 

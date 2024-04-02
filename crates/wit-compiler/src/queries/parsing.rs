@@ -3,7 +3,6 @@ use im::OrdMap;
 use crate::{
     ast::AstNode,
     diagnostics::{Diagnostic, Diagnostics, Location},
-    traverse::Order,
     Db, Text, Tree,
 };
 
@@ -16,7 +15,7 @@ pub fn parse(db: &dyn Db, file: SourceFile) -> Ast {
     let root = tree.root_node();
 
     if root.has_error() {
-        for error_node in crate::traverse::tree(&tree, Order::Pre).filter(|node| node.is_error()) {
+        for error_node in tree.iter().filter(|node| node.is_error()) {
             if let Some(parent) = error_node.parent() {
                 let location = Location::new(file.path(db), error_node.range());
                 Diagnostics::push(db, Diagnostic::parse_error(parent.kind(), location));

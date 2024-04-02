@@ -28,16 +28,12 @@ impl Index {
     const MAX: u16 = u16::MAX - 1;
     pub const ZERO: Index = Index::new(0);
 
-    const fn new(raw: usize) -> Self {
+    pub(crate) const fn new(raw: usize) -> Self {
         assert!(raw <= Index::MAX as usize);
         match NonZeroU16::new(raw as u16 + 1) {
             Some(raw) => Index(raw),
             None => panic!(),
         }
-    }
-
-    pub const fn next(self) -> Index {
-        Index::new(self.raw() + 1)
     }
 
     pub const fn raw(self) -> usize {
@@ -120,6 +116,7 @@ pub enum InterfaceItem {
     Resource(Resource),
     TypeAlias(TypeAlias),
     Variant(Variant),
+    Record(Record),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -179,6 +176,20 @@ pub enum Builtin {
     Float64,
     Char,
     String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Record {
+    pub name: Text,
+    pub docs: Option<Text>,
+    pub fields: Vector<RecordField>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecordField {
+    pub name: Text,
+    pub docs: Option<Text>,
+    pub ty: Type,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -251,6 +262,5 @@ mod tests {
     fn ids() {
         assert_eq!(Index::ZERO.raw(), 0);
         assert_eq!(Index::new(42).raw(), 42);
-        assert_eq!(Index::new(42).next().raw(), 43);
     }
 }
