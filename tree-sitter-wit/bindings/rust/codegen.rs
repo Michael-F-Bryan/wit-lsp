@@ -31,27 +31,6 @@ fn rust_type_name(value: &str) -> Ident {
     }
 }
 
-fn _generate_token(token: &NodeType) -> TokenStream {
-    let tok = TOKENS.iter().find(|t| t.literal == token.kind).unwrap();
-    let ident = tok.type_name();
-    let literal = tok.literal;
-
-    let doc = match tok.kind {
-        TokenKind::Punctuation => format!("The `{literal}` symbol."),
-        TokenKind::Keyword => format!("The `{literal}` keyword."),
-    };
-
-    let ast_node_impl = ast_node_impl(&ident, literal);
-
-    quote! {
-        #[doc = #doc]
-        #[derive(Debug, Copy, Clone, PartialEq)]
-        pub struct #ident<'tree>(tree_sitter::Node<'tree>);
-
-        #ast_node_impl
-    }
-}
-
 fn ast_node_impl(ident: &Ident, kind: &str) -> TokenStream {
     quote! {
         impl<'tree> super::AstNode<'tree> for #ident<'tree> {
