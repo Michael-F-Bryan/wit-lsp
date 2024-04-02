@@ -60,7 +60,7 @@ fn folding_range_impl(root: Node<'_>, src: &str) -> Vector<FoldingRange> {
         .matches(&query, root, src.as_bytes())
         .flat_map(|m| {
             let kind = match capture_names[m.pattern_index] {
-                "comment" => Some(FoldingRangeKind::Comment),
+                "comments" => Some(FoldingRangeKind::Comment),
                 "imports" => Some(FoldingRangeKind::Imports),
                 "normal" => None,
                 other => unreachable!(
