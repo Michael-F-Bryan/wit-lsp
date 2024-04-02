@@ -72,6 +72,7 @@ TL;DR:
 3. Let the automation do everything else
 
 [conv]: https://www.conventionalcommits.org/en/v1.0.0/
+[fast-rust-builds]: https://matklad.github.io/2021/09/04/fast-rust-builds.html
 [ls]: https://code.visualstudio.com/api/language-extensions/language-server-extension-guide
 [release-please]: https://github.com/googleapis/release-please
 [tree-sitter]: https://tree-sitter.github.io/tree-sitter/

@@ -93,7 +93,7 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
       - name: Generate Code Coverage
-        run: cargo llvm-cov nextest --html --workspace --no-fail-fast --include-ffi --show-instantiations
+        run: cargo llvm-cov nextest --html --workspace --no-fail-fast --show-instantiations
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
