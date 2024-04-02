@@ -1,0 +1,29 @@
+---
+source: crates/wit-compiler/src/queries/lowering.rs
+info:
+  src: "interface i { type x = option<u32>; }"
+  ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (typedef_item (type_item name: (identifier) ty: (ty (option (ty (builtins))))))))))"
+---
+Package {
+    decl: None,
+    worlds: [],
+    interfaces: [
+        Interface {
+            name: i,
+            docs: None,
+            items: [
+                TypeAlias(
+                    TypeAlias {
+                        name: x,
+                        docs: None,
+                        ty: Option(
+                            Builtin(
+                                U32,
+                            ),
+                        ),
+                    },
+                ),
+            ],
+        },
+    ],
+}

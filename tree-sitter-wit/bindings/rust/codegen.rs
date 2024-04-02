@@ -114,9 +114,11 @@ fn generate_helper_trait_impls(ident: &Ident, node: &NodeType) -> TokenStream {
 
     if node.fields.contains_key("name") {
         tokens.extend(quote! {
-            impl<'tree> super::HasIdent<'tree> for #ident<'tree> {
-                fn identifier(self) -> Option<Identifier<'tree>> {
-                    self.name()
+            impl super::HasIdent for #ident<'_> {
+                fn identifier(self, src: &str) -> Option<&str> {
+                    let node = self.name()?.0;
+                    let ident = node.utf8_text(src.as_bytes()).unwrap();
+                    Some(ident)
                 }
             }
         });

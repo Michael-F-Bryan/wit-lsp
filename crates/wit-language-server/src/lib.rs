@@ -1,3 +1,5 @@
+#![recursion_limit = "256"]
+
 mod database;
 mod ops;
 mod server;

@@ -1,0 +1,9 @@
+---
+source: crates/wit-compiler/src/queries/lowering.rs
+expression: got
+---
+Package {
+    decl: None,
+    worlds: [],
+    interfaces: [],
+}

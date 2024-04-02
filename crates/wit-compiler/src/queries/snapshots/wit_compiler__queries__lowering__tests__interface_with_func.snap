@@ -1,0 +1,31 @@
+---
+source: crates/wit-compiler/src/queries/lowering.rs
+expression: got
+---
+Package {
+    decl: None,
+    worlds: [],
+    interfaces: [
+        Interface {
+            name: console,
+            docs: None,
+            items: [
+                Func(
+                    FuncItem {
+                        name: log,
+                        docs: None,
+                        params: [
+                            Parameter {
+                                name: message,
+                                ty: Builtin(
+                                    String,
+                                ),
+                            },
+                        ],
+                        return_value: None,
+                    },
+                ),
+            ],
+        },
+    ],
+}

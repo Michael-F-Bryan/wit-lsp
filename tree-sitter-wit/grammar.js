@@ -283,7 +283,7 @@ module.exports = grammar({
         attribute: $ => choice($.doc_comment),
 
         semver: $ => /(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?/,
-        identifier: $ => /%?\w[\w\d_-]*/,
+        identifier: $ => /%?[a-zA-Z][a-zA-Z0-9-]*/,
         doc_comment: $ => seq(
             token.immediate("///"),
             token.immediate(/[ \t\v]*/),

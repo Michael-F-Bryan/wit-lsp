@@ -45,9 +45,11 @@ impl<'tree> BorrowedHandle<'tree> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
-impl<'tree> super::HasIdent<'tree> for BorrowedHandle<'tree> {
-    fn identifier(self) -> Option<Identifier<'tree>> {
-        self.name()
+impl super::HasIdent for BorrowedHandle<'_> {
+    fn identifier(self, src: &str) -> Option<&str> {
+        let node = self.name()?.0;
+        let ident = node.utf8_text(src.as_bytes()).unwrap();
+        Some(ident)
     }
 }
 impl<'tree> super::AstNode<'tree> for BorrowedHandle<'tree> {
@@ -115,9 +117,11 @@ impl<'tree> EnumCase<'tree> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
-impl<'tree> super::HasIdent<'tree> for EnumCase<'tree> {
-    fn identifier(self) -> Option<Identifier<'tree>> {
-        self.name()
+impl super::HasIdent for EnumCase<'_> {
+    fn identifier(self, src: &str) -> Option<&str> {
+        let node = self.name()?.0;
+        let ident = node.utf8_text(src.as_bytes()).unwrap();
+        Some(ident)
     }
 }
 impl<'tree> super::HasAttr<'tree> for EnumCase<'tree> {
@@ -163,9 +167,11 @@ impl<'tree> EnumItem<'tree> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
-impl<'tree> super::HasIdent<'tree> for EnumItem<'tree> {
-    fn identifier(self) -> Option<Identifier<'tree>> {
-        self.name()
+impl super::HasIdent for EnumItem<'_> {
+    fn identifier(self, src: &str) -> Option<&str> {
+        let node = self.name()?.0;
+        let ident = node.utf8_text(src.as_bytes()).unwrap();
+        Some(ident)
     }
 }
 impl<'tree> super::HasAttr<'tree> for EnumItem<'tree> {
@@ -225,9 +231,11 @@ impl<'tree> ExportedItem<'tree> {
             .next()
     }
 }
-impl<'tree> super::HasIdent<'tree> for ExportedItem<'tree> {
-    fn identifier(self) -> Option<Identifier<'tree>> {
-        self.name()
+impl super::HasIdent for ExportedItem<'_> {
+    fn identifier(self, src: &str) -> Option<&str> {
+        let node = self.name()?.0;
+        let ident = node.utf8_text(src.as_bytes()).unwrap();
+        Some(ident)
     }
 }
 impl<'tree> super::AstNode<'tree> for ExportedItem<'tree> {
@@ -304,9 +312,11 @@ impl<'tree> FlagsCase<'tree> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
-impl<'tree> super::HasIdent<'tree> for FlagsCase<'tree> {
-    fn identifier(self) -> Option<Identifier<'tree>> {
-        self.name()
+impl super::HasIdent for FlagsCase<'_> {
+    fn identifier(self, src: &str) -> Option<&str> {
+        let node = self.name()?.0;
+        let ident = node.utf8_text(src.as_bytes()).unwrap();
+        Some(ident)
     }
 }
 impl<'tree> super::HasAttr<'tree> for FlagsCase<'tree> {
@@ -352,9 +362,11 @@ impl<'tree> FlagsItem<'tree> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
-impl<'tree> super::HasIdent<'tree> for FlagsItem<'tree> {
-    fn identifier(self) -> Option<Identifier<'tree>> {
-        self.name()
+impl super::HasIdent for FlagsItem<'_> {
+    fn identifier(self, src: &str) -> Option<&str> {
+        let node = self.name()?.0;
+        let ident = node.utf8_text(src.as_bytes()).unwrap();
+        Some(ident)
     }
 }
 impl<'tree> super::HasAttr<'tree> for FlagsItem<'tree> {
@@ -458,9 +470,11 @@ impl<'tree> FuncItem<'tree> {
         self.0.child_by_field_name("ty").and_then(<FuncType as super::AstNode>::cast)
     }
 }
-impl<'tree> super::HasIdent<'tree> for FuncItem<'tree> {
-    fn identifier(self) -> Option<Identifier<'tree>> {
-        self.name()
+impl super::HasIdent for FuncItem<'_> {
+    fn identifier(self, src: &str) -> Option<&str> {
+        let node = self.name()?.0;
+        let ident = node.utf8_text(src.as_bytes()).unwrap();
+        Some(ident)
     }
 }
 impl<'tree> super::HasAttr<'tree> for FuncItem<'tree> {
@@ -574,9 +588,11 @@ impl<'tree> ImportedItem<'tree> {
             .next()
     }
 }
-impl<'tree> super::HasIdent<'tree> for ImportedItem<'tree> {
-    fn identifier(self) -> Option<Identifier<'tree>> {
-        self.name()
+impl super::HasIdent for ImportedItem<'_> {
+    fn identifier(self, src: &str) -> Option<&str> {
+        let node = self.name()?.0;
+        let ident = node.utf8_text(src.as_bytes()).unwrap();
+        Some(ident)
     }
 }
 impl<'tree> super::AstNode<'tree> for ImportedItem<'tree> {
@@ -649,9 +665,11 @@ impl<'tree> IncludeNamesItem<'tree> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
-impl<'tree> super::HasIdent<'tree> for IncludeNamesItem<'tree> {
-    fn identifier(self) -> Option<Identifier<'tree>> {
-        self.name()
+impl super::HasIdent for IncludeNamesItem<'_> {
+    fn identifier(self, src: &str) -> Option<&str> {
+        let node = self.name()?.0;
+        let ident = node.utf8_text(src.as_bytes()).unwrap();
+        Some(ident)
     }
 }
 impl<'tree> super::AstNode<'tree> for IncludeNamesItem<'tree> {
@@ -715,9 +733,11 @@ impl<'tree> InterfaceItem<'tree> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
-impl<'tree> super::HasIdent<'tree> for InterfaceItem<'tree> {
-    fn identifier(self) -> Option<Identifier<'tree>> {
-        self.name()
+impl super::HasIdent for InterfaceItem<'_> {
+    fn identifier(self, src: &str) -> Option<&str> {
+        let node = self.name()?.0;
+        let ident = node.utf8_text(src.as_bytes()).unwrap();
+        Some(ident)
     }
 }
 impl<'tree> super::HasAttr<'tree> for InterfaceItem<'tree> {
@@ -818,9 +838,11 @@ impl<'tree> NamedType<'tree> {
         self.0.child_by_field_name("ty").and_then(<Ty as super::AstNode>::cast)
     }
 }
-impl<'tree> super::HasIdent<'tree> for NamedType<'tree> {
-    fn identifier(self) -> Option<Identifier<'tree>> {
-        self.name()
+impl super::HasIdent for NamedType<'_> {
+    fn identifier(self, src: &str) -> Option<&str> {
+        let node = self.name()?.0;
+        let ident = node.utf8_text(src.as_bytes()).unwrap();
+        Some(ident)
     }
 }
 impl<'tree> super::AstNode<'tree> for NamedType<'tree> {
@@ -863,9 +885,11 @@ impl<'tree> OwnedHandle<'tree> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
-impl<'tree> super::HasIdent<'tree> for OwnedHandle<'tree> {
-    fn identifier(self) -> Option<Identifier<'tree>> {
-        self.name()
+impl super::HasIdent for OwnedHandle<'_> {
+    fn identifier(self, src: &str) -> Option<&str> {
+        let node = self.name()?.0;
+        let ident = node.utf8_text(src.as_bytes()).unwrap();
+        Some(ident)
     }
 }
 impl<'tree> super::AstNode<'tree> for OwnedHandle<'tree> {
@@ -1006,9 +1030,11 @@ impl<'tree> RecordField<'tree> {
         self.0.child_by_field_name("ty").and_then(<Ty as super::AstNode>::cast)
     }
 }
-impl<'tree> super::HasIdent<'tree> for RecordField<'tree> {
-    fn identifier(self) -> Option<Identifier<'tree>> {
-        self.name()
+impl super::HasIdent for RecordField<'_> {
+    fn identifier(self, src: &str) -> Option<&str> {
+        let node = self.name()?.0;
+        let ident = node.utf8_text(src.as_bytes()).unwrap();
+        Some(ident)
     }
 }
 impl<'tree> super::HasAttr<'tree> for RecordField<'tree> {
@@ -1054,9 +1080,11 @@ impl<'tree> RecordItem<'tree> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
-impl<'tree> super::HasIdent<'tree> for RecordItem<'tree> {
-    fn identifier(self) -> Option<Identifier<'tree>> {
-        self.name()
+impl super::HasIdent for RecordItem<'_> {
+    fn identifier(self, src: &str) -> Option<&str> {
+        let node = self.name()?.0;
+        let ident = node.utf8_text(src.as_bytes()).unwrap();
+        Some(ident)
     }
 }
 impl<'tree> super::HasAttr<'tree> for RecordItem<'tree> {
@@ -1138,9 +1166,11 @@ impl<'tree> ResourceItem<'tree> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
-impl<'tree> super::HasIdent<'tree> for ResourceItem<'tree> {
-    fn identifier(self) -> Option<Identifier<'tree>> {
-        self.name()
+impl super::HasIdent for ResourceItem<'_> {
+    fn identifier(self, src: &str) -> Option<&str> {
+        let node = self.name()?.0;
+        let ident = node.utf8_text(src.as_bytes()).unwrap();
+        Some(ident)
     }
 }
 impl<'tree> super::HasAttr<'tree> for ResourceItem<'tree> {
@@ -1281,9 +1311,11 @@ impl<'tree> StaticMethod<'tree> {
         super::children(self.0).filter_map(<FuncType as super::AstNode<'_>>::cast).next()
     }
 }
-impl<'tree> super::HasIdent<'tree> for StaticMethod<'tree> {
-    fn identifier(self) -> Option<Identifier<'tree>> {
-        self.name()
+impl super::HasIdent for StaticMethod<'_> {
+    fn identifier(self, src: &str) -> Option<&str> {
+        let node = self.name()?.0;
+        let ident = node.utf8_text(src.as_bytes()).unwrap();
+        Some(ident)
     }
 }
 impl<'tree> super::HasAttr<'tree> for StaticMethod<'tree> {
@@ -1440,9 +1472,11 @@ impl<'tree> TypeItem<'tree> {
         self.0.child_by_field_name("ty").and_then(<Ty as super::AstNode>::cast)
     }
 }
-impl<'tree> super::HasIdent<'tree> for TypeItem<'tree> {
-    fn identifier(self) -> Option<Identifier<'tree>> {
-        self.name()
+impl super::HasIdent for TypeItem<'_> {
+    fn identifier(self, src: &str) -> Option<&str> {
+        let node = self.name()?.0;
+        let ident = node.utf8_text(src.as_bytes()).unwrap();
+        Some(ident)
     }
 }
 impl<'tree> super::HasAttr<'tree> for TypeItem<'tree> {
@@ -1541,9 +1575,11 @@ impl<'tree> UseNamesItem<'tree> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
-impl<'tree> super::HasIdent<'tree> for UseNamesItem<'tree> {
-    fn identifier(self) -> Option<Identifier<'tree>> {
-        self.name()
+impl super::HasIdent for UseNamesItem<'_> {
+    fn identifier(self, src: &str) -> Option<&str> {
+        let node = self.name()?.0;
+        let ident = node.utf8_text(src.as_bytes()).unwrap();
+        Some(ident)
     }
 }
 impl<'tree> super::AstNode<'tree> for UseNamesItem<'tree> {
@@ -1627,9 +1663,11 @@ impl<'tree> VariantCase<'tree> {
         self.0.child_by_field_name("ty").and_then(<Ty as super::AstNode>::cast)
     }
 }
-impl<'tree> super::HasIdent<'tree> for VariantCase<'tree> {
-    fn identifier(self) -> Option<Identifier<'tree>> {
-        self.name()
+impl super::HasIdent for VariantCase<'_> {
+    fn identifier(self, src: &str) -> Option<&str> {
+        let node = self.name()?.0;
+        let ident = node.utf8_text(src.as_bytes()).unwrap();
+        Some(ident)
     }
 }
 impl<'tree> super::HasAttr<'tree> for VariantCase<'tree> {
@@ -1675,9 +1713,11 @@ impl<'tree> VariantItem<'tree> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
-impl<'tree> super::HasIdent<'tree> for VariantItem<'tree> {
-    fn identifier(self) -> Option<Identifier<'tree>> {
-        self.name()
+impl super::HasIdent for VariantItem<'_> {
+    fn identifier(self, src: &str) -> Option<&str> {
+        let node = self.name()?.0;
+        let ident = node.utf8_text(src.as_bytes()).unwrap();
+        Some(ident)
     }
 }
 impl<'tree> super::HasAttr<'tree> for VariantItem<'tree> {
@@ -1723,9 +1763,11 @@ impl<'tree> WorldItem<'tree> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
 }
-impl<'tree> super::HasIdent<'tree> for WorldItem<'tree> {
-    fn identifier(self) -> Option<Identifier<'tree>> {
-        self.name()
+impl super::HasIdent for WorldItem<'_> {
+    fn identifier(self, src: &str) -> Option<&str> {
+        let node = self.name()?.0;
+        let ident = node.utf8_text(src.as_bytes()).unwrap();
+        Some(ident)
     }
 }
 impl<'tree> super::HasAttr<'tree> for WorldItem<'tree> {

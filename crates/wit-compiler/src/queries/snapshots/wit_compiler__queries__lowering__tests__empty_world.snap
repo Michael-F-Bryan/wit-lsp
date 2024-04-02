@@ -1,0 +1,15 @@
+---
+source: crates/wit-compiler/src/queries/lowering.rs
+expression: got
+---
+Package {
+    decl: None,
+    worlds: [
+        World {
+            name: empty,
+            docs: None,
+            items: [],
+        },
+    ],
+    interfaces: [],
+}

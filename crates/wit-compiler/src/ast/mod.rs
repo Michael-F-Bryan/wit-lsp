@@ -3,6 +3,7 @@
 #[rustfmt::skip]
 mod generated;
 mod traits;
+mod hand_written;
 
 use tree_sitter::Node;
 

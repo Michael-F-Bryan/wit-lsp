@@ -13,16 +13,16 @@ pub trait AstNode<'tree>: 'tree {
     fn syntax(&self) -> Node<'tree>;
 }
 
-pub trait HasIdent<'tree> {
-    fn identifier(self) -> Option<super::Identifier<'tree>>;
+pub trait HasIdent {
+    fn identifier(self, src: &str) -> Option<&str>;
 }
 
-impl<'tree, A> HasIdent<'tree> for &A
+impl<A> HasIdent for &A
 where
-    A: HasIdent<'tree> + Clone,
+    A: HasIdent + Clone,
 {
-    fn identifier(self) -> Option<super::Identifier<'tree>> {
-        self.clone().identifier()
+    fn identifier(self, src: &str) -> Option<&str> {
+        self.clone().identifier(src)
     }
 }
 

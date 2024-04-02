@@ -1,0 +1,34 @@
+---
+source: crates/wit-compiler/src/queries/lowering.rs
+expression: got
+---
+Package {
+    decl: None,
+    worlds: [],
+    interfaces: [
+        Interface {
+            name: i,
+            docs: None,
+            items: [
+                TypeAlias(
+                    TypeAlias {
+                        name: x,
+                        docs: None,
+                        ty: Result {
+                            ok: Some(
+                                Builtin(
+                                    Boolean,
+                                ),
+                            ),
+                            err: Some(
+                                Builtin(
+                                    String,
+                                ),
+                            ),
+                        },
+                    },
+                ),
+            ],
+        },
+    ],
+}

@@ -1477,6 +1477,7 @@ dependencies = [
  "im",
  "insta",
  "salsa-2022",
+ "serde",
  "tracing",
  "tree-sitter",
  "tree-sitter-wit",

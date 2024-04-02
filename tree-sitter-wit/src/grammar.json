@@ -2095,7 +2095,7 @@
     },
     "identifier": {
       "type": "PATTERN",
-      "value": "%?\\w[\\w\\d_-]*"
+      "value": "%?[a-zA-Z][a-zA-Z0-9-]*"
     },
     "doc_comment": {
       "type": "SEQ",

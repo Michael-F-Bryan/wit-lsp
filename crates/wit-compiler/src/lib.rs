@@ -1,3 +1,5 @@
+#![recursion_limit = "256"]
+
 pub mod ast;
 mod compiler;
 pub mod diagnostics;
@@ -16,14 +18,11 @@ pub use crate::{compiler::Compiler, text::Text, tree::Tree};
 pub struct Jar(
     crate::diagnostics::Diagnostics,
     crate::queries::Ast,
-    crate::queries::Items,
     crate::queries::parse,
     crate::queries::selection_ranges,
     crate::queries::SourceFile,
     crate::queries::lower,
     crate::queries::Workspace,
-    crate::hir::Interface,
-    crate::hir::World,
 );
 
 /// The trait that all [`salsa::Database`] implementations must implement to

@@ -1,3 +1,5 @@
+#![recursion_limit = "256"]
+
 use std::{future::Future, io::IsTerminal, net::SocketAddr, pin::Pin};
 
 use clap::Parser;

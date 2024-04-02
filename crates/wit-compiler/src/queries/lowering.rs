@@ -16,31 +16,34 @@ use crate::{
 /// corresponding [`Diagnostic`] will be emitted.
 #[salsa::tracked]
 #[tracing::instrument(level = "debug", skip_all, fields(file = %file.path(db)))]
-pub fn lower(db: &dyn Db, _ws: Workspace, file: SourceFile) -> Items {
+pub fn lower(db: &dyn Db, _ws: Workspace, file: SourceFile) -> hir::Package {
     let ast = crate::queries::parse(db, file);
     let src = file.contents(db);
     let root = ast.source_file(db);
 
-    let mut ctx = Context::new(db, &src, file);
+    let mut ctx = State::new(db, &src, file);
     ctx.process_file(root);
 
-    ctx.finish(db)
+    ctx.finish()
 }
 
-struct Context<'a> {
+/// A big bundle of state used while lowering.
+struct State<'a> {
     db: &'a dyn Db,
     src: &'a str,
     file: SourceFile,
+    decl: Option<hir::PackageDeclaration>,
     interfaces: OrdMap<Text, hir::Interface>,
     worlds: OrdMap<Text, hir::World>,
     names: OrdMap<Text, NamedItem<'a>>,
 }
 
-impl<'a> Context<'a> {
+impl<'a> State<'a> {
     pub fn new(db: &'a dyn Db, src: &'a str, file: SourceFile) -> Self {
-        Context {
+        State {
             db,
             file,
+            decl: None,
             interfaces: OrdMap::default(),
             names: OrdMap::new(),
             src,
@@ -49,12 +52,10 @@ impl<'a> Context<'a> {
     }
 
     fn process_file(&mut self, root: ast::SourceFile<'a>) {
+        self.decl = self.lower_package_decl(root);
+
         for item in root.iter_top_level_items().flat_map(named_item) {
-            let name = item
-                .ident()
-                .syntax()
-                .utf8_text(self.src.as_bytes())
-                .expect("syntax error");
+            let name = item.ident().value(self.src);
 
             match item {
                 NamedItem::World(node) => {
@@ -117,21 +118,30 @@ impl<'a> Context<'a> {
         Location::new(self.file.path(db), node.range())
     }
 
-    fn finish(self, db: &dyn Db) -> Items {
-        let Context {
-            interfaces, worlds, ..
+    fn finish(self) -> hir::Package {
+        let State {
+            interfaces,
+            worlds,
+            decl,
+            ..
         } = self;
-        Items::new(db, interfaces, worlds)
+
+        hir::Package {
+            decl,
+            interfaces: interfaces.into_iter().map(|(_, i)| i).collect(),
+            worlds: worlds.into_iter().map(|(_, w)| w).collect(),
+        }
     }
 
     fn lower_world(&mut self, world: ast::WorldItem<'_>) -> Option<hir::World> {
         let docs = world.docs(self.src);
+        let name = world.identifier(self.src)?.into();
         let items = world
             .iter_items()
             .filter_map(|item| self.lower_world_item(item))
             .collect();
 
-        Some(hir::World::new(self.db, docs, items))
+        Some(hir::World { name, docs, items })
     }
 
     fn lower_world_item(&mut self, item: ast::WorldItems<'_>) -> Option<hir::WorldItem> {
@@ -177,13 +187,14 @@ impl<'a> Context<'a> {
 
     fn lower_interface(&mut self, interface: ast::InterfaceItem<'_>) -> Option<hir::Interface> {
         let docs = interface.docs(self.src);
+        let name = interface.identifier(self.src)?.into();
 
         let items = interface
             .iter_items()
             .filter_map(|item| self.lower_interface_item(item))
             .collect();
 
-        Some(hir::Interface::new(self.db, docs, items))
+        Some(hir::Interface { name, docs, items })
     }
 
     fn lower_interface_item(
@@ -194,7 +205,7 @@ impl<'a> Context<'a> {
             self.lower_func_item(node).map(hir::InterfaceItem::Func)
         } else if let Some(node) = item.typedef_item() {
             self.lower_type_definition(node)
-        } else if let Some(node) = item.use_item() {
+        } else if let Some(_node) = item.use_item() {
             todo!()
         } else {
             None
@@ -202,17 +213,16 @@ impl<'a> Context<'a> {
     }
 
     fn lower_type_definition(&self, node: ast::TypedefItem<'_>) -> Option<hir::InterfaceItem> {
-        todo!()
+        if let Some(type_item) = node.type_item() {
+            self.lower_type_item(type_item)
+        } else {
+            None
+        }
     }
 
     fn lower_func_item(&self, node: ast::FuncItem<'_>) -> Option<hir::FuncItem> {
         let docs = node.docs(self.src);
-        let name = node
-            .identifier()?
-            .syntax()
-            .utf8_text(self.src.as_bytes())
-            .unwrap()
-            .into();
+        let name = node.identifier(self.src)?.into();
 
         let ty = node.ty()?;
         let params = self.lower_params(ty.params()?)?;
@@ -232,12 +242,7 @@ impl<'a> Context<'a> {
         let mut params = Vector::new();
 
         for param in ty.iter_params() {
-            let name = param
-                .name()?
-                .syntax()
-                .utf8_text(self.src.as_bytes())
-                .expect("syntax error")
-                .into();
+            let name = param.name()?.value(self.src).into();
             let ty = self.lower_type(param.ty()?)?;
             params.push_back(hir::Parameter { name, ty });
         }
@@ -245,7 +250,7 @@ impl<'a> Context<'a> {
         Some(params)
     }
 
-    fn lower_return_type(&self, node: ast::ResultList<'_>) -> Option<hir::ReturnValue> {
+    fn lower_return_type(&self, _node: ast::ResultList<'_>) -> Option<hir::ReturnValue> {
         todo!()
     }
 
@@ -270,8 +275,7 @@ impl<'a> Context<'a> {
     }
 
     fn lower_builtin(&self, builtin: ast::Builtins<'_>) -> Option<hir::Type> {
-        let node = builtin.syntax();
-        let name = node.utf8_text(self.src.as_bytes()).expect("syntax error");
+        let name = builtin.value(self.src);
 
         match name {
             "u8" => Some(hir::Type::Builtin(hir::Builtin::U8)),
@@ -288,36 +292,98 @@ impl<'a> Context<'a> {
             "bool" => Some(hir::Type::Builtin(hir::Builtin::Boolean)),
             "string" => Some(hir::Type::Builtin(hir::Builtin::String)),
             other => {
-                unreachable!("Unknown builtin type, \"{other}\" at {}", node.to_sexp())
+                unreachable!(
+                    "Unknown builtin type, \"{other}\" at {}",
+                    builtin.syntax().to_sexp()
+                )
             }
         }
     }
 
     fn lower_handle(&self, handle: ast::Handle<'_>) -> Option<hir::Type> {
-        todo!()
+        if let Some(borrowed) = handle.borrowed_handle() {
+            let _name = borrowed.name()?.value(self.src);
+            todo!()
+        } else if let Some(owned) = handle.owned_handle() {
+            let _name = owned.name()?.value(self.src);
+            todo!()
+        } else {
+            None
+        }
     }
 
     fn lower_list(&self, list: ast::List<'_>) -> Option<hir::Type> {
-        todo!()
+        let element_type = list.ty().and_then(|ty| self.lower_type(ty))?;
+        Some(hir::Type::List(Box::new(element_type)))
     }
 
     fn lower_option(&self, option: ast::Option_<'_>) -> Option<hir::Type> {
-        todo!()
+        let element_type = option.ty().and_then(|ty| self.lower_type(ty))?;
+        Some(hir::Type::Option(Box::new(element_type)))
     }
 
     fn lower_result(&self, result: ast::Result_<'_>) -> Option<hir::Type> {
-        todo!()
+        let ok = result
+            .ok_opt()
+            .and_then(|ty| self.lower_type(ty))
+            .map(Box::new);
+        let err = result
+            .err_opt()
+            .and_then(|ty| self.lower_type(ty))
+            .map(Box::new);
+        Some(hir::Type::Result { ok, err })
     }
 
     fn lower_tuple(&self, tuple: ast::Tuple<'_>) -> Option<hir::Type> {
-        todo!()
+        let mut element_types = Vector::new();
+
+        for ty in tuple.iter_tys() {
+            element_types.push_back(self.lower_type(ty)?);
+        }
+
+        Some(hir::Type::Tuple(element_types))
     }
 
     fn lower_user_defined_type(
         &self,
         user_defined_type: ast::UserDefinedType<'_>,
     ) -> Option<hir::Type> {
+        let text = user_defined_type.value(self.src);
+        eprintln!("{:?} => {}", text, user_defined_type.syntax().to_sexp());
         todo!()
+    }
+
+    fn lower_type_item(&self, type_item: ast::TypeItem<'_>) -> Option<hir::InterfaceItem> {
+        let docs = type_item.docs(self.src);
+        let name = type_item.identifier(self.src)?.into();
+        let ty = self.lower_type(type_item.ty()?)?;
+
+        Some(hir::InterfaceItem::TypeAlias(hir::TypeAlias {
+            docs,
+            name,
+            ty,
+        }))
+    }
+
+    fn lower_package_decl(&self, root: ast::SourceFile<'_>) -> Option<hir::PackageDeclaration> {
+        let node = root.package_opt()?;
+        let docs = node.docs(self.src);
+
+        let package_name = node.fully_qualified_package_name()?;
+        let package = package_name.package()?.identifier()?.value(self.src).into();
+        let path = package_name
+            .path()?
+            .iter_identifiers()
+            .map(|p| p.value(self.src).into())
+            .collect();
+        let version = package_name.version_opt().map(|s| s.value(self.src).into());
+
+        Some(hir::PackageDeclaration {
+            docs,
+            package,
+            path,
+            version,
+        })
     }
 }
 
@@ -337,12 +403,6 @@ fn named_item(item: ast::TopLevelItem<'_>) -> Option<NamedItem<'_>> {
     } else {
         unreachable!("Unknown top level item node: {}", node.kind());
     }
-}
-
-#[salsa::tracked]
-pub struct Items {
-    pub interfaces: OrdMap<Text, hir::Interface>,
-    pub worlds: OrdMap<Text, hir::World>,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -399,78 +459,16 @@ impl<'a> From<ast::InterfaceItem<'a>> for NamedItem<'a> {
 
 #[cfg(test)]
 mod tests {
-    use im::Vector;
-
     use crate::Compiler;
 
     use super::*;
 
-    macro_rules! world_assertions {
-        (
-            $(
-                $name:literal : {
-                    $(docs: $docs:literal,)?
-                    items: [$($items:expr),* $(,)?] $(,)?
-                }
-            ),*
-            $(,)?
-        ) => {
-            |db: &dyn Db, mut worlds: OrdMap<Text, hir::World>| {
-                $(
-                    let world = worlds.remove($name)
-                        .unwrap_or_else(|| panic!("expected a {} world in {worlds:#?}", stringify!($name)));
-                    let mut expected_docs = None;
-                    $(
-                        expected_docs = Some($docs.into());
-                    )*
-
-                    assert_eq!(world.docs(db), expected_docs);
-                    assert_eq!(world.items(db), Vector::from_iter([$($items),*]));
-                )*
-
-                assert!(worlds.is_empty(), "Leftover worlds: {worlds:#?}");
-            }
-        };
-    }
-
-    macro_rules! interface_assertions {
-        (
-            $(
-                $interface_name:literal : {
-                    $(docs: $docs:literal,)?
-                    items: [$($items:expr),* $(,)?] $(,)?
-                }
-            ),*
-            $(,)?
-        ) => {
-            |db: &dyn Db, mut interfaces: OrdMap<Text, hir::Interface>| {
-                $(
-                    let interface = interfaces.remove($interface_name)
-                        .unwrap_or_else(|| panic!("expected a {} interface in {interfaces:#?}", stringify!($interface_name)));
-                    let mut expected_docs = None;
-                    $(
-                        expected_docs = Some($docs.into());
-                    )*
-
-                    assert_eq!(interface.docs(db), expected_docs);
-                    assert_eq!(interface.items(db), Vector::from_iter([$($items),*]));
-                )*
-
-                assert!(interfaces.is_empty(), "Leftover interfaces: {interfaces:#?}");
-            }
-        };
-    }
-
-    macro_rules! lowering_tests {
+    macro_rules! lowering_test {
         (
             $(
                 $( #[$meta:meta] )*
-                $name:ident : $contents:literal => {
-                    interfaces: { $($interface_value:tt)* },
-                    worlds: { $($world_value:tt)* } $(,)?
-                }
-            ),*
-            $(,)?
+                $name:ident : $contents:literal
+            ),* $(,)?
         ) => {
             $(
                 #[test]
@@ -486,84 +484,59 @@ mod tests {
                     );
                     let ws = Workspace::new(&db, [(file.path(&db), file)].into_iter().collect());
 
+                    let ast = crate::queries::parse(&db, file);
+                    eprintln!("{}", ast.root_node(&db).to_sexp());
+
                     let got = super::lower(&db, ws, file);
                     let diags = super::lower::accumulated::<Diagnostics>(&db, ws, file);
 
                     assert!(diags.is_empty(), "{diags:#?}");
 
-                    let assert = interface_assertions!($($interface_value)*);
-                    assert(&db, got.interfaces(&db));
+                    let mut settings = insta::Settings::clone_current();
 
-                    let assert = world_assertions!($($world_value)*);
-                    assert(&db, got.worlds(&db));
+                    #[derive(serde::Serialize)]
+                    struct Info<'a> {
+                        src: &'a str,
+                        ast: String,
+                    }
+                    settings.set_info(&Info {
+                        src: $contents,
+                        ast: ast.root_node(&db).to_sexp(),
+                    });
+                    settings.set_omit_expression(true);
+
+                    settings.bind(|| insta::assert_debug_snapshot!(got));
                 }
             )*
         };
     }
 
-    lowering_tests! {
-        lower_an_empty_file: "" => { interfaces: {}, worlds: {} },
-        empty_interface: "interface empty {}" => {
-            interfaces: {
-                "empty": {items: []},
-            },
-            worlds: {},
-        },
-        interface_with_func: "interface console { log: func(message: string); }" => {
-            interfaces: {
-                "console": {items: [
-                    hir::InterfaceItem::Func(hir::FuncItem {
-                        docs: None,
-                        name: "log".into(),
-                        params: vec![
-                            hir::Parameter {
-                                name: "message".into(),
-                                ty: hir::Type::Builtin(hir::Builtin::String),
-                            },
-                        ].into(),
-                        return_value: None,
-                    }),
-                ]},
-            },
-            worlds: {},
-        },
-        empty_world: "world empty {}" => {
-            interfaces: { },
-            worlds: {
-                "empty": {items: []},
-            },
-        },
+    lowering_test! {
+        lower_an_empty_file: "",
+        lower_package_with_docs: "/// This is a package.\npackage wasi:filesystem@1.2.3;",
+        empty_interface: "interface empty {}" ,
+        interface_with_func: "interface console { log: func(message: string); }",
+        interface_with_builtin_type: "interface i { type x = u32; }",
+        empty_tuple: "interface i { type x = tuple<>; }",
+        tuple_with_single_element: "interface i { type x = tuple<string>; }",
+        tuple_with_multiple_elements: "interface i { type x = tuple<string, bool, u32>; }",
+        result_with_ok_and_error: "interface i { type x = result<bool, string>; }",
+        result_with_empty_ok: "interface i { type x = result<_>; }",
+        bare_result: "interface i { type x = result; }",
+        result_with_just_error: "interface i { type x = result<_, string>; }",
+        list: "interface i { type x = list<u32>; }",
+        option: "interface i { type x = option<u32>; }",
+
+        empty_world: "world empty {}",
         #[ignore]
-        world_with_function_export: "world console { export run: func(); }" => {
-            interfaces: { },
-            worlds: {
-                "console": {items: [
-                    hir::WorldItem::Export(hir::ExposableItem::Inline {
-                        name: "run".into(),
-                        value: hir::ExternType::Function(hir::FuncItem {
-                            docs: None,
-                            name: "run".into(),
-                            params: Vector::new(),
-                            return_value: None,
-                        }),
-                    }),
-                ]},
-            },
-        },
+        world_with_function_export: "world console { export run: func(); }",
+        #[ignore]
+        world_with_external_export: "world with-import {
+            export wasi:filesystem/filesystem;
+        }",
         #[ignore]
         world_with_external_import: "world with-import {
             import wasi:filesystem/filesystem;
-        }" => {
-            interfaces: { },
-            worlds: {
-                "with-import": {items: [
-                    hir::WorldItem::Import(hir::ExposableItem::Named(hir::Path {
-                        namespace: Some("wasi".into()),
-                        path: "filesystem/filesystem".into(),
-                    }))
-                ]},
-            },
-        },
-
+        }"
     }
 }

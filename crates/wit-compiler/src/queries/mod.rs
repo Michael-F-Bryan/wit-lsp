@@ -5,7 +5,7 @@ mod parsing;
 mod selection;
 
 pub use self::{
-    lowering::{lower, Items},
+    lowering::lower,
     parsing::{parse, Ast, SourceFile, Workspace},
     selection::selection_ranges,
 };
