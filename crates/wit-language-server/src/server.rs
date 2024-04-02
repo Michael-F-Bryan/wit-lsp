@@ -4,7 +4,13 @@ use tokio::sync::{Mutex, MutexGuard};
 use tower_lsp::{
     jsonrpc::Error,
     lsp_types::{
-        CompletionOptions, CompletionParams, CompletionResponse, DiagnosticOptions, DiagnosticServerCapabilities, DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams, DidSaveTextDocumentParams, DocumentDiagnosticParams, DocumentDiagnosticReportResult, FoldingRange, FoldingRangeParams, InitializeParams, InitializeResult, SelectionRange, SelectionRangeParams, ServerCapabilities, ServerInfo, TextDocumentContentChangeEvent, TextDocumentItem, TextDocumentSyncCapability, TextDocumentSyncKind, Url
+        CompletionOptions, CompletionParams, CompletionResponse, DiagnosticOptions,
+        DiagnosticServerCapabilities, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
+        DidOpenTextDocumentParams, DidSaveTextDocumentParams, DocumentDiagnosticParams,
+        DocumentDiagnosticReportResult, FoldingRange, FoldingRangeParams, InitializeParams,
+        InitializeResult, SelectionRange, SelectionRangeParams, ServerCapabilities, ServerInfo,
+        TextDocumentContentChangeEvent, TextDocumentItem, TextDocumentSyncCapability,
+        TextDocumentSyncKind, Url,
     },
     Client, ClientSocket, LspService,
 };

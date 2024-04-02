@@ -4,12 +4,12 @@ pub mod ast;
 mod compiler;
 pub mod diagnostics;
 pub mod hir;
+pub mod pointer;
 pub mod queries;
 mod text;
 pub mod traverse;
 mod tree;
 mod workspace;
-pub mod pointer;
 
 pub use crate::{compiler::Compiler, text::Text, tree::Tree};
 
