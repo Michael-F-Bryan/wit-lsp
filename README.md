@@ -2,7 +2,7 @@
 
 [![Continuous Integration](https://github.com/Michael-F-Bryan/wit-lsp/actions/workflows/ci.yml/badge.svg)](https://github.com/Michael-F-Bryan/wit-lsp/actions/workflows/ci.yml)
 
-([API Docs][api-docs])
+([API Docs][api-docs] | [Code Coverage][coverage])
 
 An alternative Language Server implementation for [WIT][wit].
 
@@ -59,7 +59,8 @@ conditions.
 The intent of this crate is to be free of soundness bugs. The developers will
 do their best to avoid them, and welcome help in analysing and fixing them.
 
-[api-docs]: https://michael-f-bryan.github.io/wit-lsp
+[api-docs]: https://michael-f-bryan.github.io/wit-lsp/crate-docs
+[coverage]: https://michael-f-bryan.github.io/wit-lsp/coverage
 [crev]: https://github.com/crev-dev/cargo-crev
 [wit]: https://github.com/WebAssembly/component-model/blob/main/design/mvp/WIT.md
 [vscode-wit]: https://github.com/bytecodealliance/vscode-wit
