@@ -30,7 +30,7 @@ impl Tree {
     /// Finds the node at a particular location, returning the node, followed by
     /// all parent nodes.
     #[track_caller]
-    pub fn ancestors(&self, point: Point) -> impl Iterator<Item = Node<'_>> {
+    pub fn ancestors(&self, point: Point) -> impl DoubleEndedIterator<Item = Node<'_>> {
         let root = self.root_node();
 
         assert!(
@@ -39,22 +39,17 @@ impl Tree {
             root.range()
         );
 
+        let mut nodes = Vec::new();
+
         let mut cursor = root.walk();
 
         while cursor.goto_first_child_for_point(point).is_some() {
-            // keep iterating
+            nodes.push(cursor.node());
         }
 
-        let innermost_node = cursor.node();
-        let parents = std::iter::from_fn(move || {
-            if cursor.goto_parent() {
-                Some(cursor.node())
-            } else {
-                None
-            }
-        });
+        nodes.push(cursor.node());
 
-        std::iter::once(innermost_node).chain(parents)
+        nodes.into_iter().rev()
     }
 
     /// Iterate over all nodes in the tree, depth first.

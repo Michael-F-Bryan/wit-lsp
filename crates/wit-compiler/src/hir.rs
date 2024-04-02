@@ -36,7 +36,7 @@ impl Index {
         }
     }
 
-    pub const fn raw(self) -> usize {
+    pub const fn as_usize(self) -> usize {
         self.0.get() as usize - 1
     }
 }
@@ -260,7 +260,7 @@ mod tests {
 
     #[test]
     fn ids() {
-        assert_eq!(Index::ZERO.raw(), 0);
-        assert_eq!(Index::new(42).raw(), 42);
+        assert_eq!(Index::ZERO.as_usize(), 0);
+        assert_eq!(Index::new(42).as_usize(), 42);
     }
 }

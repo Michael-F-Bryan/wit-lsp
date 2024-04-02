@@ -1,16 +1,17 @@
 #![allow(clippy::too_many_arguments)]
 
+use either::Either;
 use im::{ordmap::Entry, OrdMap, Vector};
-use tree_sitter::Node;
+use tree_sitter::{Node, Point, Range};
 
 use crate::{
     ast::{self, AstNode, HasIdent},
     diagnostics::{Diagnostic, Diagnostics, Location},
-    hir::{self, Index},
+    hir::{self},
     pointer::{
-        EnumIndex, EnumPtr, FlagsIndex, FlagsPtr, FuncItemIndex, FunctionPtr, InterfacePtr,
-        Pointer, RecordIndex, RecordPtr, ResourceIndex, ResourcePtr, TypeAliasIndex, TypeAliasPtr,
-        VariantIndex, VariantPtr, WorldPtr,
+        EnumIndex, EnumPtr, FlagsIndex, FlagsPtr, FuncItemIndex, FunctionPtr, Index,
+        InterfaceIndex, InterfacePtr, Pointer, RecordIndex, RecordPtr, ResourceIndex, ResourcePtr,
+        TypeAliasIndex, TypeAliasPtr, VariantIndex, VariantPtr, WorldIndex, WorldPtr,
     },
     queries::SourceFile,
     Db, Text,
@@ -36,7 +37,7 @@ pub fn file_items(db: &dyn Db, file: SourceFile) -> Items {
         if let Some(world) = top_level_item.world_item() {
             if let Some((name, world)) = walk_world(db, world, src, file) {
                 if names.insert(name.clone(), node) {
-                    let ix = WorldIndex(Index::new(worlds.len()));
+                    let ix = WorldIndex::from_raw(hir::Index::new(worlds.len()));
                     worlds.push_back(world);
                     worlds_by_name.insert(name, ix);
                 }
@@ -44,7 +45,7 @@ pub fn file_items(db: &dyn Db, file: SourceFile) -> Items {
         } else if let Some(interface) = top_level_item.interface_item() {
             if let Some((name, interface)) = walk_interface(db, interface, src, file) {
                 if names.insert(name.clone(), node) {
-                    let ix = InterfaceIndex(Index::new(worlds.len()));
+                    let ix = InterfaceIndex::from_raw(hir::Index::new(worlds.len()));
                     interfaces.push_back(interface);
                     interfaces_by_name.insert(name, ix);
                 }
@@ -288,17 +289,72 @@ pub struct Items {
     pub interfaces: Vector<InterfaceMetadata>,
 }
 
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct WorldIndex(hir::Index);
+impl Items {
+    pub fn iter_worlds(
+        &self,
+        db: &dyn Db,
+    ) -> impl Iterator<Item = (Text, WorldIndex, WorldMetadata)> {
+        let worlds = self.worlds(db);
+
+        self.worlds_by_name(db)
+            .into_iter()
+            .map(move |(name, ix)| (name, ix, worlds[ix.raw().as_usize()]))
+    }
+
+    pub fn iter_interfaces(
+        &self,
+        db: &dyn Db,
+    ) -> impl Iterator<Item = (Text, InterfaceIndex, InterfaceMetadata)> {
+        let interfaces = self.interfaces(db);
+
+        self.interfaces_by_name(db)
+            .into_iter()
+            .map(move |(name, ix)| (name, ix, interfaces[ix.raw().as_usize()]))
+    }
+}
+
+#[salsa::tracked]
+impl Items {
+    pub fn get_world(&self, db: &dyn Db, index: WorldIndex) -> WorldMetadata {
+        let worlds = self.worlds(db);
+        worlds[index.raw().as_usize()]
+    }
+
+    pub fn get_interface(&self, db: &dyn Db, index: InterfaceIndex) -> InterfaceMetadata {
+        let interfaces = self.interfaces(db);
+        interfaces[index.raw().as_usize()]
+    }
+
+    pub fn enclosing_item(
+        &self,
+        db: &dyn Db,
+        point: Point,
+    ) -> Option<Either<WorldIndex, InterfaceIndex>> {
+        for (i, meta) in self.worlds(db).into_iter().enumerate() {
+            if range_contains(meta.location(db).range(), point) {
+                return Some(Either::Left(WorldIndex::from_raw(hir::Index::new(i))));
+            }
+        }
+
+        for (i, meta) in self.interfaces(db).into_iter().enumerate() {
+            if range_contains(meta.location(db).range(), point) {
+                return Some(Either::Right(InterfaceIndex::from_raw(hir::Index::new(i))));
+            }
+        }
+
+        None
+    }
+}
+
+fn range_contains(range: Range, point: Point) -> bool {
+    range.start_point <= point && point <= range.end_point
+}
 
 #[salsa::tracked]
 pub struct WorldMetadata {
     pub location: WorldPtr,
     pub items: ItemDefinitionMetadata,
 }
-
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct InterfaceIndex(hir::Index);
 
 #[salsa::tracked]
 pub struct InterfaceMetadata {
@@ -322,4 +378,17 @@ pub struct ItemDefinitionMetadata {
     pub typedefs: Vector<TypeAliasPtr>,
     pub variants_by_name: OrdMap<Text, VariantIndex>,
     pub variants: Vector<VariantPtr>,
+}
+
+impl ItemDefinitionMetadata {
+    pub fn names(&self) -> impl Iterator<Item = &Text> {
+        self.enums_by_name
+            .keys()
+            .chain(self.flags_by_name.keys())
+            .chain(self.functions_by_name.keys())
+            .chain(self.records_by_name.keys())
+            .chain(self.resources_by_name.keys())
+            .chain(self.typedefs_by_name.keys())
+            .chain(self.variants_by_name.keys())
+    }
 }

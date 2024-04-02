@@ -27,7 +27,7 @@ macro_rules! indices {
     };
 }
 
-indices!(Enum, Flags, Resource, Variant, FuncItem, TypeAlias, Record);
+indices!(Enum, Flags, Resource, Variant, FuncItem, TypeAlias, Record, World, Interface);
 
 /// A reference to an AST node.
 pub trait Pointer {

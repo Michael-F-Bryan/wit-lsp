@@ -13,6 +13,7 @@ rust-version.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+either = "1.10.0"
 im = { workspace = true }
 paste = "1.0.14"
 salsa = { workspace = true }

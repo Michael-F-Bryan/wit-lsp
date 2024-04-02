@@ -6,10 +6,7 @@ mod parsing;
 mod selection;
 
 pub use self::{
-    items::{
-        file_items, InterfaceIndex, InterfaceMetadata, ItemDefinitionMetadata, Items, WorldIndex,
-        WorldMetadata,
-    },
+    items::{file_items, InterfaceMetadata, ItemDefinitionMetadata, Items, WorldMetadata},
     lowering::lower,
     parsing::{parse, Ast, SourceFile, Workspace},
     selection::selection_ranges,
