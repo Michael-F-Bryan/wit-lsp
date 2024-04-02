@@ -9,15 +9,25 @@ use quote::{format_ident, quote};
 pub(crate) fn generate_ast(node_types: &str) -> TokenStream {
     let node_types: Vec<NodeType> = serde_json::from_str(node_types).unwrap();
 
-    let (nodes, _tokens): (Vec<_>, Vec<_>) = node_types.iter().partition(|n| n.named);
+    let (nodes, tokens): (Vec<_>, Vec<_>) = node_types.iter().partition(|n| n.named);
 
     let ast_nodes = nodes.iter().map(|n| generate_ast_node(n));
+    let (keywords, punctuation): (Vec<_>, Vec<_>) = tokens
+        .iter()
+        .map(|t| t.kind.as_str())
+        .partition(|t| t.chars().all(|c| c.is_alphanumeric()));
 
     quote! {
         //! Automatically generated code. DO NOT EDIT!
 
+        /// Keywords used by the WIT language.
+        pub const KEYWORDS: &[&str] = &[ #(#keywords),* ];
+
+        /// Symbols and punctuation used by the WIT language.
+        pub const PUNCTUATION: &[&str] = &[ #(#punctuation),* ];
+
         #( #ast_nodes )*
-        // #( #tokens )*
+
     }
 }
 
