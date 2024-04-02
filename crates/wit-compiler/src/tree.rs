@@ -39,7 +39,7 @@ impl Tree {
             root.range()
         );
 
-        let mut nodes = Vec::new();
+        let mut nodes = vec![root];
 
         let mut cursor = root.walk();
 
