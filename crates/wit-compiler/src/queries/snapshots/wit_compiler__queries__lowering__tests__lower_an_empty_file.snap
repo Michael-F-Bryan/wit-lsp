@@ -1,9 +1,11 @@
 ---
 source: crates/wit-compiler/src/queries/lowering.rs
-expression: got
+info:
+  src: ""
+  ast: (source_file)
 ---
 Package {
     decl: None,
-    worlds: [],
-    interfaces: [],
+    worlds: {},
+    interfaces: {},
 }

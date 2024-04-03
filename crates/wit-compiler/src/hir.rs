@@ -1,17 +1,20 @@
 //! The high-level intermediate representation.
 
-use std::num::NonZeroU16;
-
 use im::{OrdMap, Vector};
 
-use crate::Text;
-
+use crate::{
+    pointer::{
+        EnumIndex, FlagsIndex, FuncItemIndex, InterfaceIndex, RecordIndex, ResourceIndex,
+        TypeAliasIndex, VariantIndex, WorldIndex,
+    },
+    Text,
+};
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Package {
     pub decl: Option<PackageDeclaration>,
-    pub worlds: Vector<World>,
-    pub interfaces: Vector<Interface>,
+    pub worlds: OrdMap<WorldIndex, World>,
+    pub interfaces: OrdMap<InterfaceIndex, Interface>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -85,9 +88,52 @@ pub enum InterfaceItem {
     Record(Record),
 }
 
+impl From<Enum> for InterfaceItem {
+    fn from(value: Enum) -> Self {
+        InterfaceItem::Enum(value)
+    }
+}
+
+impl From<FuncItem> for InterfaceItem {
+    fn from(value: FuncItem) -> Self {
+        InterfaceItem::Func(value)
+    }
+}
+
+impl From<Flags> for InterfaceItem {
+    fn from(value: Flags) -> Self {
+        InterfaceItem::Flags(value)
+    }
+}
+
+impl From<Resource> for InterfaceItem {
+    fn from(value: Resource) -> Self {
+        InterfaceItem::Resource(value)
+    }
+}
+
+impl From<TypeAlias> for InterfaceItem {
+    fn from(value: TypeAlias) -> Self {
+        InterfaceItem::TypeAlias(value)
+    }
+}
+
+impl From<Variant> for InterfaceItem {
+    fn from(value: Variant) -> Self {
+        InterfaceItem::Variant(value)
+    }
+}
+
+impl From<Record> for InterfaceItem {
+    fn from(value: Record) -> Self {
+        InterfaceItem::Record(value)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FuncItem {
     pub name: Text,
+    pub index: FuncItemIndex,
     pub docs: Option<Text>,
     pub params: Vector<Parameter>,
     pub return_value: Option<ReturnValue>,
@@ -147,6 +193,7 @@ pub enum Builtin {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Record {
     pub name: Text,
+    pub index: RecordIndex,
     pub docs: Option<Text>,
     pub fields: Vector<RecordField>,
 }
@@ -161,6 +208,7 @@ pub struct RecordField {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Enum {
     pub name: Text,
+    pub index: EnumIndex,
     pub docs: Option<Text>,
     pub cases: Vector<EnumCase>,
 }
@@ -174,6 +222,7 @@ pub struct EnumCase {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Flags {
     pub name: Text,
+    pub index: FlagsIndex,
     pub docs: Option<Text>,
     pub cases: Vector<FlagsCase>,
 }
@@ -187,6 +236,7 @@ pub struct FlagsCase {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Variant {
     pub name: Text,
+    pub index: VariantIndex,
     pub docs: Option<Text>,
     pub cases: Vector<VariantCase>,
 }
@@ -201,6 +251,7 @@ pub struct VariantCase {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TypeAlias {
     pub name: Text,
+    pub index: TypeAliasIndex,
     pub docs: Option<Text>,
     pub ty: Type,
 }
@@ -208,6 +259,7 @@ pub struct TypeAlias {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Resource {
     pub name: Text,
+    pub index: ResourceIndex,
     pub docs: Option<Text>,
     pub constructor: Option<Constructor>,
     pub methods: Vector<FuncItem>,

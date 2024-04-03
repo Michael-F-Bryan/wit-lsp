@@ -1,18 +1,21 @@
 ---
 source: crates/wit-compiler/src/queries/lowering.rs
-expression: got
+info:
+  src: "interface i { type x = tuple<>; }"
+  ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (typedef_item (type_item name: (identifier) ty: (ty (tuple))))))))"
 ---
 Package {
     decl: None,
-    worlds: [],
-    interfaces: [
-        Interface {
+    worlds: {},
+    interfaces: {
+        InterfaceIndex(0): Interface {
             name: i,
             docs: None,
             items: [
                 TypeAlias(
                     TypeAlias {
                         name: x,
+                        index: TypeAliasIndex(0),
                         docs: None,
                         ty: Tuple(
                             [],
@@ -21,5 +24,5 @@ Package {
                 ),
             ],
         },
-    ],
+    },
 }

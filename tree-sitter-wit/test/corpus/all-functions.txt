@@ -119,25 +119,27 @@ interface functions {
           (func_type
             (param_list)
             (result_list
-              (named_type
-                (identifier)
-                (ty
-                  (builtins)))
-              (named_type
-                (identifier)
-                (ty
-                  (user_defined_type
-                    (identifier))))))))
+              (named_result_list
+                (named_type
+                  (identifier)
+                  (ty
+                    (builtins)))
+                (named_type
+                  (identifier)
+                  (ty
+                    (user_defined_type
+                      (identifier)))))))))
       (interface_items
         (func_item
           (identifier)
           (func_type
             (param_list)
             (result_list
-              (named_type
-                (identifier)
-                (ty
-                  (builtins)))))))
+              (named_result_list
+                (named_type
+                  (identifier)
+                  (ty
+                    (builtins))))))))
       (interface_items
         (func_item
           (identifier)

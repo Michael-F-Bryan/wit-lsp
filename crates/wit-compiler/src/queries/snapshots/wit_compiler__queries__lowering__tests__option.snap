@@ -6,15 +6,16 @@ info:
 ---
 Package {
     decl: None,
-    worlds: [],
-    interfaces: [
-        Interface {
+    worlds: {},
+    interfaces: {
+        InterfaceIndex(0): Interface {
             name: i,
             docs: None,
             items: [
                 TypeAlias(
                     TypeAlias {
                         name: x,
+                        index: TypeAliasIndex(0),
                         docs: None,
                         ty: Option(
                             Builtin(
@@ -25,5 +26,5 @@ Package {
                 ),
             ],
         },
-    ],
+    },
 }

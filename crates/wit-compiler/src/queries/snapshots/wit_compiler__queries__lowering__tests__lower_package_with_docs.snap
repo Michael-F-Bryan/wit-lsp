@@ -17,6 +17,6 @@ Package {
             ),
         },
     ),
-    worlds: [],
-    interfaces: [],
+    worlds: {},
+    interfaces: {},
 }

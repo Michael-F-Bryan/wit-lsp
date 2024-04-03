@@ -136,7 +136,8 @@ module.exports = grammar({
         ),
         param_list: $ => seq("(", field("params", optional($._param_list_inner)), ")"),
         _param_list_inner: $ => seq(punctuated($._named_type_list, ","), optional(",")),
-        result_list: $ => choice($.ty, seq("(", optional($._named_type_list), ")")),
+        result_list: $ => choice($.ty, seq("(", optional($.named_result_list), ")")),
+        named_result_list: $ => $._named_type_list,
         _named_type_list: $ => prec.left(punctuated($.named_type, ",")),
         named_type: $ => seq(
             field("name", $.identifier),

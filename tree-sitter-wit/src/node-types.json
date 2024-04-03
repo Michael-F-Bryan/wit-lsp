@@ -637,6 +637,21 @@
     }
   },
   {
+    "type": "named_result_list",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "named_type",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "named_type",
     "named": true,
     "fields": {
@@ -961,11 +976,11 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": false,
       "types": [
         {
-          "type": "named_type",
+          "type": "named_result_list",
           "named": true
         },
         {

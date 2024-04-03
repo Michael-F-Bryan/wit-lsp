@@ -1,15 +1,17 @@
 ---
 source: crates/wit-compiler/src/queries/lowering.rs
-expression: got
+info:
+  src: "interface empty {}"
+  ast: "(source_file (top_level_item (interface_item name: (identifier))))"
 ---
 Package {
     decl: None,
-    worlds: [],
-    interfaces: [
-        Interface {
+    worlds: {},
+    interfaces: {
+        InterfaceIndex(0): Interface {
             name: empty,
             docs: None,
             items: [],
         },
-    ],
+    },
 }

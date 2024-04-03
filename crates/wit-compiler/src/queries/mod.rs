@@ -2,7 +2,7 @@
 
 mod hover;
 mod items;
-mod lowering;
+pub(crate) mod lowering;
 mod parsing;
 mod selection;
 

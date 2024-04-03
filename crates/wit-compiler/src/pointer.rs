@@ -28,6 +28,7 @@ use crate::{
 /// [`NonZeroU16`] over [`u16`], we are more likely to benefit from niche
 /// optimisations.
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(transparent)]
 pub struct RawIndex(NonZeroU16);
 
 impl RawIndex {
@@ -60,7 +61,7 @@ macro_rules! indices {
         $(
             paste::paste! {
                 #[doc = concat!("The index of a [`crate::hir::", stringify!($name), "`].")]
-                #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+                #[derive(Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
                 pub struct [< $name "Index" >](RawIndex);
 
                 impl Index for [< $name "Index" >] {
@@ -70,12 +71,36 @@ macro_rules! indices {
 
                     fn raw(self) -> RawIndex { self.0 }
                 }
+
+                impl std::fmt::Debug for [< $name "Index" >] {
+                    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(f, "{}({})", stringify!([< $name "Index" >]), self.raw().as_usize())
+                    }
+                }
             }
         )*
     };
 }
 
 indices!(Enum, Flags, Resource, Variant, FuncItem, TypeAlias, Record, World, Interface);
+
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub enum ScopeIndex {
+    World(WorldIndex),
+    Interface(InterfaceIndex),
+}
+
+impl From<InterfaceIndex> for ScopeIndex {
+    fn from(v: InterfaceIndex) -> Self {
+        Self::Interface(v)
+    }
+}
+
+impl From<WorldIndex> for ScopeIndex {
+    fn from(v: WorldIndex) -> Self {
+        Self::World(v)
+    }
+}
 
 /// A reference to an AST node.
 pub trait Pointer {

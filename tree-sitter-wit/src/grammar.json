@@ -877,7 +877,7 @@
               "members": [
                 {
                   "type": "SYMBOL",
-                  "name": "_named_type_list"
+                  "name": "named_result_list"
                 },
                 {
                   "type": "BLANK"
@@ -891,6 +891,10 @@
           ]
         }
       ]
+    },
+    "named_result_list": {
+      "type": "SYMBOL",
+      "name": "_named_type_list"
     },
     "_named_type_list": {
       "type": "PREC_LEFT",

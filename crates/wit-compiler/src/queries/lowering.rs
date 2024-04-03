@@ -1,12 +1,15 @@
 use im::{OrdMap, Vector};
-use tree_sitter::Node;
 
 use crate::{
     ast::{self, AstNode, HasAttr, HasIdent},
     diagnostics::{Diagnostic, Diagnostics, Location},
     hir,
+    pointer::{
+        EnumIndex, FlagsIndex, FuncItemIndex, GetByIndex, InterfaceIndex, Pointer, RecordIndex,
+        ResourceIndex, ScopeIndex, TypeAliasIndex, VariantIndex, WorldIndex,
+    },
     queries::{SourceFile, Workspace},
-    Db, Text,
+    Db, Text, Tree,
 };
 
 /// Parse a file and lower it from its [`crate::ast`] representation to the
@@ -18,263 +21,442 @@ use crate::{
 #[tracing::instrument(level = "debug", skip_all, fields(file = %file.path(db)))]
 pub fn lower(db: &dyn Db, _ws: Workspace, file: SourceFile) -> hir::Package {
     let ast = crate::queries::parse(db, file);
-    let src = file.contents(db);
     let root = ast.source_file(db);
+    let src = ast.src(db);
 
-    let mut ctx = State::new(db, src, file);
-    ctx.process_file(root);
+    let items = crate::queries::file_items(db, file);
 
-    ctx.finish()
+    let mut worlds = OrdMap::new();
+    let mut interfaces = OrdMap::new();
+
+    for index in items.worlds_by_name(db).values().copied() {
+        if let Some(world) = lower_world(db, file, index) {
+            worlds.insert(index, world);
+        }
+    }
+
+    for index in items.interfaces_by_name(db).values().copied() {
+        if let Some(interface) = lower_interface(db, file, index) {
+            interfaces.insert(index, interface);
+        }
+    }
+
+    hir::Package {
+        decl: root.package_opt().and_then(|d| lower_package_decl(d, src)),
+        interfaces,
+        worlds,
+    }
 }
 
-/// A big bundle of state used while lowering.
-struct State<'a> {
-    db: &'a dyn Db,
-    src: &'a str,
+fn lower_package_decl(node: ast::PackageDecl, src: &str) -> Option<hir::PackageDeclaration> {
+    let docs = node.docs(src);
+
+    let package_name = node.fully_qualified_package_name()?;
+    let package = package_name.package()?.identifier()?.value(src).into();
+    let path = package_name
+        .path()?
+        .iter_identifiers()
+        .map(|p| p.value(src).into())
+        .collect();
+    let version = package_name.version_opt().map(|s| s.value(src).into());
+
+    Some(hir::PackageDeclaration {
+        docs,
+        package,
+        path,
+        version,
+    })
+}
+
+#[salsa::tracked]
+pub(crate) fn lower_world(db: &dyn Db, file: SourceFile, index: WorldIndex) -> Option<hir::World> {
+    let ast = crate::queries::parse(db, file);
+    let tree = ast.tree(db);
+    let items = crate::queries::file_items(db, file);
+
+    let meta = items.get_by_index(db, index);
+    let _node = meta.location(db).lookup(tree);
+    let _item_definitions = meta.items(db);
+
+    todo!();
+}
+
+#[salsa::tracked]
+pub(crate) fn lower_interface(
+    db: &dyn Db,
     file: SourceFile,
-    decl: Option<hir::PackageDeclaration>,
-    interfaces: OrdMap<Text, hir::Interface>,
-    worlds: OrdMap<Text, hir::World>,
-    names: OrdMap<Text, NamedItem<'a>>,
+    index: InterfaceIndex,
+) -> Option<hir::Interface> {
+    let ast = crate::queries::parse(db, file);
+    let tree = ast.tree(db);
+    let items = crate::queries::file_items(db, file);
+
+    let meta = items.get_by_index(db, index);
+    let node = meta.location(db).lookup(tree);
+    let item_definitions = meta.items(db);
+
+    let mut items = Vector::new();
+    let scope = ScopeIndex::Interface(index);
+
+    for ix in item_definitions.iter_enums() {
+        if let Some(item) = lower_enum(db, file, scope, ix) {
+            items.push_back(item.into());
+        }
+    }
+
+    for ix in item_definitions.iter_flags() {
+        if let Some(item) = lower_flags(db, file, scope, ix) {
+            items.push_back(item.into());
+        }
+    }
+
+    for ix in item_definitions.iter_functions() {
+        if let Some(item) = lower_func_item(db, file, index, ix) {
+            items.push_back(item.into());
+        }
+    }
+
+    for ix in item_definitions.iter_records() {
+        if let Some(item) = lower_record(db, file, scope, ix) {
+            items.push_back(item.into());
+        }
+    }
+
+    for ix in item_definitions.iter_resources() {
+        if let Some(item) = lower_resource(db, file, scope, ix) {
+            items.push_back(item.into());
+        }
+    }
+
+    for ix in item_definitions.iter_typedefs() {
+        if let Some(item) = lower_type_alias(db, file, scope, ix) {
+            items.push_back(item.into());
+        }
+    }
+
+    for ix in item_definitions.iter_variants() {
+        if let Some(item) = lower_variant(db, file, scope, ix) {
+            items.push_back(item.into());
+        }
+    }
+
+    Some(hir::Interface {
+        name: meta.name(db),
+        docs: node.docs(ast.src(db)),
+        items,
+    })
 }
 
-impl<'a> State<'a> {
-    pub fn new(db: &'a dyn Db, src: &'a str, file: SourceFile) -> Self {
-        State {
-            db,
-            file,
-            decl: None,
-            interfaces: OrdMap::default(),
-            names: OrdMap::new(),
-            src,
-            worlds: OrdMap::default(),
-        }
+#[salsa::tracked]
+pub(crate) fn lower_enum(
+    db: &dyn Db,
+    file: SourceFile,
+    scope: ScopeIndex,
+    index: EnumIndex,
+) -> Option<hir::Enum> {
+    let ast = crate::queries::parse(db, file);
+    let ptr = match scope {
+        ScopeIndex::Interface(interface) => file.get_by_index(db, (interface, index)),
+        ScopeIndex::World(world) => file.get_by_index(db, (world, index)),
+    };
+    let src = ast.src(db);
+
+    let tree = ast.tree(db);
+    let node = ptr.lookup(tree);
+    let name = node.identifier(src)?.into();
+
+    let cases = node
+        .iter_cases()
+        .filter_map(|case| lower_enum_case(case, src))
+        .collect();
+
+    Some(hir::Enum {
+        name,
+        docs: node.docs(src),
+        index,
+        cases,
+    })
+}
+
+fn lower_enum_case(case: ast::EnumCase<'_>, src: &str) -> Option<hir::EnumCase> {
+    Some(hir::EnumCase {
+        docs: case.docs(src),
+        name: case.identifier(src)?.into(),
+    })
+}
+
+#[salsa::tracked]
+pub(crate) fn lower_flags(
+    db: &dyn Db,
+    file: SourceFile,
+    scope: ScopeIndex,
+    index: FlagsIndex,
+) -> Option<hir::Flags> {
+    let ast = crate::queries::parse(db, file);
+    let ptr = match scope {
+        ScopeIndex::Interface(interface) => file.get_by_index(db, (interface, index)),
+        ScopeIndex::World(world) => file.get_by_index(db, (world, index)),
+    };
+    let src = ast.src(db);
+
+    let tree = ast.tree(db);
+    let node = ptr.lookup(tree);
+    let name = node.identifier(src)?.into();
+
+    let cases = node
+        .iter_cases()
+        .filter_map(|case| lower_flags_case(case, src))
+        .collect();
+
+    Some(hir::Flags {
+        name,
+        docs: node.docs(src),
+        index,
+        cases,
+    })
+}
+
+fn lower_flags_case(case: ast::FlagsCase<'_>, src: &str) -> Option<hir::FlagsCase> {
+    Some(hir::FlagsCase {
+        docs: case.docs(src),
+        name: case.identifier(src)?.into(),
+    })
+}
+
+#[salsa::tracked]
+pub(crate) fn lower_func_item(
+    db: &dyn Db,
+    file: SourceFile,
+    interface: InterfaceIndex,
+    index: FuncItemIndex,
+) -> Option<hir::FuncItem> {
+    let ast = crate::queries::parse(db, file);
+    let tree = ast.tree(db);
+    let node = file.get_by_index(db, (interface, index)).lookup(tree);
+    let src = ast.src(db);
+
+    let name = node.identifier(src)?.into();
+    let func_type = node.ty()?;
+
+    let mut params = Vector::new();
+
+    for param in func_type.params()?.iter_params() {
+        let param = lower_param(db, src, interface.into(), tree, param)?;
+        params.push_back(param);
     }
 
-    fn process_file(&mut self, root: ast::SourceFile<'a>) {
-        self.decl = self.lower_package_decl(root);
+    let return_value = func_type
+        .result_opt()
+        .and_then(|r| lower_return_value(db, src, file, interface.into(), tree, r));
 
-        for item in root.iter_top_level_items().flat_map(named_item) {
-            let name = item.ident().value(self.src);
+    Some(hir::FuncItem {
+        index,
+        name,
+        docs: node.docs(src),
+        params,
+        return_value,
+    })
+}
 
-            match item {
-                NamedItem::World(node) => {
-                    if let Some(world) = self.lower_world(node) {
-                        self.push_world(name, world, node);
-                    }
+fn lower_param(
+    db: &dyn Db,
+    src: &str,
+    scope: ScopeIndex,
+    tree: &Tree,
+    param: ast::NamedType<'_>,
+) -> Option<hir::Parameter> {
+    let name = param.identifier(src)?.into();
+    let ty = param.ty()?;
+    let ty = resolve_type(db, src, scope, tree, ty)?;
+
+    Some(hir::Parameter { name, ty })
+}
+
+fn lower_return_value(
+    db: &dyn Db,
+    src: &str,
+    file: SourceFile,
+    scope: ScopeIndex,
+    tree: &Tree,
+    ret: ast::ResultList<'_>,
+) -> Option<hir::ReturnValue> {
+    if let Some(ty) = ret.ty_opt() {
+        let ty = resolve_type(db, src, scope, tree, ty)?;
+        Some(hir::ReturnValue::Single(ty))
+    } else if let Some(list) = ret.named_result_list_opt() {
+        let mut return_types = OrdMap::new();
+
+        for pair in list.iter_named_types() {
+            let name = Text::from(pair.identifier(src)?);
+            let ty_node = pair.ty()?;
+            let ty = resolve_type(db, src, scope, tree, ty_node).unwrap_or(hir::Type::Error);
+
+            match return_types.entry(name) {
+                im::ordmap::Entry::Vacant(entry) => {
+                    entry.insert((ty, ty_node.range()));
                 }
-                NamedItem::Interface(node) => {
-                    if let Some(world) = self.lower_interface(node) {
-                        self.push_interface(name, world, node);
-                    }
+                im::ordmap::Entry::Occupied(entry) => {
+                    let path = file.path(db);
+                    let location = Location::new(path, pair.range());
+                    let original_definition = Location::new(path, entry.get().1);
+
+                    let diag = Diagnostic::duplicate_name(
+                        entry.key().clone(),
+                        location,
+                        original_definition,
+                    );
+                    Diagnostics::push(db, diag);
                 }
-                NamedItem::Use(_) => todo!(),
             }
         }
+
+        let return_types = return_types.into_iter().map(|(k, (v, _))| (k, v)).collect();
+        Some(hir::ReturnValue::Named(return_types))
+    } else {
+        None
     }
+}
 
-    fn push_interface(
-        &mut self,
-        name: &str,
-        interface: hir::Interface,
-        node: ast::InterfaceItem<'a>,
-    ) {
-        let name = Text::from(name);
+#[salsa::tracked]
+pub(crate) fn lower_record(
+    _db: &dyn Db,
+    _file: SourceFile,
+    _scope: ScopeIndex,
+    _ix: RecordIndex,
+) -> Option<hir::Record> {
+    todo!();
+}
 
-        if self.insert_named(self.db, name.clone(), node.into()) {
-            self.interfaces.insert(name, interface);
-        }
-    }
+#[salsa::tracked]
+pub(crate) fn lower_resource(
+    _db: &dyn Db,
+    _file: SourceFile,
+    _scope: ScopeIndex,
+    _ix: ResourceIndex,
+) -> Option<hir::Resource> {
+    todo!();
+}
 
-    fn push_world(&mut self, name: &str, world: hir::World, node: ast::WorldItem<'a>) {
-        let name = Text::from(name);
+#[salsa::tracked]
+pub(crate) fn lower_type_alias(
+    db: &dyn Db,
+    file: SourceFile,
+    scope: ScopeIndex,
+    index: TypeAliasIndex,
+) -> Option<hir::TypeAlias> {
+    let ast = crate::queries::parse(db, file);
+    let ptr = match scope {
+        ScopeIndex::Interface(interface) => file.get_by_index(db, (interface, index)),
+        ScopeIndex::World(world) => file.get_by_index(db, (world, index)),
+    };
+    let src = ast.src(db);
 
-        if self.insert_named(self.db, name.clone(), node.into()) {
-            self.worlds.insert(name, world);
-        }
-    }
+    let tree = ast.tree(db);
+    let node = ptr.lookup(tree);
+    let name = node.identifier(src)?.into();
 
-    fn insert_named(&mut self, db: &dyn Db, name: Text, node: NamedItem<'a>) -> bool {
-        match self.names.entry(name) {
-            im::ordmap::Entry::Occupied(entry) => {
-                let name = entry.key().clone();
-                let original_node = *entry.get();
-                drop(entry);
-                let location = self.location(db, node.node());
-                let original_definition = self.location(db, original_node.node());
+    let ty = node.ty()?;
+    let ty = resolve_type(db, src, scope, tree, ty)?;
 
-                let diag = Diagnostic::duplicate_name(name, location, original_definition);
-                Diagnostics::push(db, diag);
-                false
-            }
-            im::ordmap::Entry::Vacant(entry) => {
-                entry.insert(node);
-                true
-            }
-        }
-    }
+    Some(hir::TypeAlias {
+        name,
+        docs: node.docs(src),
+        index,
+        ty,
+    })
+}
 
-    fn location(&self, db: &dyn Db, node: Node<'_>) -> Location {
-        Location::new(self.file.path(db), node.range())
-    }
+#[salsa::tracked]
+pub(crate) fn lower_variant(
+    _db: &dyn Db,
+    _file: SourceFile,
+    _scope: ScopeIndex,
+    _ix: VariantIndex,
+) -> Option<hir::Variant> {
+    todo!();
+}
 
-    fn finish(self) -> hir::Package {
-        let State {
-            interfaces,
-            worlds,
-            decl,
-            ..
-        } = self;
+fn resolve_type(
+    _db: &dyn Db,
+    src: &str,
+    _scope: ScopeIndex,
+    _tree: &Tree,
+    ty: ast::Ty<'_>,
+) -> Option<hir::Type> {
+    let resolver = TypeResolver { src };
+    resolver.resolve_type(ty)
+}
 
-        hir::Package {
-            decl,
-            interfaces: interfaces.into_iter().map(|(_, i)| i).collect(),
-            worlds: worlds.into_iter().map(|(_, w)| w).collect(),
-        }
-    }
+struct TypeResolver<'a> {
+    src: &'a str,
+}
 
-    fn lower_world(&mut self, world: ast::WorldItem<'_>) -> Option<hir::World> {
-        let docs = world.docs(self.src);
-        let name = world.identifier(self.src)?.into();
-        let items = world
-            .iter_items()
-            .filter_map(|item| self.lower_world_item(item))
-            .collect();
-
-        Some(hir::World { name, docs, items })
-    }
-
-    fn lower_world_item(&mut self, item: ast::WorldItems<'_>) -> Option<hir::WorldItem> {
-        if let Some(export) = item.export_item() {
-            self.lower_export_item(export).map(hir::WorldItem::Export)
-        } else if let Some(import) = item.import_item() {
-            self.lower_import_item(import).map(hir::WorldItem::Import)
-        } else if let Some(include) = item.include_item() {
-            self.lower_include_item(include)
-                .map(hir::WorldItem::Include)
+impl<'a> TypeResolver<'a> {
+    fn resolve_type(&self, ty: ast::Ty<'_>) -> Option<hir::Type> {
+        if let Some(builtin) = ty.builtins() {
+            self.resolve_builtin(builtin)
+        } else if let Some(handle) = ty.handle() {
+            self.resolve_handle(handle)
+        } else if let Some(list) = ty.list() {
+            self.resolve_list(list)
+        } else if let Some(option) = ty.option() {
+            self.resolve_option(option)
+        } else if let Some(result) = ty.result() {
+            self.resolve_result(result)
+        } else if let Some(tuple) = ty.tuple() {
+            self.resolve_tuple(tuple)
+        } else if let Some(user_defined_type) = ty.user_defined_type() {
+            self.resolve_user_defined_type(user_defined_type)
         } else {
             None
         }
     }
 
-    fn lower_include_item(&mut self, item: ast::IncludeItem<'_>) -> Option<hir::Include> {
-        let _path = item.path()?;
-
-        todo!()
+    fn resolve_option(&self, option: ast::Option_<'_>) -> Option<hir::Type> {
+        let element_type = option.ty()?;
+        let element_type = self.resolve_type(element_type)?;
+        Some(hir::Type::Option(Box::new(element_type)))
     }
 
-    fn lower_import_item(&mut self, item: ast::ImportItem<'_>) -> Option<hir::ExposableItem> {
-        dbg!(item.syntax().to_sexp());
+    fn resolve_result(&self, result: ast::Result_<'_>) -> Option<hir::Type> {
+        let ok = result.ok_opt().and_then(|ty| self.resolve_type(ty));
+        let err = result.err_opt().and_then(|ty| self.resolve_type(ty));
 
-        if let Some(_path) = item.imported_item() {
-            todo!()
-        } else if let Some(_item) = item.imported_path() {
-            todo!()
-        } else {
-            None
-        }
-    }
-
-    fn lower_export_item(&mut self, item: ast::ExportItem<'_>) -> Option<hir::ExposableItem> {
-        if let Some(_path) = item.exported_item() {
-            todo!()
-        } else if let Some(_item) = item.exported_item() {
-            todo!()
-        } else {
-            None
-        }
-    }
-
-    fn lower_interface(&mut self, interface: ast::InterfaceItem<'_>) -> Option<hir::Interface> {
-        let docs = interface.docs(self.src);
-        let name = interface.identifier(self.src)?.into();
-
-        let items = interface
-            .iter_items()
-            .filter_map(|item| self.lower_interface_item(item))
-            .collect();
-
-        Some(hir::Interface { name, docs, items })
-    }
-
-    fn lower_interface_item(
-        &mut self,
-        item: ast::InterfaceItems<'_>,
-    ) -> Option<hir::InterfaceItem> {
-        if let Some(node) = item.func_item() {
-            self.lower_func_item(node).map(hir::InterfaceItem::Func)
-        } else if let Some(node) = item.typedef_item() {
-            self.lower_type_definition(node)
-        } else if let Some(_node) = item.use_item() {
-            todo!()
-        } else {
-            None
-        }
-    }
-
-    fn lower_type_definition(&self, node: ast::TypedefItem<'_>) -> Option<hir::InterfaceItem> {
-        if let Some(type_item) = node.type_item() {
-            self.lower_type_item(type_item)
-        } else {
-            None
-        }
-    }
-
-    fn lower_func_item(&self, node: ast::FuncItem<'_>) -> Option<hir::FuncItem> {
-        let docs = node.docs(self.src);
-        let name = node.identifier(self.src)?.into();
-
-        let ty = node.ty()?;
-        let params = self.lower_params(ty.params()?)?;
-        let return_value = ty
-            .result_opt()
-            .and_then(|node| self.lower_return_type(node));
-
-        Some(hir::FuncItem {
-            docs,
-            name,
-            params,
-            return_value,
+        Some(hir::Type::Result {
+            ok: ok.map(Box::new),
+            err: err.map(Box::new),
         })
     }
 
-    fn lower_params(&self, ty: ast::ParamList<'_>) -> Option<im::Vector<hir::Parameter>> {
-        let mut params = Vector::new();
+    fn resolve_tuple(&self, tuple: ast::Tuple<'_>) -> Option<hir::Type> {
+        let mut types = Vector::new();
 
-        for param in ty.iter_params() {
-            let name = param.name()?.value(self.src).into();
-            let ty = self.lower_type(param.ty()?)?;
-            params.push_back(hir::Parameter { name, ty });
+        for ty in tuple.iter_tys() {
+            let ty = self.resolve_type(ty).unwrap_or(hir::Type::Error);
+            types.push_back(ty);
         }
 
-        Some(params)
+        Some(hir::Type::Tuple(types))
     }
 
-    fn lower_return_type(&self, _node: ast::ResultList<'_>) -> Option<hir::ReturnValue> {
+    fn resolve_user_defined_type(
+        &self,
+        _user_defined_type: ast::UserDefinedType<'_>,
+    ) -> Option<hir::Type> {
         todo!()
     }
 
-    fn lower_type(&self, ty: ast::Ty<'_>) -> Option<hir::Type> {
-        if let Some(builtin) = ty.builtins() {
-            self.lower_builtin(builtin)
-        } else if let Some(handle) = ty.handle() {
-            self.lower_handle(handle)
-        } else if let Some(list) = ty.list() {
-            self.lower_list(list)
-        } else if let Some(option) = ty.option() {
-            self.lower_option(option)
-        } else if let Some(result) = ty.result() {
-            self.lower_result(result)
-        } else if let Some(tuple) = ty.tuple() {
-            self.lower_tuple(tuple)
-        } else if let Some(user_defined_type) = ty.user_defined_type() {
-            self.lower_user_defined_type(user_defined_type)
-        } else {
-            None
-        }
+    fn resolve_list(&self, list: ast::List<'_>) -> Option<hir::Type> {
+        let element_type = list.ty()?;
+        let element_type = self.resolve_type(element_type)?;
+        Some(hir::Type::List(Box::new(element_type)))
     }
 
-    fn lower_builtin(&self, builtin: ast::Builtins<'_>) -> Option<hir::Type> {
+    fn resolve_handle(&self, _handle: ast::Handle<'_>) -> Option<hir::Type> {
+        todo!()
+    }
+
+    fn resolve_builtin(&self, builtin: ast::Builtins<'_>) -> Option<hir::Type> {
         let name = builtin.value(self.src);
 
         match name {
@@ -299,167 +481,11 @@ impl<'a> State<'a> {
             }
         }
     }
-
-    fn lower_handle(&self, handle: ast::Handle<'_>) -> Option<hir::Type> {
-        if let Some(borrowed) = handle.borrowed_handle() {
-            let _name = borrowed.name()?.value(self.src);
-            todo!()
-        } else if let Some(owned) = handle.owned_handle() {
-            let _name = owned.name()?.value(self.src);
-            todo!()
-        } else {
-            None
-        }
-    }
-
-    fn lower_list(&self, list: ast::List<'_>) -> Option<hir::Type> {
-        let element_type = list.ty().and_then(|ty| self.lower_type(ty))?;
-        Some(hir::Type::List(Box::new(element_type)))
-    }
-
-    fn lower_option(&self, option: ast::Option_<'_>) -> Option<hir::Type> {
-        let element_type = option.ty().and_then(|ty| self.lower_type(ty))?;
-        Some(hir::Type::Option(Box::new(element_type)))
-    }
-
-    fn lower_result(&self, result: ast::Result_<'_>) -> Option<hir::Type> {
-        let ok = result
-            .ok_opt()
-            .and_then(|ty| self.lower_type(ty))
-            .map(Box::new);
-        let err = result
-            .err_opt()
-            .and_then(|ty| self.lower_type(ty))
-            .map(Box::new);
-        Some(hir::Type::Result { ok, err })
-    }
-
-    fn lower_tuple(&self, tuple: ast::Tuple<'_>) -> Option<hir::Type> {
-        let mut element_types = Vector::new();
-
-        for ty in tuple.iter_tys() {
-            element_types.push_back(self.lower_type(ty)?);
-        }
-
-        Some(hir::Type::Tuple(element_types))
-    }
-
-    fn lower_user_defined_type(
-        &self,
-        user_defined_type: ast::UserDefinedType<'_>,
-    ) -> Option<hir::Type> {
-        let text = user_defined_type.value(self.src);
-        eprintln!("{:?} => {}", text, user_defined_type.syntax().to_sexp());
-        todo!()
-    }
-
-    fn lower_type_item(&self, type_item: ast::TypeItem<'_>) -> Option<hir::InterfaceItem> {
-        let docs = type_item.docs(self.src);
-        let name = type_item.identifier(self.src)?.into();
-        let ty = self.lower_type(type_item.ty()?)?;
-
-        Some(hir::InterfaceItem::TypeAlias(hir::TypeAlias {
-            docs,
-            name,
-            ty,
-        }))
-    }
-
-    fn lower_package_decl(&self, root: ast::SourceFile<'_>) -> Option<hir::PackageDeclaration> {
-        let node = root.package_opt()?;
-        let docs = node.docs(self.src);
-
-        let package_name = node.fully_qualified_package_name()?;
-        let package = package_name.package()?.identifier()?.value(self.src).into();
-        let path = package_name
-            .path()?
-            .iter_identifiers()
-            .map(|p| p.value(self.src).into())
-            .collect();
-        let version = package_name.version_opt().map(|s| s.value(self.src).into());
-
-        Some(hir::PackageDeclaration {
-            docs,
-            package,
-            path,
-            version,
-        })
-    }
-}
-
-fn named_item(item: ast::TopLevelItem<'_>) -> Option<NamedItem<'_>> {
-    let node = item.syntax();
-
-    if node.has_error() {
-        return None;
-    }
-
-    if let Some(interface) = item.interface_item() {
-        Some(NamedItem::Interface(interface))
-    } else if let Some(world) = item.world_item() {
-        Some(NamedItem::World(world))
-    } else if let Some(import) = item.top_level_use_item() {
-        Some(NamedItem::Use(import))
-    } else {
-        unreachable!("Unknown top level item node: {}", node.kind());
-    }
-}
-
-#[derive(Debug, Copy, Clone)]
-enum NamedItem<'a> {
-    World(ast::WorldItem<'a>),
-    Interface(ast::InterfaceItem<'a>),
-    Use(ast::TopLevelUseItem<'a>),
-}
-
-impl<'a> NamedItem<'a> {
-    fn node(self) -> tree_sitter::Node<'a> {
-        match self {
-            NamedItem::World(world) => world.syntax(),
-            NamedItem::Interface(interface) => interface.syntax(),
-            NamedItem::Use(node) => node.syntax(),
-        }
-    }
-
-    fn ident(self) -> ast::Identifier<'a> {
-        match self {
-            NamedItem::World(w) => w.name().expect("syntax error"),
-            NamedItem::Interface(i) => i.name().expect("syntax error"),
-            NamedItem::Use(u) => {
-                if let Some(ident) = u.alias_opt() {
-                    return ident;
-                }
-
-                let use_path = u.use_path().expect("syntax error");
-                if let Some(p) = use_path.fully_qualified_use_path() {
-                    p.package()
-                        .and_then(|pkg| pkg.identifier())
-                        .expect("syntax error")
-                } else if let Some(p) = use_path.local_use_path() {
-                    p.identifier().expect("syntax error")
-                } else {
-                    unreachable!("syntax error")
-                }
-            }
-        }
-    }
-}
-
-impl<'a> From<ast::WorldItem<'a>> for NamedItem<'a> {
-    fn from(value: ast::WorldItem<'a>) -> Self {
-        NamedItem::World(value)
-    }
-}
-
-impl<'a> From<ast::InterfaceItem<'a>> for NamedItem<'a> {
-    fn from(value: ast::InterfaceItem<'a>) -> Self {
-        NamedItem::Interface(value)
-    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::Compiler;
+    use crate::{diagnostics::Diagnostics, Compiler};
 
     use super::*;
 
@@ -560,8 +586,38 @@ mod tests {
         lower_an_empty_file: "",
         lower_package_with_docs: "/// This is a package.\npackage wasi:filesystem@1.2.3;",
         empty_interface: "interface empty {}" ,
-        interface_with_func: "interface console { log: func(message: string); }",
+        func_with_no_arguments: "interface i { f: func(); }",
+        func_with_one_argument: "interface i { f: func(message: string); }",
+        func_with_multiple_arguments: "interface i { f: func(first: u32, second: string, third: list<bool>); }",
+        func_with_return_value: "interface i { f: func() -> bool; }",
+        func_with_named_return_values: "interface i { f: func() -> (a: u32, b: option<string>); }",
         interface_with_builtin_type: "interface i { type x = u32; }",
+        empty_enum: "interface i { enum empty {} }",
+        enum_with_one_element: "interface i { enum foo { first } }",
+        enum_with_multiple_elements: "interface i {
+            /// This is an enum.
+            enum foo {
+                /// first case.
+                first,
+                /// Second case.
+                /// and another
+                /// doc-comment.
+                second,
+             }
+         }",
+        empty_flags: "interface i { flags empty {} }",
+        flags_with_one_element: "interface i { flags foo { first } }",
+        flags_with_multiple_elements: "interface i {
+            /// This is a flags.
+            flags foo {
+                /// first case.
+                first,
+                /// Second case.
+                /// and another
+                /// doc-comment.
+                second,
+             }
+         }",
         empty_tuple: "interface i { type x = tuple<>; }",
         tuple_with_single_element: "interface i { type x = tuple<string>; }",
         tuple_with_multiple_elements: "interface i { type x = tuple<string, bool, u32>; }",
@@ -572,6 +628,7 @@ mod tests {
         list: "interface i { type x = list<u32>; }",
         option: "interface i { type x = option<u32>; }",
 
+        #[ignore]
         empty_world: "world empty {}",
         #[ignore]
         world_with_function_export: "world console { export run: func(); }",

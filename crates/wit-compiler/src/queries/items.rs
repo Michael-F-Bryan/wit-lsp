@@ -7,7 +7,6 @@ use tree_sitter::{Node, Point, Range};
 use crate::{
     ast::{self, AstNode, HasIdent},
     diagnostics::{Diagnostic, Diagnostics, Location},
-    hir,
     pointer::{
         EnumIndex, EnumPtr, FlagsIndex, FlagsPtr, FuncItemIndex, FunctionPtr, Index,
         InterfaceIndex, InterfacePtr, Pointer, RawIndex, RecordIndex, RecordPtr, ResourceIndex,
@@ -75,7 +74,7 @@ fn walk_world(
         }
     }
 
-    let meta = WorldMetadata::new(db, location, builder.finish());
+    let meta = WorldMetadata::new(db, name.clone(), location, builder.finish());
 
     Some((name, meta))
 }
@@ -101,7 +100,7 @@ fn walk_interface(
         }
     }
 
-    let meta = InterfaceMetadata::new(db, location, builder.finish());
+    let meta = InterfaceMetadata::new(db, name.clone(), location, builder.finish());
 
     Some((name, meta))
 }
@@ -352,12 +351,14 @@ fn range_contains(range: Range, point: Point) -> bool {
 
 #[salsa::tracked]
 pub struct WorldMetadata {
+    pub name: Text,
     pub location: WorldPtr,
     pub items: ItemDefinitionMetadata,
 }
 
 #[salsa::tracked]
 pub struct InterfaceMetadata {
+    pub name: Text,
     pub location: InterfacePtr,
     pub items: ItemDefinitionMetadata,
 }
@@ -381,6 +382,34 @@ pub struct ItemDefinitionMetadata {
 }
 
 impl ItemDefinitionMetadata {
+    pub fn iter_enums(&self) -> impl Iterator<Item = EnumIndex> + '_ {
+        iter(&self.enums)
+    }
+
+    pub fn iter_flags(&self) -> impl Iterator<Item = FlagsIndex> + '_ {
+        iter(&self.flags)
+    }
+
+    pub fn iter_functions(&self) -> impl Iterator<Item = FuncItemIndex> + '_ {
+        iter(&self.functions)
+    }
+
+    pub fn iter_records(&self) -> impl Iterator<Item = RecordIndex> + '_ {
+        iter(&self.records)
+    }
+
+    pub fn iter_resources(&self) -> impl Iterator<Item = ResourceIndex> + '_ {
+        iter(&self.resources)
+    }
+
+    pub fn iter_typedefs(&self) -> impl Iterator<Item = TypeAliasIndex> + '_ {
+        iter(&self.typedefs)
+    }
+
+    pub fn iter_variants(&self) -> impl Iterator<Item = VariantIndex> + '_ {
+        iter(&self.variants)
+    }
+
     pub fn names(&self) -> impl Iterator<Item = &Text> {
         self.enums_by_name
             .keys()
@@ -391,4 +420,12 @@ impl ItemDefinitionMetadata {
             .chain(self.typedefs_by_name.keys())
             .chain(self.variants_by_name.keys())
     }
+}
+
+fn iter<Ix, Meta>(items: &Vector<Meta>) -> impl Iterator<Item = Ix> + '_
+where
+    Ix: Copy + Index,
+    Meta: Clone,
+{
+    (0..items.len()).map(|ix| Ix::from_raw(RawIndex::new(ix)))
 }

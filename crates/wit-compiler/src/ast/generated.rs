@@ -887,6 +887,26 @@ impl<'tree> super::AstNode<'tree> for LocalUsePath<'tree> {
         self.0
     }
 }
+///The `named_result_list` node.
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct NamedResultList<'tree>(tree_sitter::Node<'tree>);
+impl<'tree> NamedResultList<'tree> {
+    pub fn iter_named_types(self) -> impl Iterator<Item = NamedType<'tree>> {
+        super::children(self.0).filter_map(<NamedType as super::AstNode<'_>>::cast)
+    }
+}
+impl<'tree> super::AstNode<'tree> for NamedResultList<'tree> {
+    const NAME: &'static str = "named_result_list";
+    fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        if node.kind() == Self::NAME { Some(NamedResultList(node)) } else { None }
+    }
+    fn syntax(&self) -> tree_sitter::Node<'tree> {
+        self.0
+    }
+}
 ///The `named_type` node.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct NamedType<'tree>(tree_sitter::Node<'tree>);
@@ -1307,11 +1327,13 @@ impl<'tree> super::AstNode<'tree> for Result_<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ResultList<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> ResultList<'tree> {
-    pub fn iter_named_types(self) -> impl Iterator<Item = NamedType<'tree>> {
-        super::children(self.0).filter_map(<NamedType as super::AstNode<'_>>::cast)
+    pub fn named_result_list_opt(self) -> Option<NamedResultList<'tree>> {
+        super::children(self.0)
+            .filter_map(<NamedResultList as super::AstNode<'_>>::cast)
+            .next()
     }
-    pub fn iter_tys(self) -> impl Iterator<Item = Ty<'tree>> {
-        super::children(self.0).filter_map(<Ty as super::AstNode<'_>>::cast)
+    pub fn ty_opt(self) -> Option<Ty<'tree>> {
+        super::children(self.0).filter_map(<Ty as super::AstNode<'_>>::cast).next()
     }
 }
 impl<'tree> super::AstNode<'tree> for ResultList<'tree> {

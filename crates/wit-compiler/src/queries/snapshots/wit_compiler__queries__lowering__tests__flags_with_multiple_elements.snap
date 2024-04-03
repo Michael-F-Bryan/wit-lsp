@@ -1,0 +1,35 @@
+---
+source: crates/wit-compiler/src/queries/lowering.rs
+info:
+  src: "interface i {\n            /// This is a flags.\n            flags foo {\n                /// first case.\n                first,\n                /// Second case.\n                /// and another\n                /// doc-comment.\n                second,\n             }\n         }"
+  ast: "(source_file (top_level_item (interface_item name: (identifier) (slash_comment) items: (interface_items (typedef_item (flags_item name: (identifier) (slash_comment) cases: (flags_case name: (identifier)) (slash_comment) (slash_comment) (slash_comment) cases: (flags_case name: (identifier))))))))"
+---
+Package {
+    decl: None,
+    worlds: {},
+    interfaces: {
+        InterfaceIndex(0): Interface {
+            name: i,
+            docs: None,
+            items: [
+                Flags(
+                    Flags {
+                        name: foo,
+                        index: FlagsIndex(0),
+                        docs: None,
+                        cases: [
+                            FlagsCase {
+                                name: first,
+                                docs: None,
+                            },
+                            FlagsCase {
+                                name: second,
+                                docs: None,
+                            },
+                        ],
+                    },
+                ),
+            ],
+        },
+    },
+}

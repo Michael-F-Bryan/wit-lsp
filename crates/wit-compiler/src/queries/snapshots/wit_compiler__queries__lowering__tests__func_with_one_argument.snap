@@ -1,0 +1,34 @@
+---
+source: crates/wit-compiler/src/queries/lowering.rs
+info:
+  src: "interface i { f: func(message: string); }"
+  ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (func_item name: (identifier) ty: (func_type params: (param_list params: (named_type name: (identifier) ty: (ty (builtins))))))))))"
+---
+Package {
+    decl: None,
+    worlds: {},
+    interfaces: {
+        InterfaceIndex(0): Interface {
+            name: i,
+            docs: None,
+            items: [
+                Func(
+                    FuncItem {
+                        name: f,
+                        index: FuncItemIndex(0),
+                        docs: None,
+                        params: [
+                            Parameter {
+                                name: message,
+                                ty: Builtin(
+                                    String,
+                                ),
+                            },
+                        ],
+                        return_value: None,
+                    },
+                ),
+            ],
+        },
+    },
+}
