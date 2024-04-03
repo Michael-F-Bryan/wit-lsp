@@ -6,40 +6,6 @@ use im::{OrdMap, Vector};
 
 use crate::Text;
 
-/// An index optimised for use in item IDs.
-///
-/// You typically won't use this directly, and instead rely on strongly-typed
-/// wrappers.
-///
-/// # Implementation
-///
-/// Under the hood, the index is represented as a [`NonZeroU16`].  We make the
-/// assumption that no file will contain more than `2^16-2` sequential elements
-/// of the same type, so we can get away with only using 2 bytes for our indices
-/// rather than the 8 we would need if we stored a `usize`.
-///
-/// Strongly typed wrappers will sometimes include enums, so by using
-/// [`NonZeroU16`] over [`u16`], we are more likely to benefit from niche
-/// optimisations.
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Index(NonZeroU16);
-
-impl Index {
-    const MAX: u16 = u16::MAX - 1;
-    pub const ZERO: Index = Index::new(0);
-
-    pub(crate) const fn new(raw: usize) -> Self {
-        assert!(raw <= Index::MAX as usize);
-        match NonZeroU16::new(raw as u16 + 1) {
-            Some(raw) => Index(raw),
-            None => panic!(),
-        }
-    }
-
-    pub const fn as_usize(self) -> usize {
-        self.0.get() as usize - 1
-    }
-}
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Package {
@@ -252,15 +218,4 @@ pub struct Resource {
 pub struct Constructor {
     pub docs: Option<Text>,
     pub params: Vector<Parameter>,
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn ids() {
-        assert_eq!(Index::ZERO.as_usize(), 0);
-        assert_eq!(Index::new(42).as_usize(), 42);
-    }
 }

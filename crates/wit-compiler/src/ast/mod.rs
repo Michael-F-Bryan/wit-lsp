@@ -9,7 +9,7 @@ use tree_sitter::Node;
 
 pub use self::{
     generated::*,
-    traits::{AstNode, HasAttr, HasIdent, NodeExt},
+    traits::{AstNode, HasAttr, HasIdent, HasSource, NodeExt},
 };
 
 pub(crate) fn children(parent: Node<'_>) -> impl Iterator<Item = Node<'_>> {

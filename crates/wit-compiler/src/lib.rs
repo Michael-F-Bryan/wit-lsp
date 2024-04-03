@@ -22,6 +22,7 @@ pub struct Jar(
     crate::queries::parse,
     crate::queries::file_items,
     crate::queries::Items,
+    crate::queries::hover_info,
     crate::queries::WorldMetadata,
     crate::queries::InterfaceMetadata,
     crate::queries::selection_ranges,

@@ -10,7 +10,7 @@ use crate::{
 #[tracing::instrument(level = "debug", skip_all, fields(file = %file.path(db)))]
 pub fn parse(db: &dyn Db, file: SourceFile) -> Ast {
     let src = file.contents(db);
-    let tree = Tree::parse(&src);
+    let tree = Tree::parse(src);
 
     let root = tree.root_node();
 
@@ -49,9 +49,12 @@ impl Workspace {
     }
 }
 
+/// A file attached to a [`Workspace`].
 #[salsa::input]
 pub struct SourceFile {
+    #[return_ref]
     pub path: Text,
+    #[return_ref]
     pub contents: Text,
 }
 

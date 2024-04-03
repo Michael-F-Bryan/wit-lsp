@@ -21,7 +21,7 @@ pub fn lower(db: &dyn Db, _ws: Workspace, file: SourceFile) -> hir::Package {
     let src = file.contents(db);
     let root = ast.source_file(db);
 
-    let mut ctx = State::new(db, &src, file);
+    let mut ctx = State::new(db, src, file);
     ctx.process_file(root);
 
     ctx.finish()

@@ -1,7 +1,7 @@
 use crate::Text;
 
 use super::Attribute;
-use tree_sitter::Node;
+use tree_sitter::{Node, Range};
 
 pub trait AstNode<'tree>: 'tree {
     const NAME: &'static str;
@@ -11,6 +11,27 @@ pub trait AstNode<'tree>: 'tree {
         Self: Sized;
 
     fn syntax(&self) -> Node<'tree>;
+
+    fn range(&self) -> Range {
+        self.syntax().range()
+    }
+}
+
+pub trait HasSource {
+    /// Given the contents of a file, extract the text that corresponds to this
+    /// [`AstNode`].
+    fn utf8_text(self, file_contents: &str) -> &str;
+}
+
+impl<'tree, A> HasSource for A
+where
+    A: AstNode<'tree>,
+{
+    fn utf8_text(self, file_contents: &str) -> &str {
+        self.syntax()
+            .utf8_text(file_contents.as_bytes())
+            .expect("unreachable")
+    }
 }
 
 pub trait HasIdent {

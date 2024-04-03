@@ -7,11 +7,11 @@ use tree_sitter::{Node, Point, Range};
 use crate::{
     ast::{self, AstNode, HasIdent},
     diagnostics::{Diagnostic, Diagnostics, Location},
-    hir::{self},
+    hir,
     pointer::{
         EnumIndex, EnumPtr, FlagsIndex, FlagsPtr, FuncItemIndex, FunctionPtr, Index,
-        InterfaceIndex, InterfacePtr, Pointer, RecordIndex, RecordPtr, ResourceIndex, ResourcePtr,
-        TypeAliasIndex, TypeAliasPtr, VariantIndex, VariantPtr, WorldIndex, WorldPtr,
+        InterfaceIndex, InterfacePtr, Pointer, RawIndex, RecordIndex, RecordPtr, ResourceIndex,
+        ResourcePtr, TypeAliasIndex, TypeAliasPtr, VariantIndex, VariantPtr, WorldIndex, WorldPtr,
     },
     queries::SourceFile,
     Db, Text,
@@ -37,7 +37,7 @@ pub fn file_items(db: &dyn Db, file: SourceFile) -> Items {
         if let Some(world) = top_level_item.world_item() {
             if let Some((name, world)) = walk_world(db, world, src, file) {
                 if names.insert(name.clone(), node) {
-                    let ix = WorldIndex::from_raw(hir::Index::new(worlds.len()));
+                    let ix = WorldIndex::from_raw(RawIndex::new(worlds.len()));
                     worlds.push_back(world);
                     worlds_by_name.insert(name, ix);
                 }
@@ -45,7 +45,7 @@ pub fn file_items(db: &dyn Db, file: SourceFile) -> Items {
         } else if let Some(interface) = top_level_item.interface_item() {
             if let Some((name, interface)) = walk_interface(db, interface, src, file) {
                 if names.insert(name.clone(), node) {
-                    let ix = InterfaceIndex::from_raw(hir::Index::new(worlds.len()));
+                    let ix = InterfaceIndex::from_raw(RawIndex::new(worlds.len()));
                     interfaces.push_back(interface);
                     interfaces_by_name.insert(name, ix);
                 }
@@ -240,7 +240,7 @@ fn insert<'tree, Ast, Index, Ptr>(
     let name = Text::from(name);
 
     if names.insert(name.clone(), node.syntax()) {
-        let index = Index::from_raw(crate::hir::Index::new(items.len()));
+        let index = Index::from_raw(RawIndex::new(items.len()));
         items.push_back(ptr);
         by_name.insert(name, index);
     }
@@ -332,13 +332,13 @@ impl Items {
     ) -> Option<Either<WorldIndex, InterfaceIndex>> {
         for (i, meta) in self.worlds(db).into_iter().enumerate() {
             if range_contains(meta.location(db).range(), point) {
-                return Some(Either::Left(WorldIndex::from_raw(hir::Index::new(i))));
+                return Some(Either::Left(WorldIndex::from_raw(RawIndex::new(i))));
             }
         }
 
         for (i, meta) in self.interfaces(db).into_iter().enumerate() {
             if range_contains(meta.location(db).range(), point) {
-                return Some(Either::Right(InterfaceIndex::from_raw(hir::Index::new(i))));
+                return Some(Either::Right(InterfaceIndex::from_raw(RawIndex::new(i))));
             }
         }
 
