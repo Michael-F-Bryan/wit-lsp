@@ -7,7 +7,7 @@ use crate::{
         EnumIndex, FlagsIndex, FuncItemIndex, GetByIndex, Index, InterfaceIndex, Pointer,
         RecordIndex, ResourceIndex, TypeAliasIndex, VariantIndex, WorldIndex,
     },
-    queries::{ItemDefinitionMetadata, Items, SourceFile},
+    queries::{FilePath, ItemDefinitionMetadata, Items, SourceFile},
     Db, Text, Tree,
 };
 
@@ -116,7 +116,7 @@ fn hover_world(index: WorldIndex, s: State<'_>) -> HoverInfo {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HoverInfo {
     /// The name of the file this thing came from.
-    pub filename: Text,
+    pub filename: FilePath,
     /// Where the item was defined. Useful when you want to jump to definition.
     pub definition: Range,
     /// The contents of the tooltip, formatted as Markdown text.

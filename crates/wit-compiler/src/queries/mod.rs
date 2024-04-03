@@ -10,6 +10,6 @@ pub use self::{
     hover::{hover_info, HoverInfo, HoverTarget},
     items::{file_items, InterfaceMetadata, ItemDefinitionMetadata, Items, WorldMetadata},
     lowering::lower,
-    parsing::{parse, Ast, SourceFile, Workspace},
+    parsing::{parse, Ast, FilePath, SourceFile, Workspace},
     selection::selection_ranges,
 };

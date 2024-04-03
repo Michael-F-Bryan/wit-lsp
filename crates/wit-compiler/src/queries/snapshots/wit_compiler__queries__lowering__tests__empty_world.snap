@@ -1,15 +1,17 @@
 ---
 source: crates/wit-compiler/src/queries/lowering.rs
-expression: got
+info:
+  src: "world empty {}"
+  ast: "(source_file (top_level_item (world_item name: (identifier))))"
 ---
 Package {
     decl: None,
-    worlds: [
-        World {
+    worlds: {
+        WorldIndex(0): World {
             name: empty,
             docs: None,
             items: [],
         },
-    ],
-    interfaces: [],
+    },
+    interfaces: {},
 }

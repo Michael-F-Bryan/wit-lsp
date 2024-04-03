@@ -9,7 +9,9 @@ info:
         SyntaxError {
             rule: "source_file",
             location: Location {
-                filename: syntax_errors_are_emitted.wit,
+                filename: FilePath(
+                    syntax_errors_are_emitted.wit,
+                ),
                 range: Range {
                     start_byte: 0,
                     end_byte: 2,
@@ -29,7 +31,9 @@ info:
         SyntaxError {
             rule: "ERROR",
             location: Location {
-                filename: syntax_errors_are_emitted.wit,
+                filename: FilePath(
+                    syntax_errors_are_emitted.wit,
+                ),
                 range: Range {
                     start_byte: 0,
                     end_byte: 2,

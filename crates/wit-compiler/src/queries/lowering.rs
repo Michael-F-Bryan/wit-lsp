@@ -75,9 +75,27 @@ pub(crate) fn lower_world(db: &dyn Db, file: SourceFile, index: WorldIndex) -> O
     let items = crate::queries::file_items(db, file);
 
     let meta = items.get_by_index(db, index);
-    let _node = meta.location(db).lookup(tree);
-    let _item_definitions = meta.items(db);
+    let node = meta.location(db).lookup(tree);
 
+    let src = ast.src(db);
+    let name = node.identifier(src)?.into();
+
+    let mut world_items = Vector::new();
+
+    for item in node.iter_items() {
+        if let Some(item) = lower_world_item(db, item) {
+            world_items.push_back(item);
+        }
+    }
+
+    Some(hir::World {
+        name,
+        docs: node.docs(src),
+        items: world_items,
+    })
+}
+
+fn lower_world_item(_db: &dyn Db, _item: ast::WorldItems<'_>) -> Option<hir::WorldItem> {
     todo!();
 }
 
@@ -628,7 +646,6 @@ mod tests {
         list: "interface i { type x = list<u32>; }",
         option: "interface i { type x = option<u32>; }",
 
-        #[ignore]
         empty_world: "world empty {}",
         #[ignore]
         world_with_function_export: "world console { export run: func(); }",

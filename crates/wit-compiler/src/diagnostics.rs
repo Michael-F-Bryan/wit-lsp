@@ -5,7 +5,7 @@ use std::fmt::Display;
 
 use tree_sitter::{Point, Range};
 
-use crate::Text;
+use crate::{queries::FilePath, Text};
 
 /// An accumulator for all [`Diagnostic`]s that have been emitted.
 #[salsa::accumulator]
@@ -115,13 +115,13 @@ pub struct Bug {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Location {
     /// The file this error came from.
-    pub filename: Text,
+    pub filename: FilePath,
     /// Where in the file we are referencing this name.
     pub range: Range,
 }
 
 impl Location {
-    pub fn new(filename: impl Into<Text>, range: Range) -> Self {
+    pub fn new(filename: impl Into<FilePath>, range: Range) -> Self {
         Location {
             filename: filename.into(),
             range,

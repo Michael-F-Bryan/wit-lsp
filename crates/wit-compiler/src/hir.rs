@@ -42,12 +42,12 @@ pub enum WorldItem {
 /// Include one [`World`]'s items in another.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Include {
-    pub path: Path,
+    pub path: ModulePath,
     pub aliases: OrdMap<Text, Text>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Path {
+pub struct ModulePath {
     pub namespace: Option<Text>,
     pub path: Text,
 }
@@ -56,7 +56,7 @@ pub struct Path {
 /// [`WorldItem::Export`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ExposableItem {
-    Named(Path),
+    Named(ModulePath),
     /// An item that is defined in the [`World`] itself.
     Inline {
         name: Text,

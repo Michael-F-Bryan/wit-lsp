@@ -37,7 +37,7 @@ fn lsp_diagnostic(
     diag: wit_compiler::diagnostics::Diagnostic,
     uri: &str,
 ) -> Option<tower_lsp::lsp_types::Diagnostic> {
-    if diag.location().filename != uri {
+    if diag.location().filename.as_str() != uri {
         return None;
     }
 
