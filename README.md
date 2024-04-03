@@ -14,7 +14,7 @@ An alternative Language Server implementation for [WIT][wit].
 - [x] Selection range
 - [x] Diagnostic reporting
 - [ ] Semantic Syntax Highlighting
-- [ ] Semantic Autocomplete
+- [x] Semantic Autocomplete
 - [ ] Jump to Definition
 - [ ] Jump to Declaration
 - [ ] Hover
