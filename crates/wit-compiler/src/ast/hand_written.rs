@@ -1,4 +1,4 @@
-use crate::ast::{HasSource, Builtins, Identifier, Semver, UserDefinedType};
+use crate::ast::{Builtins, HasSource, Identifier, Semver, UserDefinedType};
 
 macro_rules! literal_types {
     ($($ty:ident),* $(,)?) => {
