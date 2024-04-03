@@ -17,7 +17,7 @@ pub fn file_diagnostics(
     let diags = wit_compiler::queries::lower::accumulated::<Diagnostics>(db, ws, file);
     let items = diags
         .into_iter()
-        .filter_map(|diag| lsp_diagnostic(diag, &file.path(db)))
+        .filter_map(|diag| lsp_diagnostic(diag, file.path(db)))
         .collect();
 
     DocumentDiagnosticReportResult::Report(DocumentDiagnosticReport::Full(

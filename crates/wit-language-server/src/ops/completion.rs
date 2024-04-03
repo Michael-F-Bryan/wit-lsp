@@ -47,7 +47,7 @@ pub fn complete(
         .find_map(ast::Identifier::cast)
     {
         let src = file.contents(db);
-        let ident = ident.value(&src);
+        let ident = ident.value(src);
         // The user has started writing an identifier, so limit the completions
         // to whatever might match what they've written.
         completions.retain(|c| c.label.starts_with(ident));
