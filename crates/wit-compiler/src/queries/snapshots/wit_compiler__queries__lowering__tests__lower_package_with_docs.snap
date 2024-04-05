@@ -2,12 +2,14 @@
 source: crates/wit-compiler/src/queries/lowering.rs
 info:
   src: "/// This is a package.\npackage wasi:filesystem@1.2.3;"
-  ast: "(source_file (slash_comment) package: (package_decl (fully_qualified_package_name package: (package_name (identifier)) path: (package_path (identifier)) version: (semver))))"
+  ast: "(source_file package: (package_decl attributes: (attribute (doc_comment (docs))) (fully_qualified_package_name package: (package_name (identifier)) path: (package_path (identifier)) version: (semver))))"
 ---
 Package {
     decl: Some(
         PackageDeclaration {
-            docs: None,
+            docs: Some(
+                This is a package.,
+            ),
             package: wasi,
             path: [
                 filesystem,

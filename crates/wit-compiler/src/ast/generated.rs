@@ -48,6 +48,7 @@ pub const PUNCTUATION: &[&str] = &[
     ".",
     "/",
     "/*",
+    "//",
     "///",
     ":",
     ";",
@@ -144,8 +145,8 @@ impl<'tree> super::AstNode<'tree> for Builtins<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct DocComment<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> DocComment<'tree> {
-    pub fn docs(&self) -> Option<Docs<'tree>> {
-        self.0.child_by_field_name("docs").and_then(<Docs as super::AstNode>::cast)
+    pub fn docs(self) -> Option<Docs<'tree>> {
+        super::children(self.0).filter_map(<Docs as super::AstNode<'_>>::cast).next()
     }
 }
 impl<'tree> super::AstNode<'tree> for DocComment<'tree> {
@@ -1348,6 +1349,22 @@ impl<'tree> super::AstNode<'tree> for ResultList<'tree> {
         self.0
     }
 }
+///The `slash_comment` node.
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct SlashComment<'tree>(tree_sitter::Node<'tree>);
+impl<'tree> SlashComment<'tree> {}
+impl<'tree> super::AstNode<'tree> for SlashComment<'tree> {
+    const NAME: &'static str = "slash_comment";
+    fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        if node.kind() == Self::NAME { Some(SlashComment(node)) } else { None }
+    }
+    fn syntax(&self) -> tree_sitter::Node<'tree> {
+        self.0
+    }
+}
 ///The `source_file` node.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct SourceFile<'tree>(tree_sitter::Node<'tree>);
@@ -1952,22 +1969,6 @@ impl<'tree> super::AstNode<'tree> for Semver<'tree> {
         Self: Sized,
     {
         if node.kind() == Self::NAME { Some(Semver(node)) } else { None }
-    }
-    fn syntax(&self) -> tree_sitter::Node<'tree> {
-        self.0
-    }
-}
-///The `slash_comment` node.
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub struct SlashComment<'tree>(tree_sitter::Node<'tree>);
-impl<'tree> SlashComment<'tree> {}
-impl<'tree> super::AstNode<'tree> for SlashComment<'tree> {
-    const NAME: &'static str = "slash_comment";
-    fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
-    where
-        Self: Sized,
-    {
-        if node.kind() == Self::NAME { Some(SlashComment(node)) } else { None }
     }
     fn syntax(&self) -> tree_sitter::Node<'tree> {
         self.0

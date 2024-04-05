@@ -1,0 +1,34 @@
+---
+source: crates/wit-compiler/src/queries/lowering.rs
+info:
+  src: "interface i { record foo { field: string } }"
+  ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (typedef_item (record_item name: (identifier) fields: (record_field name: (identifier) ty: (ty (builtins)))))))))"
+---
+Package {
+    decl: None,
+    worlds: {},
+    interfaces: {
+        InterfaceIndex(0): Interface {
+            name: i,
+            docs: None,
+            items: [
+                Record(
+                    Record {
+                        name: foo,
+                        index: RecordIndex(0),
+                        docs: None,
+                        fields: [
+                            RecordField {
+                                name: field,
+                                docs: None,
+                                ty: Builtin(
+                                    String,
+                                ),
+                            },
+                        ],
+                    },
+                ),
+            ],
+        },
+    },
+}

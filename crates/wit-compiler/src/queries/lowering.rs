@@ -1,4 +1,5 @@
 use im::{OrdMap, Vector};
+use tree_sitter::Node;
 
 use crate::{
     ast::{self, AstNode, HasAttr, HasIdent},
@@ -9,7 +10,7 @@ use crate::{
         ResourceIndex, ScopeIndex, TypeAliasIndex, VariantIndex, WorldIndex,
     },
     queries::{SourceFile, Workspace},
-    Db, Text, Tree,
+    Db, Text,
 };
 
 /// Parse a file and lower it from its [`crate::ast`] representation to the
@@ -259,13 +260,13 @@ pub(crate) fn lower_func_item(
     let mut params = Vector::new();
 
     for param in func_type.params()?.iter_params() {
-        let param = lower_param(db, src, interface.into(), tree, param)?;
+        let param = lower_param(src, param)?;
         params.push_back(param);
     }
 
     let return_value = func_type
         .result_opt()
-        .and_then(|r| lower_return_value(db, src, file, interface.into(), tree, r));
+        .and_then(|r| lower_return_value(db, src, file, r));
 
     Some(hir::FuncItem {
         index,
@@ -276,16 +277,10 @@ pub(crate) fn lower_func_item(
     })
 }
 
-fn lower_param(
-    db: &dyn Db,
-    src: &str,
-    scope: ScopeIndex,
-    tree: &Tree,
-    param: ast::NamedType<'_>,
-) -> Option<hir::Parameter> {
+fn lower_param(src: &str, param: ast::NamedType<'_>) -> Option<hir::Parameter> {
     let name = param.identifier(src)?.into();
     let ty = param.ty()?;
-    let ty = resolve_type(db, src, scope, tree, ty)?;
+    let ty = resolve_type(src, ty)?;
 
     Some(hir::Parameter { name, ty })
 }
@@ -294,12 +289,10 @@ fn lower_return_value(
     db: &dyn Db,
     src: &str,
     file: SourceFile,
-    scope: ScopeIndex,
-    tree: &Tree,
     ret: ast::ResultList<'_>,
 ) -> Option<hir::ReturnValue> {
     if let Some(ty) = ret.ty_opt() {
-        let ty = resolve_type(db, src, scope, tree, ty)?;
+        let ty = resolve_type(src, ty)?;
         Some(hir::ReturnValue::Single(ty))
     } else if let Some(list) = ret.named_result_list_opt() {
         let mut return_types = OrdMap::new();
@@ -307,7 +300,7 @@ fn lower_return_value(
         for pair in list.iter_named_types() {
             let name = Text::from(pair.identifier(src)?);
             let ty_node = pair.ty()?;
-            let ty = resolve_type(db, src, scope, tree, ty_node).unwrap_or(hir::Type::Error);
+            let ty = resolve_type(src, ty_node).unwrap_or(hir::Type::Error);
 
             match return_types.entry(name) {
                 im::ordmap::Entry::Vacant(entry) => {
@@ -337,22 +330,104 @@ fn lower_return_value(
 
 #[salsa::tracked]
 pub(crate) fn lower_record(
-    _db: &dyn Db,
-    _file: SourceFile,
-    _scope: ScopeIndex,
-    _ix: RecordIndex,
+    db: &dyn Db,
+    file: SourceFile,
+    scope: ScopeIndex,
+    index: RecordIndex,
 ) -> Option<hir::Record> {
-    todo!();
+    let ast = crate::queries::parse(db, file);
+    let ptr = match scope {
+        ScopeIndex::Interface(interface) => file.get_by_index(db, (interface, index)),
+        ScopeIndex::World(world) => file.get_by_index(db, (world, index)),
+    };
+    let tree = ast.tree(db);
+    let src = ast.src(db);
+
+    let node = ptr.lookup(tree);
+    let name = node.identifier(src)?.into();
+
+    let mut fields = Vector::new();
+
+    for field in node.iter_fields() {
+        if let Some(field) = lower_field(src, field) {
+            fields.push_back(field);
+        }
+    }
+
+    Some(hir::Record {
+        name,
+        docs: node.docs(src),
+        index,
+        fields,
+    })
+}
+
+fn lower_field(src: &str, node: ast::RecordField<'_>) -> Option<hir::RecordField> {
+    let name = node.identifier(src)?.into();
+    let docs = node.docs(src);
+    let ty = node.ty()?;
+    let ty = resolve_type(src, ty)?;
+
+    Some(hir::RecordField { name, docs, ty })
 }
 
 #[salsa::tracked]
 pub(crate) fn lower_resource(
-    _db: &dyn Db,
-    _file: SourceFile,
-    _scope: ScopeIndex,
-    _ix: ResourceIndex,
+    db: &dyn Db,
+    file: SourceFile,
+    scope: ScopeIndex,
+    index: ResourceIndex,
 ) -> Option<hir::Resource> {
-    todo!();
+    let ast = crate::queries::parse(db, file);
+    let ptr = match scope {
+        ScopeIndex::Interface(interface) => file.get_by_index(db, (interface, index)),
+        ScopeIndex::World(world) => file.get_by_index(db, (world, index)),
+    };
+    let tree = ast.tree(db);
+    let src = ast.src(db);
+
+    let node = ptr.lookup(tree);
+    let name = node.identifier(src)?.into();
+    let docs = node.docs(src);
+
+    let methods = Vector::new();
+    let static_methods = Vector::new();
+    let mut constructor: Option<(Node<'_>, hir::Constructor)> = None;
+
+    for method in node.iter_methods() {
+        if let Some(_method) = method.func_item() {
+            todo!();
+        } else if let Some(c) = method.resource_constructor() {
+            if let Some((_original, _)) = constructor {
+                todo!("Report multiple constructors");
+            }
+
+            constructor = Some((c.syntax(), lower_constructor(c, src)))
+        } else if let Some(_static_method) = method.static_method() {
+            todo!();
+        }
+    }
+
+    Some(hir::Resource {
+        constructor: constructor.map(|(_, c)| c),
+        docs,
+        index,
+        methods,
+        static_methods,
+        name,
+    })
+}
+
+fn lower_constructor(node: ast::ResourceConstructor<'_>, src: &str) -> hir::Constructor {
+    let docs = node.docs(src);
+    let params = node
+        .params()
+        .into_iter()
+        .flat_map(|params| params.iter_params())
+        .filter_map(|p| lower_param(src, p))
+        .collect();
+
+    hir::Constructor { docs, params }
 }
 
 #[salsa::tracked]
@@ -374,7 +449,7 @@ pub(crate) fn lower_type_alias(
     let name = node.identifier(src)?.into();
 
     let ty = node.ty()?;
-    let ty = resolve_type(db, src, scope, tree, ty)?;
+    let ty = resolve_type(src, ty)?;
 
     Some(hir::TypeAlias {
         name,
@@ -394,13 +469,7 @@ pub(crate) fn lower_variant(
     todo!();
 }
 
-fn resolve_type(
-    _db: &dyn Db,
-    src: &str,
-    _scope: ScopeIndex,
-    _tree: &Tree,
-    ty: ast::Ty<'_>,
-) -> Option<hir::Type> {
+fn resolve_type(src: &str, ty: ast::Ty<'_>) -> Option<hir::Type> {
     let resolver = TypeResolver { src };
     resolver.resolve_type(ty)
 }
@@ -645,6 +714,27 @@ mod tests {
         result_with_just_error: "interface i { type x = result<_, string>; }",
         list: "interface i { type x = list<u32>; }",
         option: "interface i { type x = option<u32>; }",
+        empty_record: "interface i { record empty {} }",
+        record_with_one_field: "interface i { record foo { field: string } }",
+        record_with_kitchen_sink: "interface i {
+            /// A very important record.
+            record foo {
+                /// The first field.
+                first: string,
+                /// The second field.
+                second: u32,
+                /// The third field.
+                third: list<bool>,
+             }
+        }",
+        empty_resource: "interface i { resource empty; }",
+        empty_resource_with_braces: "interface i { resource empty {} }",
+        resource_with_parameterless_constructor: "interface i { resource r { constructor(); } }",
+        resource_with_constructor: "interface i { resource r { constructor(arg1: string, arg2: bool); } }",
+        #[ignore]
+        resource_with_method: "interface i { resource r { method: func(arg1: string, arg2: bool) -> u32; } }",
+        #[ignore]
+        resource_with_static_method: "interface i { resource r { method: static func(arg1: string, arg2: bool) -> u32; } }",
 
         empty_world: "world empty {}",
         #[ignore]
@@ -672,5 +762,7 @@ mod tests {
         }",
         #[ignore]
         duplicate_identifiers: "interface i { record foo {} variant foo {} }",
+        #[ignore]
+        resource_with_multiple_constructors: "interface i { resource r { constructor(); constructor(); }}",
     }
 }

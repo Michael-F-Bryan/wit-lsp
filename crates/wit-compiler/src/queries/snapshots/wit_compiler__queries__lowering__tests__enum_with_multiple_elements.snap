@@ -2,7 +2,7 @@
 source: crates/wit-compiler/src/queries/lowering.rs
 info:
   src: "interface i {\n            /// This is an enum.\n            enum foo {\n                /// first case.\n                first,\n                /// Second case.\n                /// and another\n                /// doc-comment.\n                second,\n             }\n         }"
-  ast: "(source_file (top_level_item (interface_item name: (identifier) (slash_comment) items: (interface_items (typedef_item (enum_item name: (identifier) (slash_comment) cases: (enum_case name: (identifier)) (slash_comment) (slash_comment) (slash_comment) cases: (enum_case name: (identifier))))))))"
+  ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (typedef_item (enum_item attributes: (attribute (doc_comment (docs))) name: (identifier) cases: (enum_case attributes: (attribute (doc_comment (docs))) name: (identifier)) cases: (enum_case attributes: (attribute (doc_comment (docs))) attributes: (attribute (doc_comment (docs))) attributes: (attribute (doc_comment (docs))) name: (identifier))))))))"
 ---
 Package {
     decl: None,
@@ -16,15 +16,23 @@ Package {
                     Enum {
                         name: foo,
                         index: EnumIndex(0),
-                        docs: None,
+                        docs: Some(
+                            This is an enum.,
+                        ),
                         cases: [
                             EnumCase {
                                 name: first,
-                                docs: None,
+                                docs: Some(
+                                    first case.,
+                                ),
                             },
                             EnumCase {
                                 name: second,
-                                docs: None,
+                                docs: Some(
+                                    Second case.
+                                    and another
+                                    doc-comment.,
+                                ),
                             },
                         ],
                     },

@@ -1,0 +1,58 @@
+---
+source: crates/wit-compiler/src/queries/lowering.rs
+info:
+  src: "interface i {\n            /// A very important record.\n            record foo {\n                /// The first field.\n                first: string,\n                /// The second field.\n                second: u32,\n                /// The third field.\n                third: list<bool>,\n             }\n        }"
+  ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (typedef_item (record_item attributes: (attribute (doc_comment (docs))) name: (identifier) fields: (record_field attributes: (attribute (doc_comment (docs))) name: (identifier) ty: (ty (builtins))) fields: (record_field attributes: (attribute (doc_comment (docs))) name: (identifier) ty: (ty (builtins))) fields: (record_field attributes: (attribute (doc_comment (docs))) name: (identifier) ty: (ty (list (ty (builtins)))))))))))"
+---
+Package {
+    decl: None,
+    worlds: {},
+    interfaces: {
+        InterfaceIndex(0): Interface {
+            name: i,
+            docs: None,
+            items: [
+                Record(
+                    Record {
+                        name: foo,
+                        index: RecordIndex(0),
+                        docs: Some(
+                            A very important record.,
+                        ),
+                        fields: [
+                            RecordField {
+                                name: first,
+                                docs: Some(
+                                    The first field.,
+                                ),
+                                ty: Builtin(
+                                    String,
+                                ),
+                            },
+                            RecordField {
+                                name: second,
+                                docs: Some(
+                                    The second field.,
+                                ),
+                                ty: Builtin(
+                                    U32,
+                                ),
+                            },
+                            RecordField {
+                                name: third,
+                                docs: Some(
+                                    The third field.,
+                                ),
+                                ty: List(
+                                    Builtin(
+                                        Boolean,
+                                    ),
+                                ),
+                            },
+                        ],
+                    },
+                ),
+            ],
+        },
+    },
+}

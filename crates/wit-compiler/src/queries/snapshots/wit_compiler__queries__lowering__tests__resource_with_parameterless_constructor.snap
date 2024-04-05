@@ -1,0 +1,33 @@
+---
+source: crates/wit-compiler/src/queries/lowering.rs
+info:
+  src: "interface i { resource r { constructor(); } }"
+  ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (typedef_item (resource_item name: (identifier) methods: (resource_method (resource_constructor params: (param_list)))))))))"
+---
+Package {
+    decl: None,
+    worlds: {},
+    interfaces: {
+        InterfaceIndex(0): Interface {
+            name: i,
+            docs: None,
+            items: [
+                Resource(
+                    Resource {
+                        name: r,
+                        index: ResourceIndex(0),
+                        docs: None,
+                        constructor: Some(
+                            Constructor {
+                                docs: None,
+                                params: [],
+                            },
+                        ),
+                        methods: [],
+                        static_methods: [],
+                    },
+                ),
+            ],
+        },
+    },
+}
