@@ -43,17 +43,16 @@
   {
     "type": "doc_comment",
     "named": true,
-    "fields": {
-      "docs": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "docs",
-            "named": true
-          }
-        ]
-      }
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "docs",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -991,6 +990,11 @@
     }
   },
   {
+    "type": "slash_comment",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "source_file",
     "named": true,
     "fields": {
@@ -1484,6 +1488,10 @@
     "named": false
   },
   {
+    "type": "//",
+    "named": false
+  },
+  {
     "type": "///",
     "named": false
   },
@@ -1625,10 +1633,6 @@
   },
   {
     "type": "semver",
-    "named": true
-  },
-  {
-    "type": "slash_comment",
     "named": true
   },
   {

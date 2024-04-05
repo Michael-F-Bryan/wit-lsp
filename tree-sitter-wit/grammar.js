@@ -14,11 +14,11 @@ function cases(rule) {
 module.exports = grammar({
     name: "wit",
     word: $ => $.identifier,
-    extras: $ => [/[\s\n\t]/, $.slash_comment, $.block_comment],
+    extras: $ => [/[\s\n\t]+/, $.slash_comment, $.block_comment],
     conficts: $ => [
-        [$.package_name],
         [$.exported_item, $.exported_path],
         [$.imported_item, $.imported_path],
+        [$.doc_comment, $.slash_comment],
     ],
 
     rules: {
@@ -281,17 +281,17 @@ module.exports = grammar({
         borrowed_handle: $ => seq("borrow", "<", field("name", $.identifier), ">"),
         owned_handle: $ => seq("own", "<", field("name", $.identifier), ">"),
 
-        attribute: $ => choice($.doc_comment),
+        attribute: $ => $.doc_comment,
 
         semver: $ => /(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?/,
         identifier: $ => /%?[a-zA-Z][a-zA-Z0-9-]*/,
-        doc_comment: $ => seq(
-            token.immediate("///"),
-            token.immediate(/[ \t\v]*/),
-            field("docs", $.docs),
+        doc_comment: $ => seq("///", /[ ]*/, $.docs),
+        docs: $ => /[^\n]*/,
+        block_comment: $ => seq(
+            '/*',
+            /[^*]*\*+([^/*][^*]*\*+)*/,
+            '/'
         ),
-        docs: $ => token.immediate(/[^n]*/),
-        block_comment: $ => seq("/*", /[^*]*\*+([^/*][^*]*\*+)*/, "/"),
-        slash_comment: $ => /\/\/[^\n]*/,
+        slash_comment: $ => seq("//", /[^/\n][^\n]*/),
     },
 });

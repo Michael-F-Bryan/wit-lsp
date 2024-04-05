@@ -2085,13 +2085,8 @@
       ]
     },
     "attribute": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "doc_comment"
-        }
-      ]
+      "type": "SYMBOL",
+      "name": "doc_comment"
     },
     "semver": {
       "type": "PATTERN",
@@ -2105,35 +2100,22 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "IMMEDIATE_TOKEN",
-          "content": {
-            "type": "STRING",
-            "value": "///"
-          }
+          "type": "STRING",
+          "value": "///"
         },
         {
-          "type": "IMMEDIATE_TOKEN",
-          "content": {
-            "type": "PATTERN",
-            "value": "[ \\t\\v]*"
-          }
+          "type": "PATTERN",
+          "value": "[ ]*"
         },
         {
-          "type": "FIELD",
-          "name": "docs",
-          "content": {
-            "type": "SYMBOL",
-            "name": "docs"
-          }
+          "type": "SYMBOL",
+          "name": "docs"
         }
       ]
     },
     "docs": {
-      "type": "IMMEDIATE_TOKEN",
-      "content": {
-        "type": "PATTERN",
-        "value": "[^n]*"
-      }
+      "type": "PATTERN",
+      "value": "[^\\n]*"
     },
     "block_comment": {
       "type": "SEQ",
@@ -2153,14 +2135,23 @@
       ]
     },
     "slash_comment": {
-      "type": "PATTERN",
-      "value": "\\/\\/[^\\n]*"
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "//"
+        },
+        {
+          "type": "PATTERN",
+          "value": "[^/\\n][^\\n]*"
+        }
+      ]
     }
   },
   "extras": [
     {
       "type": "PATTERN",
-      "value": "[\\s\\n\\t]"
+      "value": "[\\s\\n\\t]+"
     },
     {
       "type": "SYMBOL",

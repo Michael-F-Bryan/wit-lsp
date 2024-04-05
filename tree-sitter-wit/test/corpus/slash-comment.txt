@@ -1,0 +1,10 @@
+=============
+Slash Comment
+=============
+
+// This is a comment
+
+---
+
+(source_file
+  (slash_comment))

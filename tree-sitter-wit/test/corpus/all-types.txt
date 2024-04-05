@@ -429,10 +429,12 @@ interface types {
               (user_defined_type
                 (identifier))))))
       (block_comment)
-      (slash_comment)
       (interface_items
         (typedef_item
           (type_item
+            (attribute
+              (doc_comment
+                (docs)))
             (identifier)
             (ty
               (user_defined_type

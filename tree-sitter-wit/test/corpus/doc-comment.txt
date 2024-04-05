@@ -1,0 +1,19 @@
+===========
+Doc Comment
+===========
+
+/// Some package.
+package local:demo;
+
+---
+
+(source_file
+  (package_decl
+    (attribute
+      (doc_comment
+        (docs)))
+    (fully_qualified_package_name
+      (package_name
+        (identifier))
+      (package_path
+        (identifier)))))

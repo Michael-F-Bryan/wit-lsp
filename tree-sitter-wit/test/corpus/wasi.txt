@@ -197,259 +197,435 @@ interface wasi {
         (typedef_item
           (enum_item
             (identifier)
-            (slash_comment)
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
-            (slash_comment)
-            (slash_comment)
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
+              (attribute
+                (doc_comment
+                  (docs)))
+              (attribute
+                (doc_comment
+                  (docs)))
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier)))))
-      (slash_comment)
       (interface_items
         (typedef_item
           (type_item
+            (attribute
+              (doc_comment
+                (docs)))
             (identifier)
             (ty
               (builtins)))))
-      (slash_comment)
-      (slash_comment)
-      (slash_comment)
-      (slash_comment)
       (interface_items
         (typedef_item
           (enum_item
+            (attribute
+              (doc_comment
+                (docs)))
+            (attribute
+              (doc_comment
+                (docs)))
+            (attribute
+              (doc_comment
+                (docs)))
+            (attribute
+              (doc_comment
+                (docs)))
             (identifier)
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))
-            (slash_comment)
             (enum_case
+              (attribute
+                (doc_comment
+                  (docs)))
               (identifier))))))))
