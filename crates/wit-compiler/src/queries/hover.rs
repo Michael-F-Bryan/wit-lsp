@@ -2,11 +2,11 @@ use either::Either;
 use tree_sitter::Range;
 
 use crate::{
-    ast::{AstNode, HasSource},
     access::{
         EnumIndex, FlagsIndex, FuncItemIndex, GetAstNode, GetByIndex, Index, InterfaceIndex,
         RecordIndex, ResourceIndex, TypeAliasIndex, VariantIndex, WorldIndex,
     },
+    ast::{AstNode, HasSource},
     queries::{FilePath, ItemDefinitionMetadata, Items, SourceFile},
     Db, Text, Tree,
 };
