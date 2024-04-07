@@ -3,7 +3,7 @@
 use im::{OrdMap, Vector};
 
 use crate::{
-    pointer::{
+    access::{
         EnumIndex, FlagsIndex, FuncItemIndex, InterfaceIndex, RecordIndex, ResourceIndex,
         TypeAliasIndex, VariantIndex, WorldIndex,
     },
@@ -262,9 +262,14 @@ pub struct Resource {
     pub index: ResourceIndex,
     pub docs: Option<Text>,
     pub constructor: Option<Constructor>,
-    pub methods: Vector<FuncItem>,
-    pub static_methods: Vector<FuncItem>,
+    pub methods: Vector<ResourceMethod>,
+    pub static_methods: Vector<StaticResourceMethod>,
 }
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ResourceMethod(pub FuncItem);
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StaticResourceMethod(pub FuncItem);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Constructor {

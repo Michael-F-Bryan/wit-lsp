@@ -5,8 +5,8 @@ use crate::{
     ast::{self, AstNode, HasAttr, HasIdent},
     diagnostics::{Diagnostic, Diagnostics, Location},
     hir,
-    pointer::{
-        EnumIndex, FlagsIndex, FuncItemIndex, GetByIndex, InterfaceIndex, Pointer, RecordIndex,
+    access::{
+        EnumIndex, FlagsIndex, FuncItemIndex, GetAstNode, GetByIndex, InterfaceIndex, RecordIndex,
         ResourceIndex, ScopeIndex, TypeAliasIndex, VariantIndex, WorldIndex,
     },
     queries::{SourceFile, Workspace},
@@ -76,7 +76,7 @@ pub(crate) fn lower_world(db: &dyn Db, file: SourceFile, index: WorldIndex) -> O
     let items = crate::queries::file_items(db, file);
 
     let meta = items.get_by_index(db, index);
-    let node = meta.location(db).lookup(tree);
+    let node = meta.location(db).ast_node(tree);
 
     let src = ast.src(db);
     let name = node.identifier(src)?.into();
@@ -111,7 +111,7 @@ pub(crate) fn lower_interface(
     let items = crate::queries::file_items(db, file);
 
     let meta = items.get_by_index(db, index);
-    let node = meta.location(db).lookup(tree);
+    let node = meta.location(db).ast_node(tree);
     let item_definitions = meta.items(db);
 
     let mut items = Vector::new();
@@ -181,7 +181,7 @@ pub(crate) fn lower_enum(
     let src = ast.src(db);
 
     let tree = ast.tree(db);
-    let node = ptr.lookup(tree);
+    let node = ptr.ast_node(tree);
     let name = node.identifier(src)?.into();
 
     let cases = node
@@ -219,7 +219,7 @@ pub(crate) fn lower_flags(
     let src = ast.src(db);
 
     let tree = ast.tree(db);
-    let node = ptr.lookup(tree);
+    let node = ptr.ast_node(tree);
     let name = node.identifier(src)?.into();
 
     let cases = node
@@ -251,7 +251,7 @@ pub(crate) fn lower_func_item(
 ) -> Option<hir::FuncItem> {
     let ast = crate::queries::parse(db, file);
     let tree = ast.tree(db);
-    let node = file.get_by_index(db, (interface, index)).lookup(tree);
+    let node = file.get_by_index(db, (interface, index)).ast_node(tree);
     let src = ast.src(db);
 
     let name = node.identifier(src)?.into();
@@ -343,7 +343,7 @@ pub(crate) fn lower_record(
     let tree = ast.tree(db);
     let src = ast.src(db);
 
-    let node = ptr.lookup(tree);
+    let node = ptr.ast_node(tree);
     let name = node.identifier(src)?.into();
 
     let mut fields = Vector::new();
@@ -386,7 +386,7 @@ pub(crate) fn lower_resource(
     let tree = ast.tree(db);
     let src = ast.src(db);
 
-    let node = ptr.lookup(tree);
+    let node = ptr.location.ast_node(tree);
     let name = node.identifier(src)?.into();
     let docs = node.docs(src);
 
@@ -445,7 +445,7 @@ pub(crate) fn lower_type_alias(
     let src = ast.src(db);
 
     let tree = ast.tree(db);
-    let node = ptr.lookup(tree);
+    let node = ptr.ast_node(tree);
     let name = node.identifier(src)?.into();
 
     let ty = node.ty()?;

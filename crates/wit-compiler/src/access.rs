@@ -7,7 +7,8 @@ use crate::{
     ast::AstNode,
     hir,
     queries::{
-        InterfaceMetadata, ItemDefinitionMetadata, Items, SourceFile, Workspace, WorldMetadata,
+        InterfaceMetadata, ItemDefinitionMetadata, Items, ResourceMetadata, SourceFile, Workspace,
+        WorldMetadata,
     },
     Db, Text, Tree,
 };
@@ -48,7 +49,8 @@ impl RawIndex {
     }
 }
 
-/// An index into a
+/// An index that can be used alongside [`GetByIndex`] to access a
+/// [`crate::hir`] item.
 pub trait Index: Copy {
     type Hir;
 
@@ -57,7 +59,7 @@ pub trait Index: Copy {
 }
 
 macro_rules! indices {
-    ($( $name:ident),* ) => {
+    ($( $name:ident),* $(,)? ) => {
         $(
             paste::paste! {
                 #[doc = concat!("The index of a [`crate::hir::", stringify!($name), "`].")]
@@ -82,7 +84,10 @@ macro_rules! indices {
     };
 }
 
-indices!(Enum, Flags, Resource, Variant, FuncItem, TypeAlias, Record, World, Interface);
+indices! {
+    Enum, Flags, Resource, Variant, FuncItem, TypeAlias, Record, World,
+    Interface, ResourceMethod, StaticResourceMethod,
+}
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ScopeIndex {
@@ -102,13 +107,18 @@ impl From<WorldIndex> for ScopeIndex {
     }
 }
 
-/// A reference to an AST node.
-pub trait Pointer {
+/// Get the [`crate::ast::AstNode`] that is referred to by this type.
+pub trait GetAstNode {
     type Node<'tree>: crate::ast::AstNode<'tree>;
 
+    /// Get the [`crate::ast`] node from the AST [`Tree`].
+    fn ast_node(self, tree: &Tree) -> Self::Node<'_>;
+}
+
+/// A reference to an AST node.
+pub trait Pointer: GetAstNode {
     fn for_node(node: Self::Node<'_>) -> Self;
     fn range(self) -> tree_sitter::Range;
-    fn lookup(self, tree: &Tree) -> Self::Node<'_>;
 }
 
 macro_rules! item_pointers {
@@ -118,19 +128,21 @@ macro_rules! item_pointers {
             #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
             pub struct $pointer(tree_sitter::Range);
 
-            impl Pointer for $pointer {
+            impl GetAstNode for $pointer {
                 type Node<'tree> = crate::ast::$ast_node<'tree>;
 
+                fn ast_node(self, tree: &Tree) -> Self::Node<'_> {
+                    tree.find(self.0)
+                }
+            }
+
+            impl Pointer for $pointer {
                 fn for_node(node: crate::ast::$ast_node<'_>) -> Self {
                     $pointer(node.syntax().range())
                 }
 
                 fn range(self) -> tree_sitter::Range {
                     self.0
-                }
-
-                fn lookup(self, tree: &Tree) -> Self::Node<'_> {
-                    tree.find(self.0)
                 }
             }
         )*
@@ -147,6 +159,9 @@ item_pointers! {
     ResourcePtr => ResourceItem,
     VariantPtr => VariantItem,
     FunctionPtr => FuncItem,
+    ConstructorPtr => ResourceConstructor,
+    MethodPtr => FuncItem,
+    StaticMethodPtr => StaticMethod,
 }
 
 /// Look up an item's metadata using its [`Index`].
@@ -165,7 +180,7 @@ macro_rules! get_metadata {
                 #[allow(unused_variables)]
                 fn get_by_index(&self, db: &dyn Db, index: $index) -> Self::Metadata {
                     let index = index.raw().as_usize();
-                    self.$field[index]
+                    self.$field[index].clone()
                 }
             }
         )*
@@ -177,7 +192,7 @@ get_metadata! {
     FlagsIndex => flags => FlagsPtr,
     FuncItemIndex => functions => FunctionPtr,
     RecordIndex => records => RecordPtr,
-    ResourceIndex => resources => ResourcePtr,
+    ResourceIndex => resources => ResourceMetadata,
     TypeAliasIndex => typedefs => TypeAliasPtr,
     VariantIndex => variants => VariantPtr,
 }

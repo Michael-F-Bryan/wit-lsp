@@ -3,8 +3,8 @@ use tree_sitter::Range;
 
 use crate::{
     ast::{AstNode, HasSource},
-    pointer::{
-        EnumIndex, FlagsIndex, FuncItemIndex, GetByIndex, Index, InterfaceIndex, Pointer,
+    access::{
+        EnumIndex, FlagsIndex, FuncItemIndex, GetAstNode, GetByIndex, Index, InterfaceIndex,
         RecordIndex, ResourceIndex, TypeAliasIndex, VariantIndex, WorldIndex,
     },
     queries::{FilePath, ItemDefinitionMetadata, Items, SourceFile},
@@ -67,7 +67,7 @@ impl<'db> State<'db> {
     where
         I: Index,
         ItemDefinitionMetadata: GetByIndex<I>,
-        <ItemDefinitionMetadata as GetByIndex<I>>::Metadata: Pointer,
+        <ItemDefinitionMetadata as GetByIndex<I>>::Metadata: GetAstNode,
     {
         let ptr = match scope {
             Either::Left(interface) => {
@@ -80,7 +80,7 @@ impl<'db> State<'db> {
             }
         };
 
-        let node = ptr.lookup(self.tree);
+        let node = ptr.ast_node(self.tree);
 
         HoverInfo {
             filename: self.file.path(self.db).clone(),
@@ -92,7 +92,7 @@ impl<'db> State<'db> {
 
 fn hover_interface(index: InterfaceIndex, s: State<'_>) -> HoverInfo {
     let meta = s.items.get_interface(s.db, index);
-    let node = meta.location(s.db).lookup(s.tree);
+    let node = meta.location(s.db).ast_node(s.tree);
 
     HoverInfo {
         filename: s.file.path(s.db).clone(),
@@ -103,7 +103,7 @@ fn hover_interface(index: InterfaceIndex, s: State<'_>) -> HoverInfo {
 
 fn hover_world(index: WorldIndex, s: State<'_>) -> HoverInfo {
     let meta = s.items.get_world(s.db, index);
-    let node = meta.location(s.db).lookup(s.tree);
+    let node = meta.location(s.db).ast_node(s.tree);
 
     HoverInfo {
         filename: s.file.path(s.db).clone(),

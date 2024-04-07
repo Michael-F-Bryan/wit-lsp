@@ -5,13 +5,15 @@ use im::{ordmap::Entry, OrdMap, Vector};
 use tree_sitter::{Node, Point, Range};
 
 use crate::{
+    access::{
+        ConstructorPtr, EnumIndex, EnumPtr, FlagsIndex, FlagsPtr, FuncItemIndex, FunctionPtr,
+        GetAstNode, Index, InterfaceIndex, InterfacePtr, MethodPtr, Pointer, RawIndex, RecordIndex,
+        RecordPtr, ResourceIndex, ResourceMethodIndex, ResourcePtr, StaticMethodPtr,
+        StaticResourceMethodIndex, TypeAliasIndex, TypeAliasPtr, VariantIndex, VariantPtr,
+        WorldIndex, WorldPtr,
+    },
     ast::{self, AstNode, HasIdent},
     diagnostics::{Diagnostic, Diagnostics, Location},
-    pointer::{
-        EnumIndex, EnumPtr, FlagsIndex, FlagsPtr, FuncItemIndex, FunctionPtr, Index,
-        InterfaceIndex, InterfacePtr, Pointer, RawIndex, RecordIndex, RecordPtr, ResourceIndex,
-        ResourcePtr, TypeAliasIndex, TypeAliasPtr, VariantIndex, VariantPtr, WorldIndex, WorldPtr,
-    },
     queries::SourceFile,
     Db, Text,
 };
@@ -117,7 +119,7 @@ struct TypesBuilder<'a> {
     records_by_name: OrdMap<Text, RecordIndex>,
     records: Vector<RecordPtr>,
     resources_by_name: OrdMap<Text, ResourceIndex>,
-    resources: Vector<ResourcePtr>,
+    resources: Vector<ResourceMetadata>,
     typedefs_by_name: OrdMap<Text, TypeAliasIndex>,
     typedefs: Vector<TypeAliasPtr>,
     variants_by_name: OrdMap<Text, VariantIndex>,
@@ -152,13 +154,18 @@ impl<'a> TypesBuilder<'a> {
                 &mut self.records_by_name,
             );
         } else if let Some(r) = typedef.resource_item() {
-            insert(
-                r,
-                self.src,
-                names,
-                &mut self.resources,
-                &mut self.resources_by_name,
-            );
+            let Some(name) = r.identifier(self.src) else {
+                return;
+            };
+
+            let meta = process_resource(names.db, names.file, r, name);
+            let name = meta.name.clone();
+
+            if names.insert(name.clone(), r.syntax()) {
+                let index = Index::from_raw(RawIndex::new(self.resources.len()));
+                self.resources.push_back(meta);
+                self.resources_by_name.insert(name, index);
+            }
         } else if let Some(f) = typedef.flags_item() {
             insert(f, self.src, names, &mut self.flags, &mut self.flags_by_name);
         } else if let Some(t) = typedef.type_item() {
@@ -219,6 +226,63 @@ impl<'a> TypesBuilder<'a> {
     }
 }
 
+fn process_resource(
+    db: &dyn Db,
+    file: SourceFile,
+    node: ast::ResourceItem<'_>,
+    name: &str,
+) -> ResourceMetadata {
+    let location = ResourcePtr::for_node(node);
+    let name = Text::from(name);
+    let src = file.contents(db);
+    let mut constructor = None;
+
+    let mut names = NameTable::new(db, file);
+
+    let mut methods = Vector::new();
+    let mut static_methods = Vector::new();
+    let mut methods_by_name = OrdMap::new();
+    let mut static_methods_by_name = OrdMap::new();
+
+    for m in node.iter_methods() {
+        if let Some(c) = m.resource_constructor() {
+            if let Some(previous) = constructor {
+                todo!("Duplicate: {previous:?}");
+            }
+
+            constructor = Some(ConstructorPtr::for_node(c));
+        } else if let Some(f) = m.func_item() {
+            if let Some(name) = f.identifier(src) {
+                let name = Text::from(name);
+                if names.insert(name.clone(), f.syntax()) {
+                    let index = ResourceMethodIndex::from_raw(RawIndex::new(methods.len()));
+                    methods_by_name.insert(name, index);
+                    methods.push_back(MethodPtr::for_node(f));
+                }
+            }
+        } else if let Some(s) = m.static_method() {
+            if let Some(name) = s.identifier(src) {
+                let name = Text::from(name);
+                if names.insert(name.clone(), m.syntax()) {
+                    let index = StaticResourceMethodIndex::from_raw(RawIndex::new(methods.len()));
+                    static_methods_by_name.insert(name, index);
+                    static_methods.push_back(StaticMethodPtr::for_node(s));
+                }
+            }
+        }
+    }
+
+    ResourceMetadata {
+        name,
+        location,
+        constructor,
+        methods,
+        methods_by_name,
+        static_methods,
+        static_methods_by_name,
+    }
+}
+
 fn insert<'tree, Ast, Index, Ptr>(
     node: Ast,
     src: &str,
@@ -227,8 +291,8 @@ fn insert<'tree, Ast, Index, Ptr>(
     by_name: &mut OrdMap<Text, Index>,
 ) where
     Ast: AstNode<'tree> + HasIdent + Copy,
-    Index: crate::pointer::Index,
-    Ptr: crate::pointer::Pointer<Node<'tree> = Ast> + Copy,
+    Index: crate::access::Index,
+    Ptr: crate::access::Pointer<Node<'tree> = Ast> + Copy,
 {
     let Some(name) = node.identifier(src) else {
         return;
@@ -374,7 +438,7 @@ pub struct ItemDefinitionMetadata {
     pub records_by_name: OrdMap<Text, RecordIndex>,
     pub records: Vector<RecordPtr>,
     pub resources_by_name: OrdMap<Text, ResourceIndex>,
-    pub resources: Vector<ResourcePtr>,
+    pub resources: Vector<ResourceMetadata>,
     pub typedefs_by_name: OrdMap<Text, TypeAliasIndex>,
     pub typedefs: Vector<TypeAliasPtr>,
     pub variants_by_name: OrdMap<Text, VariantIndex>,
@@ -428,4 +492,23 @@ where
     Meta: Clone,
 {
     (0..items.len()).map(|ix| Ix::from_raw(RawIndex::new(ix)))
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ResourceMetadata {
+    pub name: Text,
+    pub location: ResourcePtr,
+    pub constructor: Option<ConstructorPtr>,
+    pub methods_by_name: OrdMap<Text, ResourceMethodIndex>,
+    pub methods: Vector<MethodPtr>,
+    pub static_methods_by_name: OrdMap<Text, StaticResourceMethodIndex>,
+    pub static_methods: Vector<StaticMethodPtr>,
+}
+
+impl GetAstNode for ResourceMetadata {
+    type Node<'tree> = ast::ResourceItem<'tree>;
+
+    fn ast_node(self, tree: &crate::Tree) -> Self::Node<'_> {
+        self.location.ast_node(tree)
+    }
 }

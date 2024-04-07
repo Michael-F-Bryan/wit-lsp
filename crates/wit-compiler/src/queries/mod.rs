@@ -8,7 +8,10 @@ mod selection;
 
 pub use self::{
     hover::{hover_info, HoverInfo, HoverTarget},
-    items::{file_items, InterfaceMetadata, ItemDefinitionMetadata, Items, WorldMetadata},
+    items::{
+        file_items, InterfaceMetadata, ItemDefinitionMetadata, Items, ResourceMetadata,
+        WorldMetadata,
+    },
     lowering::lower,
     parsing::{parse, Ast, FilePath, SourceFile, Workspace},
     selection::selection_ranges,

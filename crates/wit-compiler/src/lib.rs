@@ -4,7 +4,7 @@ pub mod ast;
 mod compiler;
 pub mod diagnostics;
 pub mod hir;
-pub mod pointer;
+pub mod access;
 pub mod queries;
 mod text;
 pub mod traverse;
