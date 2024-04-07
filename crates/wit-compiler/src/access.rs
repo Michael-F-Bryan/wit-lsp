@@ -197,6 +197,13 @@ get_metadata! {
     VariantIndex => variants => VariantPtr,
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum AnyFuncItemIndex {
+    TopLevel(InterfaceIndex, FuncItemIndex),
+    Method(ScopeIndex, ResourceIndex, ResourceMethodIndex),
+    StaticMethod(ScopeIndex, ResourceIndex, StaticResourceMethodIndex),
+}
+
 impl GetByIndex<WorldIndex> for Items {
     type Metadata = WorldMetadata;
 

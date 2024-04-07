@@ -16,6 +16,7 @@ pub struct Diagnostics(Diagnostic);
 #[non_exhaustive]
 pub enum Diagnostic {
     DuplicateName(DuplicateName),
+    MultipleConstructors(MultipleConstructors),
     SyntaxError(SyntaxError),
     UnknownName(UnknownName),
     Bug(Bug),
@@ -27,6 +28,7 @@ impl Diagnostic {
             Diagnostic::DuplicateName(DuplicateName { location, .. })
             | Diagnostic::SyntaxError(SyntaxError { location, .. })
             | Diagnostic::UnknownName(UnknownName { location, .. })
+            | Diagnostic::MultipleConstructors(MultipleConstructors { location, .. })
             | Diagnostic::Bug(Bug { location, .. }) => location,
         }
     }
@@ -41,6 +43,13 @@ impl Diagnostic {
     pub fn duplicate_name(name: Text, location: Location, original_definition: Location) -> Self {
         Diagnostic::DuplicateName(DuplicateName {
             name,
+            location,
+            original_definition,
+        })
+    }
+
+    pub fn multiple_constructors(location: Location, original_definition: Location) -> Self {
+        Diagnostic::MultipleConstructors(MultipleConstructors {
             location,
             original_definition,
         })
@@ -87,6 +96,18 @@ pub struct DuplicateName {
 impl From<DuplicateName> for Diagnostic {
     fn from(value: DuplicateName) -> Self {
         Diagnostic::DuplicateName(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MultipleConstructors {
+    pub location: Location,
+    pub original_definition: Location,
+}
+
+impl From<MultipleConstructors> for Diagnostic {
+    fn from(value: MultipleConstructors) -> Self {
+        Diagnostic::MultipleConstructors(value)
     }
 }
 

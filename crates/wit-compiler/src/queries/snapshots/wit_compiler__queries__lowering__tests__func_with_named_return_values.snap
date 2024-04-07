@@ -15,7 +15,10 @@ Package {
                 Func(
                     FuncItem {
                         name: f,
-                        index: FuncItemIndex(0),
+                        index: TopLevel(
+                            InterfaceIndex(0),
+                            FuncItemIndex(0),
+                        ),
                         docs: None,
                         params: [],
                         return_value: Some(

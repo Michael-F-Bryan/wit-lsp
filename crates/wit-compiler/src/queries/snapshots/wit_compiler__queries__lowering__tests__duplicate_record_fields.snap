@@ -1,0 +1,47 @@
+---
+source: crates/wit-compiler/src/queries/lowering.rs
+info:
+  src: "interface i { record r { field: u32, field: u32 } }"
+  ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (typedef_item (record_item name: (identifier) fields: (record_field name: (identifier) ty: (ty (builtins))) fields: (record_field name: (identifier) ty: (ty (builtins)))))))))"
+---
+[
+    DuplicateName(
+        DuplicateName {
+            name: field,
+            location: Location {
+                filename: FilePath(
+                    duplicate_record_fields.wit,
+                ),
+                range: Range {
+                    start_byte: 37,
+                    end_byte: 47,
+                    start_point: Point {
+                        row: 0,
+                        column: 37,
+                    },
+                    end_point: Point {
+                        row: 0,
+                        column: 47,
+                    },
+                },
+            },
+            original_definition: Location {
+                filename: FilePath(
+                    duplicate_record_fields.wit,
+                ),
+                range: Range {
+                    start_byte: 25,
+                    end_byte: 35,
+                    start_point: Point {
+                        row: 0,
+                        column: 25,
+                    },
+                    end_point: Point {
+                        row: 0,
+                        column: 35,
+                    },
+                },
+            },
+        },
+    ),
+]

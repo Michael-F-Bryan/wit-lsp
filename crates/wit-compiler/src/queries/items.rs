@@ -235,7 +235,7 @@ fn process_resource(
     let location = ResourcePtr::for_node(node);
     let name = Text::from(name);
     let src = file.contents(db);
-    let mut constructor = None;
+    let mut constructor: Option<ConstructorPtr> = None;
 
     let mut names = NameTable::new(db, file);
 
@@ -247,7 +247,11 @@ fn process_resource(
     for m in node.iter_methods() {
         if let Some(c) = m.resource_constructor() {
             if let Some(previous) = constructor {
-                todo!("Duplicate: {previous:?}");
+                let location = Location::new(file.path(db), c.range());
+                let original_location = Location::new(file.path(db), previous.range());
+                let diag = Diagnostic::multiple_constructors(location, original_location);
+                Diagnostics::push(db, diag);
+                continue;
             }
 
             constructor = Some(ConstructorPtr::for_node(c));
@@ -309,14 +313,14 @@ fn insert<'tree, Ast, Index, Ptr>(
     }
 }
 
-struct NameTable<'db, 'tree> {
+pub(crate) struct NameTable<'db, 'tree> {
     db: &'db dyn Db,
     file: SourceFile,
     names: OrdMap<Text, Node<'tree>>,
 }
 
 impl<'db, 'tree> NameTable<'db, 'tree> {
-    fn new(db: &'db dyn Db, file: SourceFile) -> Self {
+    pub fn new(db: &'db dyn Db, file: SourceFile) -> Self {
         NameTable {
             db,
             file,
@@ -324,7 +328,7 @@ impl<'db, 'tree> NameTable<'db, 'tree> {
         }
     }
 
-    fn insert(&mut self, name: Text, node: Node<'tree>) -> bool {
+    pub fn insert(&mut self, name: Text, node: Node<'tree>) -> bool {
         match self.names.entry(name.clone()) {
             Entry::Vacant(entry) => {
                 entry.insert(node);
@@ -503,6 +507,22 @@ pub struct ResourceMetadata {
     pub methods: Vector<MethodPtr>,
     pub static_methods_by_name: OrdMap<Text, StaticResourceMethodIndex>,
     pub static_methods: Vector<StaticMethodPtr>,
+}
+
+impl ResourceMetadata {
+    pub fn iter_methods(&self) -> impl Iterator<Item = (&Text, ResourceMethodIndex, MethodPtr)> {
+        self.methods_by_name
+            .iter()
+            .map(|(name, ix)| (name, *ix, self.methods[ix.raw().as_usize()]))
+    }
+
+    pub fn iter_static_methods(
+        &self,
+    ) -> impl Iterator<Item = (&Text, StaticResourceMethodIndex, StaticMethodPtr)> {
+        self.static_methods_by_name
+            .iter()
+            .map(|(name, ix)| (name, *ix, self.static_methods[ix.raw().as_usize()]))
+    }
 }
 
 impl GetAstNode for ResourceMetadata {

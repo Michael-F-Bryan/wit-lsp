@@ -1,15 +1,15 @@
 use im::{OrdMap, Vector};
-use tree_sitter::Node;
 
 use crate::{
+    access::{
+        AnyFuncItemIndex, EnumIndex, FlagsIndex, FuncItemIndex, GetAstNode, GetByIndex,
+        InterfaceIndex, RecordIndex, ResourceIndex, ScopeIndex, TypeAliasIndex, VariantIndex,
+        WorldIndex,
+    },
     ast::{self, AstNode, HasAttr, HasIdent},
     diagnostics::{Diagnostic, Diagnostics, Location},
     hir,
-    access::{
-        EnumIndex, FlagsIndex, FuncItemIndex, GetAstNode, GetByIndex, InterfaceIndex, RecordIndex,
-        ResourceIndex, ScopeIndex, TypeAliasIndex, VariantIndex, WorldIndex,
-    },
-    queries::{SourceFile, Workspace},
+    queries::{items::NameTable, SourceFile, Workspace},
     Db, Text,
 };
 
@@ -269,7 +269,7 @@ pub(crate) fn lower_func_item(
         .and_then(|r| lower_return_value(db, src, file, r));
 
     Some(hir::FuncItem {
-        index,
+        index: AnyFuncItemIndex::TopLevel(interface, index),
         name,
         docs: node.docs(src),
         params,
@@ -346,11 +346,14 @@ pub(crate) fn lower_record(
     let node = ptr.ast_node(tree);
     let name = node.identifier(src)?.into();
 
+    let mut names = NameTable::new(db, file);
     let mut fields = Vector::new();
 
     for field in node.iter_fields() {
-        if let Some(field) = lower_field(src, field) {
-            fields.push_back(field);
+        if let Some(f) = lower_field(src, field) {
+            if names.insert(f.name.clone(), field.syntax()) {
+                fields.push_back(f);
+            }
         }
     }
 
@@ -379,43 +382,109 @@ pub(crate) fn lower_resource(
     index: ResourceIndex,
 ) -> Option<hir::Resource> {
     let ast = crate::queries::parse(db, file);
-    let ptr = match scope {
+    let meta = match scope {
         ScopeIndex::Interface(interface) => file.get_by_index(db, (interface, index)),
         ScopeIndex::World(world) => file.get_by_index(db, (world, index)),
     };
     let tree = ast.tree(db);
     let src = ast.src(db);
 
-    let node = ptr.location.ast_node(tree);
+    let node = meta.location.ast_node(tree);
     let name = node.identifier(src)?.into();
     let docs = node.docs(src);
 
-    let methods = Vector::new();
-    let static_methods = Vector::new();
-    let mut constructor: Option<(Node<'_>, hir::Constructor)> = None;
+    let methods = meta
+        .iter_methods()
+        .filter_map(|(_, ix, ptr)| {
+            let node = ptr.ast_node(tree);
+            let index = AnyFuncItemIndex::Method(scope, index, ix);
+            lower_method(db, file, index, node, src)
+        })
+        .collect();
+    let static_methods = meta
+        .iter_static_methods()
+        .filter_map(|(_, ix, ptr)| {
+            let node = ptr.ast_node(tree);
+            let index = AnyFuncItemIndex::StaticMethod(scope, index, ix);
+            lower_static_method(db, file, index, node, src)
+        })
+        .collect();
 
-    for method in node.iter_methods() {
-        if let Some(_method) = method.func_item() {
-            todo!();
-        } else if let Some(c) = method.resource_constructor() {
-            if let Some((_original, _)) = constructor {
-                todo!("Report multiple constructors");
-            }
-
-            constructor = Some((c.syntax(), lower_constructor(c, src)))
-        } else if let Some(_static_method) = method.static_method() {
-            todo!();
-        }
-    }
+    let constructor = meta
+        .constructor
+        .map(|c| c.ast_node(tree))
+        .map(|c| lower_constructor(c, src));
 
     Some(hir::Resource {
-        constructor: constructor.map(|(_, c)| c),
+        constructor,
         docs,
         index,
         methods,
         static_methods,
         name,
     })
+}
+
+fn lower_method(
+    db: &dyn Db,
+    file: SourceFile,
+    index: AnyFuncItemIndex,
+    node: ast::FuncItem<'_>,
+    src: &str,
+) -> Option<hir::ResourceMethod> {
+    let name = node.identifier(src)?.into();
+    let ty = node.ty()?;
+    let docs = node.docs(src);
+
+    let (params, return_value) = lower_func_type(db, ty, src, file)?;
+
+    Some(hir::ResourceMethod(hir::FuncItem {
+        name,
+        index,
+        docs,
+        params,
+        return_value,
+    }))
+}
+
+fn lower_func_type(
+    db: &dyn Db,
+    node: ast::FuncType<'_>,
+    src: &str,
+    file: SourceFile,
+) -> Option<(Vector<hir::Parameter>, Option<hir::ReturnValue>)> {
+    let mut params = Vector::new();
+    for param in node.params()?.iter_params() {
+        let param = lower_param(src, param)?;
+        params.push_back(param);
+    }
+    let return_value = node
+        .result_opt()
+        .and_then(|r| lower_return_value(db, src, file, r));
+
+    Some((params, return_value))
+}
+
+fn lower_static_method(
+    db: &dyn Db,
+    file: SourceFile,
+    index: AnyFuncItemIndex,
+    node: ast::StaticMethod<'_>,
+    src: &str,
+) -> Option<hir::StaticResourceMethod> {
+    let name = node.identifier(src)?.into();
+    let ty = node.func_type()?;
+    let docs = node.docs(src);
+
+    let (params, return_value) = lower_func_type(db, ty, src, file)?;
+
+    Some(hir::StaticResourceMethod(hir::FuncItem {
+        name,
+        index,
+        docs,
+        params,
+        return_value,
+    }))
 }
 
 fn lower_constructor(node: ast::ResourceConstructor<'_>, src: &str) -> hir::Constructor {
@@ -731,9 +800,7 @@ mod tests {
         empty_resource_with_braces: "interface i { resource empty {} }",
         resource_with_parameterless_constructor: "interface i { resource r { constructor(); } }",
         resource_with_constructor: "interface i { resource r { constructor(arg1: string, arg2: bool); } }",
-        #[ignore]
         resource_with_method: "interface i { resource r { method: func(arg1: string, arg2: bool) -> u32; } }",
-        #[ignore]
         resource_with_static_method: "interface i { resource r { method: static func(arg1: string, arg2: bool) -> u32; } }",
 
         empty_world: "world empty {}",
@@ -760,9 +827,14 @@ mod tests {
             record first { second: second }
             record second { first: first }
         }",
-        #[ignore]
-        duplicate_identifiers: "interface i { record foo {} variant foo {} }",
-        #[ignore]
+        duplicate_identifiers_within_interface: "interface i { record foo {} variant foo {} }",
+        duplicate_record_fields: "interface i { record r { field: u32, field: u32 } }",
+        duplicate_resource_methods: "interface i {
+            resource r {
+                method: func();
+                method: static func();
+            }
+        }",
         resource_with_multiple_constructors: "interface i { resource r { constructor(); constructor(); }}",
     }
 }

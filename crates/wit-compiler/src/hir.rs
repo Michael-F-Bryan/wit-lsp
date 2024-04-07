@@ -4,7 +4,7 @@ use im::{OrdMap, Vector};
 
 use crate::{
     access::{
-        EnumIndex, FlagsIndex, FuncItemIndex, InterfaceIndex, RecordIndex, ResourceIndex,
+        AnyFuncItemIndex, EnumIndex, FlagsIndex, InterfaceIndex, RecordIndex, ResourceIndex,
         TypeAliasIndex, VariantIndex, WorldIndex,
     },
     Text,
@@ -133,7 +133,7 @@ impl From<Record> for InterfaceItem {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FuncItem {
     pub name: Text,
-    pub index: FuncItemIndex,
+    pub index: AnyFuncItemIndex,
     pub docs: Option<Text>,
     pub params: Vector<Parameter>,
     pub return_value: Option<ReturnValue>,

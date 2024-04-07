@@ -1,0 +1,46 @@
+---
+source: crates/wit-compiler/src/queries/lowering.rs
+info:
+  src: "interface i { resource r { constructor(); constructor(); }}"
+  ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (typedef_item (resource_item name: (identifier) methods: (resource_method (resource_constructor params: (param_list))) methods: (resource_method (resource_constructor params: (param_list)))))))))"
+---
+[
+    MultipleConstructors(
+        MultipleConstructors {
+            location: Location {
+                filename: FilePath(
+                    resource_with_multiple_constructors.wit,
+                ),
+                range: Range {
+                    start_byte: 42,
+                    end_byte: 56,
+                    start_point: Point {
+                        row: 0,
+                        column: 42,
+                    },
+                    end_point: Point {
+                        row: 0,
+                        column: 56,
+                    },
+                },
+            },
+            original_definition: Location {
+                filename: FilePath(
+                    resource_with_multiple_constructors.wit,
+                ),
+                range: Range {
+                    start_byte: 27,
+                    end_byte: 41,
+                    start_point: Point {
+                        row: 0,
+                        column: 27,
+                    },
+                    end_point: Point {
+                        row: 0,
+                        column: 41,
+                    },
+                },
+            },
+        },
+    ),
+]
