@@ -15,7 +15,6 @@ rust-version.workspace = true
 [dependencies]
 clap = { workspace = true }
 color-eyre = { workspace = true }
-either = "1.10.0"
 im = { workspace = true }
 salsa = { workspace = true }
 serde = { workspace = true }

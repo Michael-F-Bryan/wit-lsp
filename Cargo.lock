@@ -330,12 +330,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "either"
-version = "1.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11157ac094ffbdde99aa67b23417ebdd801842852b500e395a45a9c0aac03e4a"
-
-[[package]]
 name = "encode_unicode"
 version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1486,7 +1480,6 @@ checksum = "32b752e52a2da0ddfbdbcc6fceadfeede4c939ed16d13e648833a61dfb611ed8"
 name = "wit-compiler"
 version = "0.1.0"
 dependencies = [
- "either",
  "im",
  "insta",
  "paste",
@@ -1503,7 +1496,6 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "color-eyre",
- "either",
  "im",
  "insta",
  "salsa-2022",

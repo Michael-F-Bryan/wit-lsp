@@ -1,8 +1,8 @@
-use either::Either;
 use tower_lsp::lsp_types::{
     CompletionItem, CompletionItemKind, CompletionParams, CompletionResponse,
 };
 use wit_compiler::{
+    access::ScopeIndex,
     ast::{self, AstNode},
     queries::{SourceFile, Workspace},
 };
@@ -30,8 +30,8 @@ pub fn complete(
     let items = wit_compiler::queries::file_items(db, file);
     if let Some(index) = items.enclosing_item(db, point) {
         let types = match index {
-            Either::Left(index) => items.get_world(db, index).items(db),
-            Either::Right(index) => items.get_interface(db, index).items(db),
+            ScopeIndex::World(index) => items.get_world(db, index).items(db),
+            ScopeIndex::Interface(index) => items.get_interface(db, index).items(db),
         };
 
         completions.extend(types.names().map(|label| CompletionItem {

@@ -1,10 +1,9 @@
-use either::Either;
 use tree_sitter::Range;
 
 use crate::{
     access::{
         EnumIndex, FlagsIndex, FuncItemIndex, GetAstNode, GetByIndex, Index, InterfaceIndex,
-        RecordIndex, ResourceIndex, TypeAliasIndex, VariantIndex, WorldIndex,
+        RecordIndex, ResourceIndex, ScopeIndex, TypeAliasIndex, VariantIndex, WorldIndex,
     },
     ast::{AstNode, HasSource},
     queries::{FilePath, ItemDefinitionMetadata, Items, SourceFile},
@@ -15,13 +14,13 @@ use crate::{
 pub enum HoverTarget {
     Interface(InterfaceIndex),
     World(WorldIndex),
-    Enum(Either<InterfaceIndex, WorldIndex>, EnumIndex),
-    Flags(Either<InterfaceIndex, WorldIndex>, FlagsIndex),
-    Resource(Either<InterfaceIndex, WorldIndex>, ResourceIndex),
-    Variant(Either<InterfaceIndex, WorldIndex>, VariantIndex),
-    FuncItem(Either<InterfaceIndex, WorldIndex>, FuncItemIndex),
-    TypeAlias(Either<InterfaceIndex, WorldIndex>, TypeAliasIndex),
-    Record(Either<InterfaceIndex, WorldIndex>, RecordIndex),
+    Enum(ScopeIndex, EnumIndex),
+    Flags(ScopeIndex, FlagsIndex),
+    Resource(ScopeIndex, ResourceIndex),
+    Variant(ScopeIndex, VariantIndex),
+    FuncItem(ScopeIndex, FuncItemIndex),
+    TypeAlias(ScopeIndex, TypeAliasIndex),
+    Record(ScopeIndex, RecordIndex),
 }
 
 #[salsa::tracked]
@@ -63,18 +62,18 @@ impl<'db> State<'db> {
         node.utf8_text(src)
     }
 
-    fn hover_type<I>(&self, scope: Either<InterfaceIndex, WorldIndex>, index: I) -> HoverInfo
+    fn hover_type<I>(&self, scope: ScopeIndex, index: I) -> HoverInfo
     where
         I: Index,
         ItemDefinitionMetadata: GetByIndex<I>,
         <ItemDefinitionMetadata as GetByIndex<I>>::Metadata: GetAstNode,
     {
         let ptr = match scope {
-            Either::Left(interface) => {
+            ScopeIndex::Interface(interface) => {
                 let world = self.items.get_by_index(self.db, interface);
                 world.get_by_index(self.db, index)
             }
-            Either::Right(world) => {
+            ScopeIndex::World(world) => {
                 let world = self.items.get_by_index(self.db, world);
                 world.get_by_index(self.db, index)
             }

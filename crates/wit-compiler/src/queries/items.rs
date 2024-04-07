@@ -1,6 +1,5 @@
 #![allow(clippy::too_many_arguments)]
 
-use either::Either;
 use im::{ordmap::Entry, OrdMap, Vector};
 use tree_sitter::{Node, Point, Range};
 
@@ -8,7 +7,7 @@ use crate::{
     access::{
         ConstructorPtr, EnumIndex, EnumPtr, FlagsIndex, FlagsPtr, FuncItemIndex, FunctionPtr,
         GetAstNode, Index, InterfaceIndex, InterfacePtr, MethodPtr, Pointer, RawIndex, RecordIndex,
-        RecordPtr, ResourceIndex, ResourceMethodIndex, ResourcePtr, StaticMethodPtr,
+        RecordPtr, ResourceIndex, ResourceMethodIndex, ResourcePtr, ScopeIndex, StaticMethodPtr,
         StaticResourceMethodIndex, TypeAliasIndex, TypeAliasPtr, VariantIndex, VariantPtr,
         WorldIndex, WorldPtr,
     },
@@ -392,20 +391,18 @@ impl Items {
         interfaces[index.raw().as_usize()]
     }
 
-    pub fn enclosing_item(
-        &self,
-        db: &dyn Db,
-        point: Point,
-    ) -> Option<Either<WorldIndex, InterfaceIndex>> {
+    pub fn enclosing_item(&self, db: &dyn Db, point: Point) -> Option<ScopeIndex> {
         for (i, meta) in self.worlds(db).into_iter().enumerate() {
             if range_contains(meta.location(db).range(), point) {
-                return Some(Either::Left(WorldIndex::from_raw(RawIndex::new(i))));
+                return Some(ScopeIndex::World(WorldIndex::from_raw(RawIndex::new(i))));
             }
         }
 
         for (i, meta) in self.interfaces(db).into_iter().enumerate() {
             if range_contains(meta.location(db).range(), point) {
-                return Some(Either::Right(InterfaceIndex::from_raw(RawIndex::new(i))));
+                return Some(ScopeIndex::Interface(InterfaceIndex::from_raw(
+                    RawIndex::new(i),
+                )));
             }
         }
 
