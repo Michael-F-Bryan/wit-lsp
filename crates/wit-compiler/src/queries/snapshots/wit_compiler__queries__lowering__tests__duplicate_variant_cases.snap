@@ -1,0 +1,47 @@
+---
+source: crates/wit-compiler/src/queries/lowering.rs
+info:
+  src: "interface i { variant v { var(float32), var } }"
+  ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (typedef_item (variant_item name: (identifier) cases: (variant_case name: (identifier) ty: (ty (builtins))) cases: (variant_case name: (identifier))))))))"
+---
+[
+    DuplicateName(
+        DuplicateName {
+            name: var,
+            location: Location {
+                filename: FilePath(
+                    duplicate_variant_cases.wit,
+                ),
+                range: Range {
+                    start_byte: 40,
+                    end_byte: 43,
+                    start_point: Point {
+                        row: 0,
+                        column: 40,
+                    },
+                    end_point: Point {
+                        row: 0,
+                        column: 43,
+                    },
+                },
+            },
+            original_definition: Location {
+                filename: FilePath(
+                    duplicate_variant_cases.wit,
+                ),
+                range: Range {
+                    start_byte: 26,
+                    end_byte: 38,
+                    start_point: Point {
+                        row: 0,
+                        column: 26,
+                    },
+                    end_point: Point {
+                        row: 0,
+                        column: 38,
+                    },
+                },
+            },
+        },
+    ),
+]

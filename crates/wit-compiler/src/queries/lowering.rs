@@ -183,11 +183,17 @@ pub(crate) fn lower_enum(
     let tree = ast.tree(db);
     let node = ptr.ast_node(tree);
     let name = node.identifier(src)?.into();
+    let mut names = NameTable::new(db, file);
 
-    let cases = node
-        .iter_cases()
-        .filter_map(|case| lower_enum_case(case, src))
-        .collect();
+    let mut cases = Vector::new();
+
+    for c in node.iter_cases() {
+        if let Some(case) = lower_enum_case(c, src) {
+            if names.insert(case.name.clone(), c.syntax()) {
+                cases.push_back(case);
+            }
+        }
+    }
 
     Some(hir::Enum {
         name,
@@ -221,11 +227,17 @@ pub(crate) fn lower_flags(
     let tree = ast.tree(db);
     let node = ptr.ast_node(tree);
     let name = node.identifier(src)?.into();
+    let mut names = NameTable::new(db, file);
 
-    let cases = node
-        .iter_cases()
-        .filter_map(|case| lower_flags_case(case, src))
-        .collect();
+    let mut cases = Vector::new();
+
+    for c in node.iter_cases() {
+        if let Some(case) = lower_flags_case(c, src) {
+            if names.insert(case.name.clone(), c.syntax()) {
+                cases.push_back(case);
+            }
+        }
+    }
 
     Some(hir::Flags {
         name,
@@ -530,12 +542,54 @@ pub(crate) fn lower_type_alias(
 
 #[salsa::tracked]
 pub(crate) fn lower_variant(
-    _db: &dyn Db,
-    _file: SourceFile,
-    _scope: ScopeIndex,
-    _ix: VariantIndex,
+    db: &dyn Db,
+    file: SourceFile,
+    scope: ScopeIndex,
+    index: VariantIndex,
 ) -> Option<hir::Variant> {
-    todo!();
+    let ast = crate::queries::parse(db, file);
+    let ptr = match scope {
+        ScopeIndex::Interface(interface) => file.get_by_index(db, (interface, index)),
+        ScopeIndex::World(world) => file.get_by_index(db, (world, index)),
+    };
+    let src = ast.src(db);
+
+    let tree = ast.tree(db);
+    let node = ptr.ast_node(tree);
+    let name = node.identifier(src)?.into();
+    let docs = node.docs(src);
+
+    let mut names = NameTable::new(db, file);
+
+    let mut cases = Vector::new();
+
+    for c in node.iter_cases() {
+        if let Some(case) = lower_variant_case(c, src) {
+            if names.insert(case.name.clone(), c.syntax()) {
+                cases.push_back(case);
+            }
+        }
+    }
+
+    Some(hir::Variant {
+        docs,
+        name,
+        index,
+        cases,
+    })
+}
+
+fn lower_variant_case(node: ast::VariantCase<'_>, src: &str) -> Option<hir::VariantCase> {
+    let name = node.identifier(src)?.into();
+    let docs = node.docs(src);
+
+    let ty = if let Some(ty) = node.ty_opt() {
+        Some(resolve_type(src, ty)?)
+    } else {
+        None
+    };
+
+    Some(hir::VariantCase { name, docs, ty })
 }
 
 fn resolve_type(src: &str, ty: ast::Ty<'_>) -> Option<hir::Type> {
@@ -803,9 +857,25 @@ mod tests {
         resource_with_method: "interface i { resource r { method: func(arg1: string, arg2: bool) -> u32; } }",
         resource_with_static_method: "interface i { resource r { method: static func(arg1: string, arg2: bool) -> u32; } }",
 
+        empty_variant: "interface i { variant v {} }",
+        varant_with_one_field: "interface i { variant v { field } }",
+        varant_with_multiple_fields_and_payloads: "interface i {
+            /// A variant.
+            variant v {
+                /// An integer.
+                first(u32),
+                /// A string.
+                second(string),
+                /// An empty variant.
+                third,
+            }
+        }",
+
         empty_world: "world empty {}",
         #[ignore]
         world_with_function_export: "world console { export run: func(); }",
+        #[ignore]
+        world_with_interface_export: "world console { export run: interface {} }",
         #[ignore]
         world_with_external_export: "world with-import {
             export wasi:filesystem/filesystem;
@@ -829,6 +899,9 @@ mod tests {
         }",
         duplicate_identifiers_within_interface: "interface i { record foo {} variant foo {} }",
         duplicate_record_fields: "interface i { record r { field: u32, field: u32 } }",
+        duplicate_variant_cases: "interface i { variant v { var(float32), var } }",
+        duplicate_enum_cases: "interface i { enum e { field, field } }",
+        duplicate_flags_cases: "interface i { flags f { field, field } }",
         duplicate_resource_methods: "interface i {
             resource r {
                 method: func();

@@ -1,0 +1,26 @@
+---
+source: crates/wit-compiler/src/queries/lowering.rs
+info:
+  src: "interface i { variant v {} }"
+  ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (typedef_item (variant_item name: (identifier)))))))"
+---
+Package {
+    decl: None,
+    worlds: {},
+    interfaces: {
+        InterfaceIndex(0): Interface {
+            name: i,
+            docs: None,
+            items: [
+                Variant(
+                    Variant {
+                        name: v,
+                        index: VariantIndex(0),
+                        docs: None,
+                        cases: [],
+                    },
+                ),
+            ],
+        },
+    },
+}

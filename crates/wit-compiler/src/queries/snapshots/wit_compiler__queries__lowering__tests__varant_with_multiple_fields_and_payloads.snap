@@ -1,0 +1,58 @@
+---
+source: crates/wit-compiler/src/queries/lowering.rs
+info:
+  src: "interface i {\n            /// A variant.\n            variant v {\n                /// An integer.\n                first(u32),\n                /// A string.\n                second(string),\n                /// An empty variant.\n                third,\n            }\n        }"
+  ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (typedef_item (variant_item attributes: (attribute (doc_comment (docs))) name: (identifier) cases: (variant_case attributes: (attribute (doc_comment (docs))) name: (identifier) ty: (ty (builtins))) cases: (variant_case attributes: (attribute (doc_comment (docs))) name: (identifier) ty: (ty (builtins))) cases: (variant_case attributes: (attribute (doc_comment (docs))) name: (identifier))))))))"
+---
+Package {
+    decl: None,
+    worlds: {},
+    interfaces: {
+        InterfaceIndex(0): Interface {
+            name: i,
+            docs: None,
+            items: [
+                Variant(
+                    Variant {
+                        name: v,
+                        index: VariantIndex(0),
+                        docs: Some(
+                            A variant.,
+                        ),
+                        cases: [
+                            VariantCase {
+                                name: first,
+                                docs: Some(
+                                    An integer.,
+                                ),
+                                ty: Some(
+                                    Builtin(
+                                        U32,
+                                    ),
+                                ),
+                            },
+                            VariantCase {
+                                name: second,
+                                docs: Some(
+                                    A string.,
+                                ),
+                                ty: Some(
+                                    Builtin(
+                                        String,
+                                    ),
+                                ),
+                            },
+                            VariantCase {
+                                name: third,
+                                docs: Some(
+                                    An empty variant.,
+                                ),
+                                ty: None,
+                            },
+                        ],
+                    },
+                ),
+            ],
+        },
+    },
+}
