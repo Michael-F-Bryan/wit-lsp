@@ -275,11 +275,11 @@ module.exports = grammar({
             ),
             ">",
         ),
-        user_defined_type: $ => $.identifier,
+        user_defined_type: $ => field("name", $.identifier),
 
         handle: $ => choice($.borrowed_handle, $.owned_handle),
-        borrowed_handle: $ => seq("borrow", "<", field("name", $.identifier), ">"),
-        owned_handle: $ => seq("own", "<", field("name", $.identifier), ">"),
+        borrowed_handle: $ => seq("borrow", "<", $.user_defined_type, ">"),
+        owned_handle: $ => seq("own", "<", $.user_defined_type, ">"),
 
         attribute: $ => $.doc_comment,
 
