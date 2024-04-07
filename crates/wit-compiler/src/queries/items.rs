@@ -13,6 +13,7 @@ use crate::{
     },
     ast::{self, AstNode, HasIdent},
     diagnostics::{Diagnostic, Diagnostics, Location},
+    hir,
     queries::SourceFile,
     Db, Text,
 };
@@ -45,7 +46,7 @@ pub fn file_items(db: &dyn Db, file: SourceFile) -> Items {
         } else if let Some(interface) = top_level_item.interface_item() {
             if let Some((name, interface)) = walk_interface(db, interface, src, file) {
                 if names.insert(name.clone(), node) {
-                    let ix = InterfaceIndex::from_raw(RawIndex::new(worlds.len()));
+                    let ix = InterfaceIndex::from_raw(RawIndex::new(interfaces.len()));
                     interfaces.push_back(interface);
                     interfaces_by_name.insert(name, ix);
                 }
@@ -475,15 +476,37 @@ impl ItemDefinitionMetadata {
         iter(&self.variants)
     }
 
+    pub fn reference_kinds(&self) -> impl Iterator<Item = (&Text, hir::ItemReferenceKind)> {
+        let ItemDefinitionMetadata {
+            enums_by_name,
+            flags_by_name,
+            functions_by_name,
+            records_by_name,
+            resources_by_name,
+            typedefs_by_name,
+            variants_by_name,
+            ..
+        } = self;
+
+        fn m<'a, Ix>((name, ix): (&'a Text, &Ix)) -> (&'a Text, hir::ItemReferenceKind)
+        where
+            Ix: Into<hir::ItemReferenceKind> + Clone,
+        {
+            (name, ix.clone().into())
+        }
+
+        std::iter::empty()
+            .chain(enums_by_name.iter().map(m))
+            .chain(flags_by_name.iter().map(m))
+            .chain(functions_by_name.iter().map(m))
+            .chain(records_by_name.iter().map(m))
+            .chain(resources_by_name.iter().map(m))
+            .chain(typedefs_by_name.iter().map(m))
+            .chain(variants_by_name.iter().map(m))
+    }
+
     pub fn names(&self) -> impl Iterator<Item = &Text> {
-        self.enums_by_name
-            .keys()
-            .chain(self.flags_by_name.keys())
-            .chain(self.functions_by_name.keys())
-            .chain(self.records_by_name.keys())
-            .chain(self.resources_by_name.keys())
-            .chain(self.typedefs_by_name.keys())
-            .chain(self.variants_by_name.keys())
+        self.reference_kinds().map(|(n, _)| n)
     }
 }
 

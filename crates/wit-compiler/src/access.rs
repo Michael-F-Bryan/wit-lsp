@@ -204,6 +204,18 @@ pub enum AnyFuncItemIndex {
     StaticMethod(ScopeIndex, ResourceIndex, StaticResourceMethodIndex),
 }
 
+impl AnyFuncItemIndex {
+    /// Get the scope this [`crate::hir::FuncItem`] is defined in.
+    pub fn scope(self) -> ScopeIndex {
+        match self {
+            AnyFuncItemIndex::TopLevel(i, _) => ScopeIndex::Interface(i),
+            AnyFuncItemIndex::Method(scope, _, _) | AnyFuncItemIndex::StaticMethod(scope, _, _) => {
+                scope
+            }
+        }
+    }
+}
+
 impl GetByIndex<WorldIndex> for Items {
     type Metadata = WorldMetadata;
 

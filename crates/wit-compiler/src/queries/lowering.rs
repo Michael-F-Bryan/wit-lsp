@@ -31,15 +31,13 @@ pub fn lower(db: &dyn Db, _ws: Workspace, file: SourceFile) -> hir::Package {
     let mut interfaces = OrdMap::new();
 
     for index in items.worlds_by_name(db).values().copied() {
-        if let Some(world) = lower_world(db, file, index) {
-            worlds.insert(index, world);
-        }
+        let world = lower_world(db, file, index);
+        worlds.insert(index, world);
     }
 
     for index in items.interfaces_by_name(db).values().copied() {
-        if let Some(interface) = lower_interface(db, file, index) {
-            interfaces.insert(index, interface);
-        }
+        let interface = lower_interface(db, file, index);
+        interfaces.insert(index, interface);
     }
 
     hir::Package {
@@ -70,7 +68,7 @@ fn lower_package_decl(node: ast::PackageDecl, src: &str) -> Option<hir::PackageD
 }
 
 #[salsa::tracked]
-pub(crate) fn lower_world(db: &dyn Db, file: SourceFile, index: WorldIndex) -> Option<hir::World> {
+pub(crate) fn lower_world(db: &dyn Db, file: SourceFile, index: WorldIndex) -> hir::World {
     let ast = crate::queries::parse(db, file);
     let tree = ast.tree(db);
     let items = crate::queries::file_items(db, file);
@@ -79,7 +77,7 @@ pub(crate) fn lower_world(db: &dyn Db, file: SourceFile, index: WorldIndex) -> O
     let node = meta.location(db).ast_node(tree);
 
     let src = ast.src(db);
-    let name = node.identifier(src)?.into();
+    let name = meta.name(db);
 
     let mut world_items = Vector::new();
 
@@ -89,11 +87,11 @@ pub(crate) fn lower_world(db: &dyn Db, file: SourceFile, index: WorldIndex) -> O
         }
     }
 
-    Some(hir::World {
+    hir::World {
         name,
         docs: node.docs(src),
         items: world_items,
-    })
+    }
 }
 
 fn lower_world_item(_db: &dyn Db, _item: ast::WorldItems<'_>) -> Option<hir::WorldItem> {
@@ -105,7 +103,7 @@ pub(crate) fn lower_interface(
     db: &dyn Db,
     file: SourceFile,
     index: InterfaceIndex,
-) -> Option<hir::Interface> {
+) -> hir::Interface {
     let ast = crate::queries::parse(db, file);
     let tree = ast.tree(db);
     let items = crate::queries::file_items(db, file);
@@ -159,11 +157,9 @@ pub(crate) fn lower_interface(
         }
     }
 
-    Some(hir::Interface {
-        name: meta.name(db),
-        docs: node.docs(ast.src(db)),
-        items,
-    })
+    let name = meta.name(db);
+    let docs = node.docs(ast.src(db));
+    hir::Interface { name, docs, items }
 }
 
 #[salsa::tracked]
@@ -272,13 +268,13 @@ pub(crate) fn lower_func_item(
     let mut params = Vector::new();
 
     for param in func_type.params()?.iter_params() {
-        let param = lower_param(src, param)?;
+        let param = lower_param(db, file, interface.into(), param)?;
         params.push_back(param);
     }
 
     let return_value = func_type
         .result_opt()
-        .and_then(|r| lower_return_value(db, src, file, r));
+        .and_then(|r| lower_return_value(db, file, interface.into(), r));
 
     Some(hir::FuncItem {
         index: AnyFuncItemIndex::TopLevel(interface, index),
@@ -289,22 +285,30 @@ pub(crate) fn lower_func_item(
     })
 }
 
-fn lower_param(src: &str, param: ast::NamedType<'_>) -> Option<hir::Parameter> {
+fn lower_param(
+    db: &dyn Db,
+    file: SourceFile,
+    scope: ScopeIndex,
+    param: ast::NamedType<'_>,
+) -> Option<hir::Parameter> {
+    let src = file.contents(db);
     let name = param.identifier(src)?.into();
     let ty = param.ty()?;
-    let ty = resolve_type(src, ty)?;
+    let ty = resolve_type(db, file, scope, ty)?;
 
     Some(hir::Parameter { name, ty })
 }
 
 fn lower_return_value(
     db: &dyn Db,
-    src: &str,
     file: SourceFile,
+    scope: ScopeIndex,
     ret: ast::ResultList<'_>,
 ) -> Option<hir::ReturnValue> {
+    let src = file.contents(db);
+
     if let Some(ty) = ret.ty_opt() {
-        let ty = resolve_type(src, ty)?;
+        let ty = resolve_type(db, file, scope, ty)?;
         Some(hir::ReturnValue::Single(ty))
     } else if let Some(list) = ret.named_result_list_opt() {
         let mut return_types = OrdMap::new();
@@ -312,7 +316,7 @@ fn lower_return_value(
         for pair in list.iter_named_types() {
             let name = Text::from(pair.identifier(src)?);
             let ty_node = pair.ty()?;
-            let ty = resolve_type(src, ty_node).unwrap_or(hir::Type::Error);
+            let ty = resolve_type(db, file, scope, ty_node).unwrap_or(hir::Type::Error);
 
             match return_types.entry(name) {
                 im::ordmap::Entry::Vacant(entry) => {
@@ -362,7 +366,7 @@ pub(crate) fn lower_record(
     let mut fields = Vector::new();
 
     for field in node.iter_fields() {
-        if let Some(f) = lower_field(src, field) {
+        if let Some(f) = lower_field(db, file, scope, field) {
             if names.insert(f.name.clone(), field.syntax()) {
                 fields.push_back(f);
             }
@@ -377,11 +381,17 @@ pub(crate) fn lower_record(
     })
 }
 
-fn lower_field(src: &str, node: ast::RecordField<'_>) -> Option<hir::RecordField> {
+fn lower_field(
+    db: &dyn Db,
+    file: SourceFile,
+    scope: ScopeIndex,
+    node: ast::RecordField<'_>,
+) -> Option<hir::RecordField> {
+    let src = file.contents(db);
     let name = node.identifier(src)?.into();
     let docs = node.docs(src);
     let ty = node.ty()?;
-    let ty = resolve_type(src, ty)?;
+    let ty = resolve_type(db, file, scope, ty)?;
 
     Some(hir::RecordField { name, docs, ty })
 }
@@ -425,7 +435,7 @@ pub(crate) fn lower_resource(
     let constructor = meta
         .constructor
         .map(|c| c.ast_node(tree))
-        .map(|c| lower_constructor(c, src));
+        .map(|c| lower_constructor(db, file, scope, c));
 
     Some(hir::Resource {
         constructor,
@@ -448,7 +458,7 @@ fn lower_method(
     let ty = node.ty()?;
     let docs = node.docs(src);
 
-    let (params, return_value) = lower_func_type(db, ty, src, file)?;
+    let (params, return_value) = lower_func_type(db, file, index.scope(), ty)?;
 
     Some(hir::ResourceMethod(hir::FuncItem {
         name,
@@ -461,18 +471,18 @@ fn lower_method(
 
 fn lower_func_type(
     db: &dyn Db,
-    node: ast::FuncType<'_>,
-    src: &str,
     file: SourceFile,
+    scope: ScopeIndex,
+    node: ast::FuncType<'_>,
 ) -> Option<(Vector<hir::Parameter>, Option<hir::ReturnValue>)> {
     let mut params = Vector::new();
     for param in node.params()?.iter_params() {
-        let param = lower_param(src, param)?;
+        let param = lower_param(db, file, scope, param)?;
         params.push_back(param);
     }
     let return_value = node
         .result_opt()
-        .and_then(|r| lower_return_value(db, src, file, r));
+        .and_then(|r| lower_return_value(db, file, scope, r));
 
     Some((params, return_value))
 }
@@ -488,7 +498,7 @@ fn lower_static_method(
     let ty = node.func_type()?;
     let docs = node.docs(src);
 
-    let (params, return_value) = lower_func_type(db, ty, src, file)?;
+    let (params, return_value) = lower_func_type(db, file, index.scope(), ty)?;
 
     Some(hir::StaticResourceMethod(hir::FuncItem {
         name,
@@ -499,13 +509,20 @@ fn lower_static_method(
     }))
 }
 
-fn lower_constructor(node: ast::ResourceConstructor<'_>, src: &str) -> hir::Constructor {
+fn lower_constructor(
+    db: &dyn Db,
+    file: SourceFile,
+    scope: ScopeIndex,
+    node: ast::ResourceConstructor<'_>,
+) -> hir::Constructor {
+    let src = file.contents(db);
     let docs = node.docs(src);
+
     let params = node
         .params()
         .into_iter()
         .flat_map(|params| params.iter_params())
-        .filter_map(|p| lower_param(src, p))
+        .filter_map(|p| lower_param(db, file, scope, p))
         .collect();
 
     hir::Constructor { docs, params }
@@ -530,7 +547,7 @@ pub(crate) fn lower_type_alias(
     let name = node.identifier(src)?.into();
 
     let ty = node.ty()?;
-    let ty = resolve_type(src, ty)?;
+    let ty = resolve_type(db, file, scope, ty)?;
 
     Some(hir::TypeAlias {
         name,
@@ -564,7 +581,7 @@ pub(crate) fn lower_variant(
     let mut cases = Vector::new();
 
     for c in node.iter_cases() {
-        if let Some(case) = lower_variant_case(c, src) {
+        if let Some(case) = lower_variant_case(db, file, scope, c) {
             if names.insert(case.name.clone(), c.syntax()) {
                 cases.push_back(case);
             }
@@ -579,12 +596,18 @@ pub(crate) fn lower_variant(
     })
 }
 
-fn lower_variant_case(node: ast::VariantCase<'_>, src: &str) -> Option<hir::VariantCase> {
+fn lower_variant_case(
+    db: &dyn Db,
+    file: SourceFile,
+    scope: ScopeIndex,
+    node: ast::VariantCase<'_>,
+) -> Option<hir::VariantCase> {
+    let src = file.contents(db);
     let name = node.identifier(src)?.into();
     let docs = node.docs(src);
 
     let ty = if let Some(ty) = node.ty_opt() {
-        Some(resolve_type(src, ty)?)
+        Some(resolve_type(db, file, scope, ty)?)
     } else {
         None
     };
@@ -592,16 +615,34 @@ fn lower_variant_case(node: ast::VariantCase<'_>, src: &str) -> Option<hir::Vari
     Some(hir::VariantCase { name, docs, ty })
 }
 
-fn resolve_type(src: &str, ty: ast::Ty<'_>) -> Option<hir::Type> {
-    let resolver = TypeResolver { src };
+fn resolve_type(
+    db: &dyn Db,
+    file: SourceFile,
+    scope: ScopeIndex,
+    ty: ast::Ty<'_>,
+) -> Option<hir::Type> {
+    let resolver = TypeResolver::new(db, file, scope);
     resolver.resolve_type(ty)
 }
 
 struct TypeResolver<'a> {
+    db: &'a dyn Db,
     src: &'a str,
+    file: SourceFile,
+    scope: ScopeIndex,
 }
 
 impl<'a> TypeResolver<'a> {
+    fn new(db: &'a dyn Db, file: SourceFile, scope: ScopeIndex) -> Self {
+        let src = file.contents(db).as_str();
+        TypeResolver {
+            db,
+            src,
+            file,
+            scope,
+        }
+    }
+
     fn resolve_type(&self, ty: ast::Ty<'_>) -> Option<hir::Type> {
         if let Some(builtin) = ty.builtins() {
             self.resolve_builtin(builtin)
@@ -651,9 +692,23 @@ impl<'a> TypeResolver<'a> {
 
     fn resolve_user_defined_type(
         &self,
-        _user_defined_type: ast::UserDefinedType<'_>,
+        user_defined_type: ast::UserDefinedType<'_>,
     ) -> Option<hir::Type> {
-        todo!()
+        let name = user_defined_type.identifier(self.src)?;
+        let name = Text::from(name);
+
+        match crate::queries::resolve_name(self.db, self.file, self.scope, name.clone()) {
+            Some(reference) => Some(hir::Type::UserDefinedType(reference)),
+            None => {
+                let diag = Diagnostic::unknown_name(
+                    self.file.path(self.db).clone(),
+                    name,
+                    user_defined_type.range(),
+                );
+                Diagnostics::push(self.db, diag);
+                Some(hir::Type::Error)
+            }
+        }
     }
 
     fn resolve_list(&self, list: ast::List<'_>) -> Option<hir::Type> {
@@ -662,8 +717,23 @@ impl<'a> TypeResolver<'a> {
         Some(hir::Type::List(Box::new(element_type)))
     }
 
-    fn resolve_handle(&self, _handle: ast::Handle<'_>) -> Option<hir::Type> {
-        todo!()
+    fn resolve_handle(&self, handle: ast::Handle<'_>) -> Option<hir::Type> {
+        let (ty, borrowed) = if let Some(h) = handle.borrowed_handle() {
+            (h.user_defined_type()?, true)
+        } else if let Some(h) = handle.owned_handle() {
+            (h.user_defined_type()?, false)
+        } else {
+            return None;
+        };
+
+        let ty = self
+            .resolve_user_defined_type(ty)
+            .unwrap_or(hir::Type::Error);
+
+        Some(hir::Type::Handle {
+            borrowed,
+            ty: Box::new(ty),
+        })
     }
 
     fn resolve_builtin(&self, builtin: ast::Builtins<'_>) -> Option<hir::Type> {
@@ -856,6 +926,18 @@ mod tests {
         resource_with_constructor: "interface i { resource r { constructor(arg1: string, arg2: bool); } }",
         resource_with_method: "interface i { resource r { method: func(arg1: string, arg2: bool) -> u32; } }",
         resource_with_static_method: "interface i { resource r { method: static func(arg1: string, arg2: bool) -> u32; } }",
+        refer_to_user_defined_type: "interface i {
+            record r {}
+            type x = list<r>;
+        }",
+        #[ignore]
+        refer_to_user_defined_type_from_other_interface: "
+            interface first { record r {} }
+            interface second {
+                use first.{r};
+                type x = r;
+            }
+        ",
 
         empty_variant: "interface i { variant v {} }",
         varant_with_one_field: "interface i { variant v { field } }",

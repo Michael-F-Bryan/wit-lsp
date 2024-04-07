@@ -3,6 +3,7 @@
 mod hover;
 mod items;
 pub(crate) mod lowering;
+mod namespaces;
 mod parsing;
 mod selection;
 
@@ -13,6 +14,7 @@ pub use self::{
         WorldMetadata,
     },
     lowering::lower,
+    namespaces::{resolve_name, resolve_namespace, Namespace},
     parsing::{parse, Ast, FilePath, SourceFile, Workspace},
     selection::selection_ranges,
 };

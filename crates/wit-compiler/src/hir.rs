@@ -4,9 +4,10 @@ use im::{OrdMap, Vector};
 
 use crate::{
     access::{
-        AnyFuncItemIndex, EnumIndex, FlagsIndex, InterfaceIndex, RecordIndex, ResourceIndex,
-        TypeAliasIndex, VariantIndex, WorldIndex,
+        AnyFuncItemIndex, EnumIndex, FlagsIndex, FuncItemIndex, InterfaceIndex, RecordIndex,
+        ResourceIndex, ScopeIndex, TypeAliasIndex, VariantIndex, WorldIndex,
     },
+    queries::FilePath,
     Text,
 };
 
@@ -156,6 +157,7 @@ pub enum Type {
     Builtin(Builtin),
     Handle {
         borrowed: bool,
+        ty: Box<Type>,
     },
     List(Box<Type>),
     Option(Box<Type>),
@@ -164,7 +166,69 @@ pub enum Type {
         err: Option<Box<Type>>,
     },
     Tuple(Vector<Type>),
+    UserDefinedType(ItemReference),
     Error,
+}
+
+/// A reference to an item defined elsewhere.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ItemReference {
+    pub file: FilePath,
+    pub scope: ScopeIndex,
+    pub item: ItemReferenceKind,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum ItemReferenceKind {
+    Enum(EnumIndex),
+    Variant(VariantIndex),
+    Flags(FlagsIndex),
+    Record(RecordIndex),
+    Resource(ResourceIndex),
+    Func(FuncItemIndex),
+    TypeAlias(TypeAliasIndex),
+}
+
+impl From<EnumIndex> for ItemReferenceKind {
+    fn from(v: EnumIndex) -> Self {
+        Self::Enum(v)
+    }
+}
+
+impl From<TypeAliasIndex> for ItemReferenceKind {
+    fn from(v: TypeAliasIndex) -> Self {
+        Self::TypeAlias(v)
+    }
+}
+
+impl From<FuncItemIndex> for ItemReferenceKind {
+    fn from(v: FuncItemIndex) -> Self {
+        Self::Func(v)
+    }
+}
+
+impl From<ResourceIndex> for ItemReferenceKind {
+    fn from(v: ResourceIndex) -> Self {
+        Self::Resource(v)
+    }
+}
+
+impl From<RecordIndex> for ItemReferenceKind {
+    fn from(v: RecordIndex) -> Self {
+        Self::Record(v)
+    }
+}
+
+impl From<FlagsIndex> for ItemReferenceKind {
+    fn from(v: FlagsIndex) -> Self {
+        Self::Flags(v)
+    }
+}
+
+impl From<VariantIndex> for ItemReferenceKind {
+    fn from(v: VariantIndex) -> Self {
+        Self::Variant(v)
+    }
 }
 
 impl From<Builtin> for Type {

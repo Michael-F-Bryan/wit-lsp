@@ -102,15 +102,10 @@ impl<'tree> super::AstNode<'tree> for BlockComment<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct BorrowedHandle<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> BorrowedHandle<'tree> {
-    pub fn name(&self) -> Option<Identifier<'tree>> {
-        self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
-    }
-}
-impl super::HasIdent for BorrowedHandle<'_> {
-    fn identifier(self, src: &str) -> Option<&str> {
-        let node = self.name()?.0;
-        let ident = node.utf8_text(src.as_bytes()).unwrap();
-        Some(ident)
+    pub fn user_defined_type(self) -> Option<UserDefinedType<'tree>> {
+        super::children(self.0)
+            .filter_map(<UserDefinedType as super::AstNode<'_>>::cast)
+            .next()
     }
 }
 impl<'tree> super::AstNode<'tree> for BorrowedHandle<'tree> {
@@ -962,15 +957,10 @@ impl<'tree> super::AstNode<'tree> for Option_<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct OwnedHandle<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> OwnedHandle<'tree> {
-    pub fn name(&self) -> Option<Identifier<'tree>> {
-        self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
-    }
-}
-impl super::HasIdent for OwnedHandle<'_> {
-    fn identifier(self, src: &str) -> Option<&str> {
-        let node = self.name()?.0;
-        let ident = node.utf8_text(src.as_bytes()).unwrap();
-        Some(ident)
+    pub fn user_defined_type(self) -> Option<UserDefinedType<'tree>> {
+        super::children(self.0)
+            .filter_map(<UserDefinedType as super::AstNode<'_>>::cast)
+            .next()
     }
 }
 impl<'tree> super::AstNode<'tree> for OwnedHandle<'tree> {
@@ -1724,10 +1714,15 @@ impl<'tree> super::AstNode<'tree> for UsePath<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct UserDefinedType<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> UserDefinedType<'tree> {
-    pub fn identifier(self) -> Option<Identifier<'tree>> {
-        super::children(self.0)
-            .filter_map(<Identifier as super::AstNode<'_>>::cast)
-            .next()
+    pub fn name(&self) -> Option<Identifier<'tree>> {
+        self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
+    }
+}
+impl super::HasIdent for UserDefinedType<'_> {
+    fn identifier(self, src: &str) -> Option<&str> {
+        let node = self.name()?.0;
+        let ident = node.utf8_text(src.as_bytes()).unwrap();
+        Some(ident)
     }
 }
 impl<'tree> super::AstNode<'tree> for UserDefinedType<'tree> {

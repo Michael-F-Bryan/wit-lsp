@@ -55,7 +55,7 @@ impl Diagnostic {
         })
     }
 
-    pub fn unknown_name(name: Text, filename: Text, range: Range) -> Self {
+    pub fn unknown_name(filename: FilePath, name: Text, range: Range) -> Self {
         Diagnostic::UnknownName(UnknownName {
             name,
             location: Location::new(filename, range),
