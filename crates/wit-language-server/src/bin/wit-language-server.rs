@@ -73,23 +73,6 @@ fn print_version(verbose: bool) {
     }
 }
 
-fn print_version_line(version: &build_info::BuildInfo) {
-    print!(
-        "{} {} (",
-        version.crate_info.name, version.crate_info.version
-    );
-
-    if let Some(VersionControl::Git(git)) = &version.version_control {
-        print!("{}", git.commit_short_id);
-        if git.dirty {
-            print!("-dirty");
-        }
-        print!(" ");
-    }
-
-    println!("{})", version.timestamp.date_naive());
-}
-
 async fn serve(mode: Mode) -> Result<(), color_eyre::Report> {
     let (service, socket) = LanguageServer::service();
     let service = LoggingService(service);
