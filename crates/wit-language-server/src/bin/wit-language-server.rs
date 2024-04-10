@@ -2,7 +2,8 @@
 
 use std::{future::Future, io::IsTerminal, net::SocketAddr, pin::Pin};
 
-use clap::Parser;
+use build_info::VersionControl;
+use clap::{CommandFactory, Parser};
 use color_eyre::config::Theme;
 use tower_lsp::Server;
 use tower_service::Service;
@@ -22,13 +23,71 @@ async fn main() -> Result<(), color_eyre::Report> {
 
     let args = Args::parse();
 
+    if args.version {
+        print_version(args.verbose);
+        return Ok(());
+    }
+
+    let Some(mode) = args.mode() else {
+        Args::command().print_long_help()?;
+        return Ok(());
+    };
+
     tracing::info!(
         lsp.name = env!("CARGO_PKG_NAME"),
         lsp.version = env!("CARGO_PKG_VERSION"),
         "Starting",
     );
 
-    serve(args.mode()).await
+    serve(mode).await
+}
+
+fn print_version(verbose: bool) {
+    build_info::build_info!(fn version);
+
+    let version = version();
+
+    print!(
+        "{} {} (",
+        version.crate_info.name, version.crate_info.version
+    );
+    if let Some(VersionControl::Git(git)) = &version.version_control {
+        print!("{}", git.commit_short_id);
+        if git.dirty {
+            print!("-dirty");
+        }
+        print!(" ");
+    }
+    println!("{})", version.timestamp.date_naive());
+
+    if verbose {
+        println!("rustc: {}", version.compiler);
+        if let Some(VersionControl::Git(git)) = &version.version_control {
+            println!("commit-hash: {}", git.commit_id);
+            println!("commit-date: {}", git.commit_timestamp.date_naive());
+        }
+        println!("host: {}", version.target.triple);
+        println!("crate: {}", version.crate_info.name);
+        println!("release: {}", version.crate_info.version);
+        println!("authors: {}", version.crate_info.authors.join(", "));
+    }
+}
+
+fn print_version_line(version: &build_info::BuildInfo) {
+    print!(
+        "{} {} (",
+        version.crate_info.name, version.crate_info.version
+    );
+
+    if let Some(VersionControl::Git(git)) = &version.version_control {
+        print!("{}", git.commit_short_id);
+        if git.dirty {
+            print!("-dirty");
+        }
+        print!(" ");
+    }
+
+    println!("{})", version.timestamp.date_naive());
 }
 
 async fn serve(mode: Mode) -> Result<(), color_eyre::Report> {
@@ -69,21 +128,28 @@ async fn serve(mode: Mode) -> Result<(), color_eyre::Report> {
 }
 
 #[derive(Debug, Clone, Parser)]
+#[clap(about)]
 struct Args {
     #[clap(flatten)]
     mode: ModeArgs,
+    /// Print out the version info.
+    #[clap(short = 'V', long)]
+    version: bool,
+    /// Print out extra
+    #[clap(short, long, requires = "version", conflicts_with = "mode")]
+    verbose: bool,
 }
 
 impl Args {
-    fn mode(&self) -> Mode {
+    fn mode(&self) -> Option<Mode> {
         if let Some(addr) = self.mode.connect {
-            Mode::Connect(addr)
+            Some(Mode::Connect(addr))
         } else if let Some(addr) = self.mode.listen {
-            Mode::Listen(addr)
+            Some(Mode::Listen(addr))
         } else if self.mode.stdio {
-            Mode::Stdio
+            Some(Mode::Stdio)
         } else {
-            unreachable!()
+            None
         }
     }
 }
@@ -96,7 +162,6 @@ enum Mode {
 }
 
 #[derive(Debug, Clone, Parser)]
-#[group(required = true)]
 struct ModeArgs {
     /// Connect to a port that the client is serving on.
     #[clap(short, long, env, group = "mode")]
