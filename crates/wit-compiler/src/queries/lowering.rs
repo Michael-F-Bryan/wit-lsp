@@ -94,8 +94,20 @@ pub(crate) fn lower_world(db: &dyn Db, file: SourceFile, index: WorldIndex) -> h
     }
 }
 
-fn lower_world_item(_db: &dyn Db, _item: ast::WorldItems<'_>) -> Option<hir::WorldItem> {
-    todo!();
+fn lower_world_item(_db: &dyn Db, item: ast::WorldItems<'_>) -> Option<hir::WorldItem> {
+    if let Some(_ty) = item.typedef_item() {
+        todo!()
+    } else if let Some(_export) = item.export_item() {
+        todo!()
+    } else if let Some(_import) = item.import_item() {
+        todo!()
+    } else if let Some(_include) = item.include_item() {
+        todo!()
+    } else if let Some(_use) = item.use_item() {
+        todo!()
+    } else {
+        None
+    }
 }
 
 #[salsa::tracked]

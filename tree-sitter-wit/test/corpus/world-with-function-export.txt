@@ -1,0 +1,13 @@
+==========================
+World with function export
+:skip
+==========================
+
+world foo {
+    export run: func();
+}
+
+---
+
+
+

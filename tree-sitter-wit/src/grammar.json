@@ -355,8 +355,12 @@
       "type": "CHOICE",
       "members": [
         {
-          "type": "SYMBOL",
-          "name": "exported_item"
+          "type": "PREC",
+          "value": 1,
+          "content": {
+            "type": "SYMBOL",
+            "name": "exported_item"
+          }
         },
         {
           "type": "SYMBOL",

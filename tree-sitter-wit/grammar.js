@@ -73,7 +73,10 @@ module.exports = grammar({
         world_items: $ => choice(
             $.export_item, $.import_item, $.use_item, $.typedef_item, $.include_item,
         ),
-        export_item: $ => choice($.exported_item, $.exported_path),
+        export_item: $ => choice(
+            prec(1, $.exported_item),
+            $.exported_path,
+        ),
         exported_item: $ => seq("export", field("name", $.identifier), ":", $.extern_type),
         exported_path: $ => seq("export", $.fully_qualified_use_path, ";"),
         import_item: $ => choice($.imported_item, $.imported_path),

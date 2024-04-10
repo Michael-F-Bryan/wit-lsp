@@ -1,3 +1,25 @@
 ==============
 World with use
 ==============
+
+world command {
+  use wasi:filesystem/filesystem.{errno};
+}
+
+---
+
+(source_file
+  (top_level_item
+    (world_item
+      (identifier)
+      (world_items
+        (use_item
+          (use_path
+            (fully_qualified_use_path
+              (package_name
+                (identifier))
+              (package_path
+                (identifier)
+                (identifier))))
+          (use_names_item
+            (identifier)))))))
