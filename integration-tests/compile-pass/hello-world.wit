@@ -1,6 +1,4 @@
-type foo = bar;
-
 world wasi {
-    
+    type foo = bar;
 }
 

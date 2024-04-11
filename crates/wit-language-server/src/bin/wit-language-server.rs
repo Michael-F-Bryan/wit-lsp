@@ -1,10 +1,13 @@
 #![recursion_limit = "256"]
 
-use std::{future::Future, io::IsTerminal, net::SocketAddr, pin::Pin};
+use std::{
+    any::Any, future::Future, io::IsTerminal, net::SocketAddr, panic::AssertUnwindSafe, pin::Pin,
+};
 
 use build_info::VersionControl;
 use clap::{CommandFactory, Parser};
 use color_eyre::config::Theme;
+use futures::future::FutureExt;
 use tower_lsp::Server;
 use tower_service::Service;
 use tracing::Instrument;
@@ -75,6 +78,7 @@ fn print_version(verbose: bool) {
 
 async fn serve(mode: Mode) -> Result<(), color_eyre::Report> {
     let (service, socket) = LanguageServer::service();
+    let service = CatchPanic(service);
     let service = LoggingService(service);
 
     match mode {
@@ -188,6 +192,7 @@ fn initialize_logging() -> Result<(), color_eyre::Report> {
     Ok(())
 }
 
+#[derive(Debug, Clone)]
 struct LoggingService<S>(S);
 
 impl<S> Service<tower_lsp::jsonrpc::Request> for LoggingService<S>
@@ -227,7 +232,7 @@ where
                     }
                 }
                 Err(err) => {
-                    tracing::warn!(
+                    tracing::error!(
                         error = err as &dyn std::error::Error,
                         "An error occurred while handling the request",
                     )
@@ -238,5 +243,95 @@ where
         };
 
         Box::pin(fut.instrument(tracing::debug_span!("request", %id, %method)))
+    }
+}
+
+#[derive(Debug, Clone)]
+struct CatchPanic<S>(S);
+
+impl<S> Service<tower_lsp::jsonrpc::Request> for CatchPanic<S>
+where
+    S: Service<
+        tower_lsp::jsonrpc::Request,
+        Response = Option<tower_lsp::jsonrpc::Response>,
+        Error = tower_lsp::ExitedError,
+    >,
+    S::Future: Send + 'static,
+{
+    type Response = S::Response;
+    type Error = CatchPanicError;
+    type Future =
+        Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send + 'static>>;
+
+    fn poll_ready(
+        &mut self,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Result<(), Self::Error>> {
+        self.0.poll_ready(cx).map_err(CatchPanicError::Exited)
+    }
+
+    fn call(&mut self, req: tower_lsp::jsonrpc::Request) -> Self::Future {
+        let fut = AssertUnwindSafe(self.0.call(req)).catch_unwind();
+
+        Box::pin(async move {
+            match fut.await {
+                Ok(result) => result.map_err(CatchPanicError::Exited),
+                Err(payload) => Err(CatchPanicError::Panic(PanicMessage::new(payload))),
+            }
+        })
+    }
+}
+
+#[derive(Debug, Clone)]
+enum CatchPanicError {
+    Panic(PanicMessage),
+    Exited(tower_lsp::ExitedError),
+}
+
+impl std::error::Error for CatchPanicError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            CatchPanicError::Panic(p) => Some(p),
+            CatchPanicError::Exited(e) => Some(e),
+        }
+    }
+}
+
+impl std::fmt::Display for CatchPanicError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CatchPanicError::Panic(p) => write!(f, "{p}"),
+            CatchPanicError::Exited(e) => write!(f, "{e}"),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+struct PanicMessage {
+    msg: Option<String>,
+}
+
+impl PanicMessage {
+    fn new(payload: Box<dyn Any + Send>) -> Self {
+        let msg = if let Some(msg) = payload.downcast_ref::<String>() {
+            Some(msg.as_str())
+        } else if let Some(&msg) = payload.downcast_ref::<&str>() {
+            Some(msg)
+        } else {
+            None
+        };
+
+        PanicMessage {
+            msg: msg.map(String::from),
+        }
+    }
+}
+
+impl std::error::Error for PanicMessage {}
+
+impl std::fmt::Display for PanicMessage {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let msg = self.msg.as_deref().unwrap_or("<unknown>");
+        write!(f, "A panic occurred while handling the request: {msg}")
     }
 }
