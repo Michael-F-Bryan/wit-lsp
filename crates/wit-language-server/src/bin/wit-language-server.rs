@@ -15,7 +15,7 @@ use tracing_subscriber::{
 use uuid::Uuid;
 use wit_language_server::LanguageServer;
 
-const RUST_LOG: &[&str] = &["info", "wit_language_server=trace"];
+const RUST_LOG: &[&str] = &["warn", "wit_language_server=info", "wit_compiler=info"];
 
 #[tokio::main]
 async fn main() -> Result<(), color_eyre::Report> {
