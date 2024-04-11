@@ -86,7 +86,8 @@
       {
         "command": "wit-language-server.dump-ast",
         "title": "Dump AST",
-        "category": "WIT"
+        "category": "WIT",
+        "enablement": "editorLangId == wit"
       },
       {
         "command": "wit-language-server.changelog",
