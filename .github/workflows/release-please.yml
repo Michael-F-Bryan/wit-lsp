@@ -30,7 +30,6 @@ jobs:
       run: |
         release-please github-release \
           --debug \
-          --draft \
           --prerelease \
           --token=${{ secrets.RELEASE_PLEASE_GH_TOKEN }} \
           --repo-url=${{ github.repositoryUrl }} \
@@ -74,6 +73,7 @@ jobs:
     defaults:
       run:
         working-directory: plugins/vscode
+        shell: bash
     steps:
       - uses: actions/checkout@v2
       - name: Setup Rust
@@ -92,9 +92,12 @@ jobs:
         run: npm run package
       - name: Package
         run: npx @vscode/vsce package --no-update-package-json --target=${{ matrix.target }}
+      - name: Upload the vsix file to the GitHub Release
+        run: gh release upload ${TAG_NAME#refs/tags/} *.vsix
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_PLEASE_GH_TOKEN }}
+          TAG_NAME: ${{ github.ref }}
       - name: Publish
         run: npx @vscode/vsce publish --no-update-package-json --target=${{ matrix.target }}
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
-
-
