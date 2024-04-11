@@ -5,6 +5,19 @@ All notable changes to `tree-sitter-wit` will be documented in this file.
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
 
+## [0.2.0](https://github.com/Michael-F-Bryan/wit-lsp/compare/tree-sitter-wit-v0.1.0...tree-sitter-wit-v0.2.0) (2024-04-11)
+
+
+### Features
+
+* Automatically implement `HasIdent` and `HasAttr` for strongly-typed AST nodes ([70cfd37](https://github.com/Michael-F-Bryan/wit-lsp/commit/70cfd37f3a0e488b6dd19d2f80e088f702aff313))
+* Include the `highlights.scm` file for highlighting ([159134e](https://github.com/Michael-F-Bryan/wit-lsp/commit/159134e6ce45ca24deca7022d956964f0fbca97b))
+
+
+### Bug Fixes
+
+* Doc-comments were being mis-parsed as normal `//` comments ([34a6834](https://github.com/Michael-F-Bryan/wit-lsp/commit/34a6834ebfc387b8c90c6220031c0e175ec4950c))
+
 ## 0.1.0 (2024-03-25)
 
 

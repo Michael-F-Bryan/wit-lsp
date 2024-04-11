@@ -4,6 +4,26 @@ All notable changes to `wit-compiler` will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.2.0](https://github.com/Michael-F-Bryan/wit-lsp/compare/wit-compiler-v0.1.0...wit-compiler-v0.2.0) (2024-04-11)
+
+
+### Features
+
+* Added a query that extracts the names and pointers for all items in a file ([59318aa](https://github.com/Michael-F-Bryan/wit-lsp/commit/59318aab20371a8ab7bbb9800c3035edea9e1fc3))
+* Automatically implement `HasIdent` and `HasAttr` for strongly-typed AST nodes ([70cfd37](https://github.com/Michael-F-Bryan/wit-lsp/commit/70cfd37f3a0e488b6dd19d2f80e088f702aff313))
+* Created a `GetByIndex` trait which makes it easier to navigate the HIR ([f823461](https://github.com/Michael-F-Bryan/wit-lsp/commit/f8234610d14ab2faff04f0348fc52cb034fe4255))
+* Implemented a `hover_info()` query ([f823461](https://github.com/Michael-F-Bryan/wit-lsp/commit/f8234610d14ab2faff04f0348fc52cb034fe4255))
+* Instrument all queries using tracing ([396c89b](https://github.com/Michael-F-Bryan/wit-lsp/commit/396c89b70cd03f87a1d165edb8fc20fc370b88c9))
+* Parsing now generates syntax error diagnistics ([c41877e](https://github.com/Michael-F-Bryan/wit-lsp/commit/c41877e65f6a359d9b2dc61f45ce349ae5b81dd7))
+* Syntax errors are emitted while parsing ([c6003b3](https://github.com/Michael-F-Bryan/wit-lsp/commit/c6003b3bcc06d23550d784198c63eb9f2efd8f6b))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * tree-sitter-wit bumped from 0.1.0 to 0.2.0
+
 ## 0.1.0 (2024-03-25)
 
 
