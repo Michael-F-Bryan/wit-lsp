@@ -4,6 +4,18 @@ All notable changes to the WIT Language Server extension will be documented in t
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [1.1.0](https://github.com/Michael-F-Bryan/wit-lsp/compare/vscode-plugin-v1.0.0...vscode-plugin-v1.1.0) (2024-04-11)
+
+
+### Features
+
+* The plugin now uses a bundled copy of the language server executable ([882bfc1](https://github.com/Michael-F-Bryan/wit-lsp/commit/882bfc11921d3d5cb4234d3d4d045373ff4c57d3))
+
+
+### Bug Fixes
+
+* The `WIT: Dump AST` command is now only available when in a `*.wit` file ([c0127e7](https://github.com/Michael-F-Bryan/wit-lsp/commit/c0127e72c0ef327c18f916d07555ef431c6c3cf2))
+
 ## 1.0.0 (2024-03-25)
 
 
