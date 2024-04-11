@@ -57,18 +57,20 @@ jobs:
         run: cargo workspaces publish --from-git --token "${{ secrets.CRATES_IO_TOKEN }}" --yes
 
   publish-vscode-plugin:
-    name: Publish the VS Code plugin (${{ matrix.runner }})
+    name: Publish the VS Code plugin (${{ matrix.target }})
     if: startsWith(github.ref, 'refs/tags/vscode-plugin-v')
     runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
         include:
           - runner: ubuntu-latest
-            targets: linux-x64
+            target: linux-x64
           - runner: macos-latest
-            targets: linux-darwin-x64,darwin-arm64
+            target: darwin-x64
+          - runner: macos-latest
+            target: darwin-arm64
           - runner: windows-latest
-            targets: win32-x64
+            target: win32-x64
     defaults:
       run:
         working-directory: plugins/vscode
@@ -89,9 +91,9 @@ jobs:
       - name: Build
         run: npm run package
       - name: Package
-        run: npx @vscode/vsce package --no-update-package-json --target=${{ matrix.targets }}
+        run: npx @vscode/vsce package --no-update-package-json --target=${{ matrix.target }}
       - name: Publish
-        run: npx @vscode/vsce publish --no-update-package-json --target=${{ matrix.targets }}
+        run: npx @vscode/vsce publish --no-update-package-json --target=${{ matrix.target }}
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
 
