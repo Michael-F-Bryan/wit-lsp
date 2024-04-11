@@ -15,6 +15,7 @@
     "type": "git",
     "url": "https://github.com/Michael-F-Bryan/wit-lsp.git"
   },
+  "license": "Apache-2.0",
   "main": "./dist/extension.js",
   "scripts": {
     "vscode:prepublish": "npm run package",

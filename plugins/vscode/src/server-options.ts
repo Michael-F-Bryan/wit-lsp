@@ -11,12 +11,12 @@ const exeSuffix = platform == "win32" ? ".exe" : "";
 /**
  * Load the configuration for starting the server executable.
  * @param context
- * @returns Executable settings, or `undefined` if no server is available.
+ * @returns Executable settings
  */
 export async function loadServerOptions(
     context: ExtensionContext,
     config: Partial<ServerConfig> | undefined,
-): Promise<Executable | undefined> {
+): Promise<Executable> {
     const env = config?.extraEnv || {};
 
     switch (context.extensionMode) {
@@ -24,19 +24,11 @@ export async function loadServerOptions(
             let exePath = config?.path;
 
             if (!exePath) {
-                const bundled = path.join(
-                    context.globalStorageUri.fsPath,
-                    "bundled",
-                    "bin",
+                exePath = path.resolve(
+                    context.extensionPath,
+                    "dist",
                     "wit-language-server" + exeSuffix,
                 );
-                if (await exists(bundled)) {
-                    exePath = bundled;
-                }
-            }
-
-            if (!exePath) {
-                return undefined;
             }
 
             return {
