@@ -91,12 +91,12 @@
       },
       {
         "command": "wit-language-server.changelog",
-        "title": "Show Changelog",
+        "title": "Show Server Changelog",
         "category": "WIT"
       },
       {
         "command": "wit-language-server.version",
-        "title": "Show Version",
+        "title": "Show Server Version",
         "category": "WIT"
       }
     ],
