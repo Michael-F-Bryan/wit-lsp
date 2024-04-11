@@ -96,14 +96,20 @@ async function cargoBuild(compiler) {
     "--bin=wit-language-server",
     `--profile=${profile}`,
   ];
+  if (process.env.CI) {
+    args.push("--verbose");
+  }
   const projectRoot = path.resolve(__dirname, "..", "..");
 
   console.log(`Executing: ${cargo} ${args.join(" ")}`);
   await spawnAsync(cargo, args, { cwd: projectRoot, stdio: "inherit" });
 
+  await fs.mkdir(compiler.outputPath, { recursive: true });
+
   const binaryName = "wit-language-server" + exeSuffix;
-  const sourcePath = path.resolve(projectRoot, "target", isProduction ? "release" : "debug", binaryName);
-  const destPath = path.resolve(__dirname, "dist", binaryName);
+  const targetDir = path.resolve(projectRoot, "target", isProduction ? "release" : "debug");
+  const sourcePath = path.resolve(targetDir, binaryName);
+  const destPath = path.resolve(compiler.outputPath, binaryName);
 
   await fs.copyFile(sourcePath, destPath);
   console.log(`Copied ${sourcePath} to ${destPath}`);
