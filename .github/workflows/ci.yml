@@ -95,6 +95,9 @@ jobs:
   vscode:
     name: VS Code Plugin
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: plugins/vscode
     steps:
       - uses: actions/checkout@v2
       - name: Rust Cache
@@ -107,14 +110,10 @@ jobs:
           node-version: latest
           cache: npm
           cache-dependency-path: plugins/vscode/package-lock.json
-      - name: Compile the language server
-        run: cargo build -p wit-language-server
-      - name: Install JavaScript dependencies
+      - name: Install JavaScript Dependencies
         run: npm ci
-        working-directory: plugins/vscode
       - name: Build
         run: npm run compile
-        working-directory: plugins/vscode
 
   api-docs:
     name: Publish API Docs to GitHub Pages
