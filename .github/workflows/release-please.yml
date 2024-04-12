@@ -101,3 +101,39 @@ jobs:
         run: npx @vscode/vsce publish --no-update-package-json --target=${{ matrix.target }}
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+  upload-language-server-artifacts:
+    name: Upload the Language Server binary (${{ matrix.target }})
+    if: startsWith(github.ref, 'refs/tags/wit-language-server-v')
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            target: x86_64-unknown-linux
+          - runner: macos-latest
+            target: x86_64-apple-darwin
+          - runner: macos-latest
+            target: aarch64-apple-darwin
+          - runner: windows-latest
+            target: x86_64-pc-windows-msvc
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Rust
+        uses: dsherret/rust-toolchain-file@v1
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+      - name: Install cargo-dist
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-dist
+      - name: Record the Tag Name
+        run: echo "TAG_NAME=${TAG_NAME#refs/tags/}" >> $GITHUB_ENV
+      - name: Compile
+        run: cargo build --workspace --verbose --profile=dist
+      - name: Generate the Archive
+        run: cargo dist --verbose=info --target=${{ matrix.target }} --tag=${TAG_NAME}
+      - name: Upload Release Artifacts
+        run: |
+          rm target/distrib/source.*
+          gh release upload ${TAG_NAME} target/distrib/wit-language-server*
