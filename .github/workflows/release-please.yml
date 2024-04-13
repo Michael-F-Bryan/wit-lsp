@@ -137,3 +137,5 @@ jobs:
         run: |
           rm target/distrib/source.*
           gh release upload ${TAG_NAME} target/distrib/wit-language-server*
+      - name: Mark this as the latest release
+        run: gh release edit --latest ${TAG_NAME}
