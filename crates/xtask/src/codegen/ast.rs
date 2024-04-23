@@ -33,16 +33,24 @@ pub struct Ast {
 }
 
 impl Ast {
+    #[tracing::instrument(skip_all)]
     pub fn generate(self) -> Result<(), Report> {
         let Ast { node_types, out } = self;
 
+        tracing::debug!(path=%node_types.display(), "Reading node-types.json");
         let node_types = std::fs::read_to_string(&node_types)
             .with_context(|| format!("Unable to read \"{}\"", node_types.display()))?;
+
+        tracing::trace!(%node_types);
 
         let tokens = generate_ast(&node_types);
         let src = utils::format_rust(tokens);
 
-        utils::ensure_file_contents(out, src)
+        tracing::trace!(generated = src.as_str());
+
+        utils::ensure_file_contents(out, src)?;
+
+        Ok(())
     }
 }
 

@@ -21,3 +21,6 @@ quote = "1.0.35"
 serde = { workspace = true }
 serde_json = { workspace = true }
 syn = "2.0.55"
+tracing = { workspace = true }
+tracing-error = { workspace = true }
+tracing-subscriber = { workspace = true }

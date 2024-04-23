@@ -28,8 +28,8 @@ tokio = { workspace = true }
 tower-lsp = "0.20.0"
 tower-service = "0.3.2"
 tracing = { workspace = true }
-tracing-error = "0.2.0"
-tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+tracing-error = { workspace = true }
+tracing-subscriber = { workspace = true }
 tree-sitter = { workspace = true }
 tree-sitter-wit = { version = "0.2.0", path = "../../tree-sitter-wit" }
 uuid = { version = "1.8.0", features = ["v4"] }

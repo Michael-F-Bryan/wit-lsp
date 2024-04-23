@@ -24,6 +24,7 @@ impl Codegen {
 }
 
 /// Run all code generators using the default settings.
+#[tracing::instrument(skip_all)]
 fn run_all_generators() -> Result<(), Report> {
     Ast::default().generate()?;
 
