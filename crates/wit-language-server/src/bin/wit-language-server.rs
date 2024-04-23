@@ -173,6 +173,11 @@ fn initialize_logging() -> Result<(), color_eyre::Report> {
     color_eyre::config::HookBuilder::default()
         .capture_span_trace_by_default(true)
         .issue_url(concat!(env!("CARGO_PKG_REPOSITORY"), "/issues/new"))
+        .add_default_filters()
+        .add_issue_metadata("arch", std::env::consts::ARCH)
+        .add_issue_metadata("os", std::env::consts::OS)
+        .add_issue_metadata("package", env!("CARGO_PKG_NAME"))
+        .add_issue_metadata("version", env!("CARGO_PKG_VERSION"))
         .theme(theme)
         .install()?;
 

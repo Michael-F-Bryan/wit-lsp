@@ -1987,6 +1987,9 @@ dependencies = [
  "serde",
  "serde_json",
  "syn 2.0.55",
+ "tracing",
+ "tracing-error",
+ "tracing-subscriber",
 ]
 
 [[package]]
