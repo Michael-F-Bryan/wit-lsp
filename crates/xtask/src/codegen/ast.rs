@@ -1,10 +1,59 @@
-//! Automatically generate a strongly-typed AST based on [`crate::NODE_TYPES`].
+use std::{collections::BTreeMap, path::PathBuf};
 
-use std::collections::BTreeMap;
-
+use clap::Parser;
+use color_eyre::{eyre::Context, Report};
 use heck::ToPascalCase;
+use once_cell::sync::Lazy;
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
+
+use crate::utils;
+
+static NODE_TYPES_PATH: Lazy<PathBuf> = Lazy::new(|| {
+    utils::project_root()
+        .join("tree-sitter-wit")
+        .join("src")
+        .join("node-types.json")
+});
+static AST_GENERATED_PATH: Lazy<PathBuf> = Lazy::new(|| {
+    utils::project_root()
+        .join("crates")
+        .join("wit-compiler")
+        .join("src")
+        .join("ast")
+        .join("generated.rs")
+});
+
+#[derive(Debug, Clone, Parser)]
+pub struct Ast {
+    #[clap(short, long, default_value = NODE_TYPES_PATH.as_os_str())]
+    node_types: PathBuf,
+    #[clap(short, long, default_value = AST_GENERATED_PATH.as_os_str())]
+    out: PathBuf,
+}
+
+impl Ast {
+    pub fn generate(self) -> Result<(), Report> {
+        let Ast { node_types, out } = self;
+
+        let node_types = std::fs::read_to_string(&node_types)
+            .with_context(|| format!("Unable to read \"{}\"", node_types.display()))?;
+
+        let tokens = generate_ast(&node_types);
+        let src = utils::format_rust(tokens);
+
+        utils::ensure_file_contents(out, src)
+    }
+}
+
+impl Default for Ast {
+    fn default() -> Self {
+        Ast {
+            node_types: NODE_TYPES_PATH.clone(),
+            out: AST_GENERATED_PATH.clone(),
+        }
+    }
+}
 
 pub(crate) fn generate_ast(node_types: &str) -> TokenStream {
     let node_types: Vec<NodeType> = serde_json::from_str(node_types).unwrap();
@@ -536,3 +585,18 @@ const TOKENS: &[Token] = &[
         kind: TokenKind::Punctuation,
     },
 ];
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::utils;
+
+    #[test]
+    fn ast_is_up_to_date() {
+        let node_types = std::fs::read_to_string(&*NODE_TYPES_PATH).unwrap();
+        let tokens = generate_ast(&node_types);
+        let src = utils::format_rust(tokens);
+        let ast_rs = utils::project_root().join("crates/wit-compiler/src/ast/generated.rs");
+        utils::ensure_file_contents(ast_rs, src).unwrap();
+    }
+}

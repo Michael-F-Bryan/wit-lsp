@@ -1,10 +1,24 @@
-use clap::Parser;
+mod codegen;
+mod utils;
 
-fn main() {
-    let _ = Cmd::parse();
-    todo!();
+use clap::Parser;
+use color_eyre::Report;
+
+use crate::codegen::Codegen;
+
+fn main() -> Result<(), Report> {
+    color_eyre::install()?;
+
+    let cmd = Cmd::parse();
+
+    match cmd {
+        Cmd::Codegen(c) => c.run(),
+    }
 }
 
 #[derive(Parser, Debug)]
 #[command(author, version)]
-enum Cmd {}
+enum Cmd {
+    /// Run code generation.
+    Codegen(Codegen),
+}
