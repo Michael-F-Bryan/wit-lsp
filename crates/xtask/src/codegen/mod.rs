@@ -1,5 +1,3 @@
-//! Automatically generate a strongly-typed AST based on [`crate::NODE_TYPES`].
-
 mod ast;
 
 use clap::Parser;
