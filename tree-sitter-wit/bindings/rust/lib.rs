@@ -1,24 +1,38 @@
-//! This crate provides Wit language support for the [tree-sitter][] parsing library.
+//! This crate provides Wit language support for the [tree-sitter][ts] parsing
+//! library.
 //!
-//! Typically, you will use the [language][language func] function to add this language to a
-//! tree-sitter [Parser][], and then use the parser to parse some code:
+//! Typically, you will use the [`language()`] function to add this language to
+//! a [`tree_sitter::Parser`], and then use the parser to parse some code:
 //!
 //! ```
 //! let code = r#"
+//!   package wasi:filesystem;
+//!
+//!   interface wasi {
+//!     enum clockid {
+//!       /// The clock measuring real time. Time value zero corresponds with
+//!       /// 1970-01-01T00:00:00Z.
+//!       realtime,
+//!       /// The store-wide monotonic clock, which is defined as a clock measuring
+//!       /// real time, whose value cannot be adjusted and which cannot have negative
+//!       /// clock jumps. The epoch of this clock is undefined. The absolute time
+//!       /// value of this clock therefore has no meaning.
+//!       monotonic,
+//!     }
+//!
+//!     /// Timestamp in nanoseconds.
+//!     type timestamp = u64;
+//!   }
 //! "#;
+//!
 //! let mut parser = tree_sitter::Parser::new();
 //! parser.set_language(&tree_sitter_wit::language()).expect("Error loading Wit grammar");
 //! let tree = parser.parse(code, None).unwrap();
+//!
 //! assert!(!tree.root_node().has_error());
 //! ```
 //!
-//! [Language]: https://docs.rs/tree-sitter/*/tree_sitter/struct.Language.html
-//! [language func]: fn.language.html
-//! [Parser]: https://docs.rs/tree-sitter/*/tree_sitter/struct.Parser.html
-//! [tree-sitter]: https://tree-sitter.github.io/
-
-#[cfg(test)]
-mod codegen;
+//! [ts]: https://tree-sitter.github.io/
 
 pub extern crate tree_sitter;
 
@@ -28,19 +42,17 @@ extern "C" {
     fn tree_sitter_wit() -> Language;
 }
 
-/// Get the tree-sitter [Language][] for this grammar.
+/// Get the tree-sitter [Language][lang] for this grammar.
 ///
-/// [Language]: https://docs.rs/tree-sitter/*/tree_sitter/struct.Language.html
+/// [lang]: https://docs.rs/tree-sitter/*/tree_sitter/struct.Language.html
 pub fn language() -> Language {
     unsafe { tree_sitter_wit() }
 }
 
-/// The content of the [`node-types.json`][] file for this grammar.
+/// The content of the [`node-types.json`][node-types] file for this grammar.
 ///
-/// [`node-types.json`]: https://tree-sitter.github.io/tree-sitter/using-parsers#static-node-types
+/// [node-types]: https://tree-sitter.github.io/tree-sitter/using-parsers#static-node-types
 pub const NODE_TYPES: &str = include_str!("../../src/node-types.json");
-
-// Uncomment these to include any queries that this grammar contains
 
 pub const HIGHLIGHTS_QUERY: &str = include_str!("../../queries/highlights.scm");
 // pub const INJECTIONS_QUERY: &str = include_str!("../../queries/injections.scm");
@@ -54,10 +66,6 @@ mod tests {
         path::Path,
         process::{Command, Output},
     };
-
-    use quote::ToTokens;
-
-    use crate::{codegen, NODE_TYPES};
 
     #[test]
     fn test_can_load_grammar() {
@@ -98,69 +106,8 @@ mod tests {
                 // The tree-sitter CLI isn't installed. Ignore.
             }
             Err(e) => {
-                panic!("{e}");
+                panic!("Unable to start `{cmd:?}`: {e}");
             }
         }
-    }
-
-    #[test]
-    fn generate_ast() {
-        let tokens = codegen::generate_ast(NODE_TYPES);
-        let src = format_rust(tokens);
-        let ast_rs = project_root().join("crates/wit-compiler/src/ast/generated.rs");
-        ensure_file_contents(ast_rs, src);
-    }
-
-    /// Get the root directory for this repository.
-    pub fn project_root() -> &'static Path {
-        Path::new(env!("CARGO_MANIFEST_DIR"))
-            .ancestors()
-            .find(|p| p.join(".git").exists())
-            .unwrap()
-    }
-
-    /// Format some Rust tokens.
-    ///
-    /// # Panics
-    ///
-    /// It is assumed that the tokens would parse as a Rust file.
-    pub fn format_rust(contents: impl ToTokens) -> String {
-        let contents = syn::parse2(contents.to_token_stream())
-            .expect("Unable to parse the tokens as a syn::File");
-        prettyplease::unparse(&contents)
-    }
-
-    /// Check that a particular file has the desired contents.
-    ///
-    /// If the file is missing or outdated, this function will update the file and
-    /// trigger a panic to fail any test this is called from.
-    pub fn ensure_file_contents(path: impl AsRef<Path>, contents: impl AsRef<str>) {
-        let path = path.as_ref();
-        let contents = normalize_newlines(contents.as_ref());
-
-        if let Ok(old_contents) = std::fs::read_to_string(path) {
-            if contents == normalize_newlines(&old_contents) {
-                // File is already up to date
-                return;
-            }
-        }
-
-        let display_path = path.strip_prefix(project_root()).unwrap_or(path);
-
-        eprintln!("{} was not up-to-date, updating...", display_path.display());
-
-        if std::env::var("CI").is_ok() {
-            eprintln!("Note: run `cargo test` locally and commit the updated files");
-        }
-
-        if let Some(parent) = path.parent() {
-            let _ = std::fs::create_dir_all(parent);
-        }
-        std::fs::write(path, contents).unwrap();
-        panic!("some file was not up to date and has been updated. Please re-run the tests.");
-    }
-
-    fn normalize_newlines(s: &str) -> String {
-        s.replace("\r\n", "\n")
     }
 }
