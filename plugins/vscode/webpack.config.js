@@ -106,7 +106,7 @@ async function cargoBuild(compiler) {
 
   await fs.mkdir(compiler.outputPath, { recursive: true });
 
-  const binaryName = "wit-language-server" + exeSuffix;
+  const binaryName = "wit" + exeSuffix;
   const targetDir = path.resolve(projectRoot, "target", isProduction ? "release" : "debug");
   const sourcePath = path.resolve(targetDir, binaryName);
   const destPath = path.resolve(compiler.outputPath, binaryName);

@@ -27,13 +27,14 @@ export async function loadServerOptions(
                 exePath = path.resolve(
                     context.extensionPath,
                     "dist",
-                    "wit-language-server" + exeSuffix,
+                    "wit" + exeSuffix,
                 );
             }
 
             return {
                 command: exePath,
                 options: { env },
+                args: ["language-server"],
                 transport: TransportKind.stdio,
             };
 
@@ -60,6 +61,7 @@ export async function loadServerOptions(
                         "--manifest-path",
                         cargoToml,
                         "--",
+                        "language-server",
                     ],
                     transport,
                     options,
@@ -85,7 +87,7 @@ async function lspCargoToml(
                 return path.resolve(
                     dir,
                     "crates",
-                    "wit-language-server",
+                    "wit-cli",
                     "Cargo.toml",
                 );
             } catch {
