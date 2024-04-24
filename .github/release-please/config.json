@@ -4,6 +4,9 @@
         "crates/wit-compiler": {
             "component": "wit-compiler"
         },
+        "crates/wit-cli": {
+            "component": "wit-cli"
+        },
         "crates/wit-language-server": {
             "component": "wit-language-server"
         },

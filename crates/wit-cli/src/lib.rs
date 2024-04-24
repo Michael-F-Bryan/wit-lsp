@@ -33,7 +33,7 @@ impl Args {
 }
 
 #[derive(Debug, Clone, Parser)]
-pub enum Cmd {
+enum Cmd {
     /// Start the language server.
     #[clap(alias = "serve")]
     LanguageServer(LanguageServer),
