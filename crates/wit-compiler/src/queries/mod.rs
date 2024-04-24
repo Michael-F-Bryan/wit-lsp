@@ -7,6 +7,7 @@ mod namespaces;
 mod parsing;
 mod selection;
 
+pub(crate) use self::parsing::Workspace_packages;
 pub use self::{
     hover::{hover_info, HoverInfo, HoverTarget},
     items::{
@@ -15,6 +16,6 @@ pub use self::{
     },
     lowering::lower,
     namespaces::{resolve_name, resolve_namespace, Namespace},
-    parsing::{parse, Ast, FilePath, SourceFile, Workspace},
+    parsing::{parse, Ast, FilePath, Package, PackageId, SourceFile, Workspace},
     selection::selection_ranges,
 };

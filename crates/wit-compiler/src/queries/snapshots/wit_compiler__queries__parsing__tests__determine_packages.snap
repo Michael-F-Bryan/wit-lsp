@@ -1,0 +1,117 @@
+---
+source: crates/wit-compiler/src/queries/parsing.rs
+expression: debug
+---
+[
+    Package {
+        [salsa id]: 0,
+        dir: FilePath(
+            .,
+        ),
+        id: None,
+        files: [
+            SourceFile(
+                Id {
+                    value: 1,
+                },
+            ),
+        ],
+    },
+    Package {
+        [salsa id]: 1,
+        dir: FilePath(
+            merge,
+        ),
+        id: Some(
+            PackageId {
+                [salsa id]: 0,
+                package: [
+                    merge,
+                ],
+                path: [
+                    some-package,
+                ],
+                version: None,
+            },
+        ),
+        files: [
+            SourceFile(
+                Id {
+                    value: 5,
+                },
+            ),
+            SourceFile(
+                Id {
+                    value: 6,
+                },
+            ),
+        ],
+    },
+    Package {
+        [salsa id]: 2,
+        dir: FilePath(
+            named,
+        ),
+        id: Some(
+            PackageId {
+                [salsa id]: 1,
+                package: [
+                    named,
+                ],
+                path: [
+                    package,
+                ],
+                version: None,
+            },
+        ),
+        files: [
+            SourceFile(
+                Id {
+                    value: 3,
+                },
+            ),
+        ],
+    },
+    Package {
+        [salsa id]: 3,
+        dir: FilePath(
+            named/with,
+        ),
+        id: Some(
+            PackageId {
+                [salsa id]: 2,
+                package: [
+                    named,
+                ],
+                path: [
+                    with,
+                    version,
+                ],
+                version: Some(
+                    1.2.3,
+                ),
+            },
+        ),
+        files: [
+            SourceFile(
+                Id {
+                    value: 4,
+                },
+            ),
+        ],
+    },
+    Package {
+        [salsa id]: 4,
+        dir: FilePath(
+            simple,
+        ),
+        id: None,
+        files: [
+            SourceFile(
+                Id {
+                    value: 2,
+                },
+            ),
+        ],
+    },
+]

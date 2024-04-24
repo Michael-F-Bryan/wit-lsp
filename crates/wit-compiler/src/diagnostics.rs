@@ -20,6 +20,7 @@ pub enum Diagnostic {
     SyntaxError(SyntaxError),
     UnknownName(UnknownName),
     Bug(Bug),
+    MismatchedPackageDeclaration(MismatchedPackageDeclaration),
 }
 
 impl Diagnostic {
@@ -29,6 +30,10 @@ impl Diagnostic {
             | Diagnostic::SyntaxError(SyntaxError { location, .. })
             | Diagnostic::UnknownName(UnknownName { location, .. })
             | Diagnostic::MultipleConstructors(MultipleConstructors { location, .. })
+            | Diagnostic::MismatchedPackageDeclaration(MismatchedPackageDeclaration {
+                second_location: location,
+                ..
+            })
             | Diagnostic::Bug(Bug { location, .. }) => location,
         }
     }
@@ -131,6 +136,20 @@ pub struct Bug {
     pub message: Text,
     pub location: Location,
     pub caller: &'static std::panic::Location<'static>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MismatchedPackageDeclaration {
+    pub second_id: crate::queries::PackageId,
+    pub second_location: Location,
+    pub original_id: crate::queries::PackageId,
+    pub original_definition: Location,
+}
+
+impl From<MismatchedPackageDeclaration> for Diagnostic {
+    fn from(value: MismatchedPackageDeclaration) -> Self {
+        Diagnostic::MismatchedPackageDeclaration(value)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

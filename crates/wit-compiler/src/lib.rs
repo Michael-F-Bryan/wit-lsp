@@ -33,12 +33,15 @@ pub struct Jar(
     crate::queries::lowering::lower_type_alias,
     crate::queries::lowering::lower_variant,
     crate::queries::lowering::lower_world,
+    crate::queries::PackageId,
+    crate::queries::Package,
     crate::queries::parse,
     crate::queries::resolve_name,
     crate::queries::resolve_namespace,
     crate::queries::selection_ranges,
     crate::queries::SourceFile,
     crate::queries::Workspace,
+    crate::queries::Workspace_packages,
     crate::queries::WorldMetadata,
 );
 
