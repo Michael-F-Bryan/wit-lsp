@@ -1,4 +1,5 @@
 mod codegen;
+mod doc;
 mod utils;
 
 use std::io::IsTerminal;
@@ -10,7 +11,7 @@ use tracing_subscriber::{
     fmt::format::FmtSpan, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter,
 };
 
-use crate::codegen::Codegen;
+use crate::{codegen::Codegen, doc::Doc};
 
 const RUST_LOG: &[&str] = &["warn"];
 
@@ -21,6 +22,7 @@ fn main() -> Result<(), Report> {
 
     match cmd {
         Cmd::Codegen(c) => c.run(),
+        Cmd::Doc(d) => d.run(),
     }
 }
 
@@ -29,6 +31,8 @@ fn main() -> Result<(), Report> {
 enum Cmd {
     /// Run code generation.
     Codegen(Codegen),
+    /// Generate project documentation.
+    Doc(Doc),
 }
 
 fn initialize_logging() -> Result<(), color_eyre::Report> {

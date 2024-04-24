@@ -13,6 +13,7 @@ pub struct Codegen {
 }
 
 impl Codegen {
+    #[tracing::instrument(skip_all)]
     pub fn run(self) -> Result<(), Report> {
         let Codegen { target } = self;
 

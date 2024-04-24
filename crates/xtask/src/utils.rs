@@ -4,6 +4,7 @@ use std::path::Path;
 
 use color_eyre::eyre::{Context, Report};
 use quote::ToTokens;
+use xshell::Shell;
 
 /// Format some Rust tokens.
 ///
@@ -74,4 +75,32 @@ pub fn project_root() -> &'static Path {
         .ancestors()
         .find(|p| p.join(".git").exists())
         .unwrap()
+}
+
+#[tracing::instrument(skip_all, fields(from = %from.as_ref().display(), to = %to.as_ref().display()))]
+pub fn copy_dir(
+    sh: &Shell,
+    from: impl AsRef<Path>,
+    to: impl AsRef<Path>,
+) -> color_eyre::Result<()> {
+    let from = from.as_ref();
+
+    let _guard = sh.push_dir(to);
+
+    for entry in walkdir::WalkDir::new(from) {
+        let entry = entry?;
+        let meta = entry.metadata()?;
+        let path = entry.path();
+        let dest = path.strip_prefix(from).unwrap();
+
+        if meta.is_dir() {
+            tracing::debug!(dir=%dest.display(), "Creating directory");
+            sh.create_dir(dest)?;
+        } else if meta.is_file() {
+            tracing::debug!(path=%dest.display(), "Copying");
+            sh.copy_file(path, dest)?;
+        }
+    }
+
+    Ok(())
 }

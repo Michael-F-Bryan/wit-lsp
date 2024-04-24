@@ -128,25 +128,16 @@ jobs:
         uses: Swatinem/rust-cache@v2
       - name: Setup Rust
         uses: dsherret/rust-toolchain-file@v1
-      - name: Generate API Docs
-        run: cargo doc --workspace --verbose --locked
-      - name: Generate Code Coverage
-        run: cargo llvm-cov nextest --html --workspace --no-fail-fast --show-instantiations
-      - name: Set up Pages Directory
-        run: |
-          mkdir -p pages
-          cp -r target/doc pages/crate-docs
-          cp -r target/llvm-cov/html pages/coverage
-      - name: Set up redirects
-        run: |
-          echo '<meta http-equiv="refresh" content="0; url=crate-docs/index.html" />' > pages/index.html
-          echo '<meta http-equiv="refresh" content="0; url=${{ env.DEFAULT_CRATE_NAME }}/index.html" />' > pages/crate-docs/index.html
+      - name: Generate Docs
+        run: cargo xtask doc
+        env:
+          RUST_LOG: debug
       - name: Upload API Docs
         uses: JamesIves/github-pages-deploy-action@v4
         if: github.ref == 'refs/heads/main'
         with:
           branch: gh-pages
-          folder: pages
+          folder: public
           single-commit: true
 
   workflow-times:
