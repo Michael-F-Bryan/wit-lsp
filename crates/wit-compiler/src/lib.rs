@@ -4,6 +4,7 @@ pub mod access;
 pub mod ast;
 mod compiler;
 pub mod diagnostics;
+mod file_path;
 pub mod hir;
 pub mod queries;
 mod text;
@@ -11,7 +12,7 @@ pub mod traverse;
 mod tree;
 mod workspace;
 
-pub use crate::{compiler::Compiler, text::Text, tree::Tree};
+pub use crate::{compiler::Compiler, file_path::FilePath, text::Text, tree::Tree};
 
 /// A [`salsa::jar::Jar`] containing all queries and tracked types used by this
 /// crate.
@@ -41,7 +42,7 @@ pub struct Jar(
     crate::queries::selection_ranges,
     crate::queries::SourceFile,
     crate::queries::Workspace,
-    crate::queries::Workspace_packages,
+    crate::queries::workspace_packages,
     crate::queries::WorldMetadata,
 );
 

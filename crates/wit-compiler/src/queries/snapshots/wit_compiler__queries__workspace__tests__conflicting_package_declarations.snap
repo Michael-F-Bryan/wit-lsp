@@ -1,5 +1,5 @@
 ---
-source: crates/wit-compiler/src/queries/parsing.rs
+source: crates/wit-compiler/src/queries/workspace.rs
 expression: diags
 ---
 [

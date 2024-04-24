@@ -7,8 +7,7 @@ use crate::{
         AnyFuncItemIndex, EnumIndex, FlagsIndex, FuncItemIndex, InterfaceIndex, RecordIndex,
         ResourceIndex, ScopeIndex, TypeAliasIndex, VariantIndex, WorldIndex,
     },
-    queries::FilePath,
-    Text,
+    FilePath, Text,
 };
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]

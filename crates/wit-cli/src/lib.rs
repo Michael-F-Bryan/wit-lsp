@@ -1,10 +1,16 @@
+mod diags;
 mod language_server;
+mod parse;
+
+pub(crate) use self::diags::print_diags;
+
+use std::fmt::Display;
 
 use build_info::VersionControl;
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 use color_eyre::eyre::Report;
 
-use crate::language_server::LanguageServer;
+use crate::{language_server::LanguageServer, parse::Parse};
 
 #[derive(Debug, Clone, Parser)]
 #[clap(about)]
@@ -28,6 +34,7 @@ impl Args {
 
         match self.cmd {
             Cmd::LanguageServer(c) => c.run(),
+            Cmd::Parse(p) => p.run(),
         }
     }
 }
@@ -37,6 +44,7 @@ enum Cmd {
     /// Start the language server.
     #[clap(alias = "serve")]
     LanguageServer(LanguageServer),
+    Parse(Parse),
 }
 
 fn print_version(verbose: bool) {
@@ -67,5 +75,21 @@ fn print_version(verbose: bool) {
         println!("crate: {}", version.crate_info.name);
         println!("release: {}", version.crate_info.version);
         println!("authors: {}", version.crate_info.authors.join(", "));
+    }
+}
+
+#[derive(Debug, Default, Copy, Clone, ValueEnum, PartialEq, Eq)]
+pub enum Format {
+    #[default]
+    Text,
+    Json,
+}
+
+impl Display for Format {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Format::Text => f.write_str("text"),
+            Format::Json => f.write_str("json"),
+        }
     }
 }

@@ -5,7 +5,7 @@ use color_eyre::eyre::Report;
 use tower_lsp::Server;
 
 #[derive(Debug, Clone, Parser)]
-pub struct LanguageServer {
+pub(crate) struct LanguageServer {
     /// Connect to a port that the client is serving on.
     #[clap(short, long, env, group = "mode")]
     connect: Option<SocketAddr>,

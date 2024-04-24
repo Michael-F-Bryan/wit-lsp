@@ -5,7 +5,7 @@ use std::fmt::Display;
 
 use tree_sitter::{Point, Range};
 
-use crate::{queries::FilePath, Text};
+use crate::{FilePath, Text};
 
 /// An accumulator for all [`Diagnostic`]s that have been emitted.
 #[salsa::accumulator]
