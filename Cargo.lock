@@ -1935,6 +1935,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32b752e52a2da0ddfbdbcc6fceadfeede4c939ed16d13e648833a61dfb611ed8"
 
 [[package]]
+name = "wit-cli"
+version = "0.1.0"
+dependencies = [
+ "build-info",
+ "build-info-build",
+ "clap",
+ "color-eyre",
+ "tokio",
+ "tower-lsp",
+ "tracing",
+ "tracing-error",
+ "tracing-subscriber",
+ "wit-language-server",
+]
+
+[[package]]
 name = "wit-compiler"
 version = "0.2.0"
 dependencies = [
@@ -1952,10 +1968,6 @@ dependencies = [
 name = "wit-language-server"
 version = "0.2.0"
 dependencies = [
- "build-info",
- "build-info-build",
- "clap",
- "color-eyre",
  "futures",
  "im",
  "insta",
@@ -1965,8 +1977,6 @@ dependencies = [
  "tower-lsp",
  "tower-service",
  "tracing",
- "tracing-error",
- "tracing-subscriber",
  "tree-sitter",
  "tree-sitter-wit",
  "uuid",
