@@ -93,7 +93,7 @@ async function cargoBuild(compiler) {
   const profile = isProduction ? "release" : "dev";
   const args = [
     "build",
-    "--bin=wit-language-server",
+    "--bin=wit",
     `--profile=${profile}`,
   ];
   if (process.env.CI) {
