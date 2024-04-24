@@ -33,7 +33,7 @@ impl LanguageServer {
         }
     }
 
-    pub fn service() -> (LspService<LanguageServer>, ClientSocket) {
+    pub(crate) fn service() -> (LspService<LanguageServer>, ClientSocket) {
         LspService::build(LanguageServer::new)
             .custom_method("wit-language-server/changelog", LanguageServer::changelog)
             .custom_method("wit-language-server/dump-ast", LanguageServer::dump_ast)
