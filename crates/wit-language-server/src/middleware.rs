@@ -6,7 +6,7 @@ use tower_service::Service;
 use tracing::Instrument;
 use uuid::Uuid;
 
-use crate::LanguageServer;
+use crate::server::LanguageServer;
 
 pub(crate) fn wrap(service: LspService<LanguageServer>) -> impl LanguageServerService {
     LoggingService(CatchPanic(service))
@@ -141,6 +141,7 @@ where
     }
 }
 
+/// Errors that may occur when you catch panics in a [`tower_service::Service`].
 #[derive(Debug, Clone)]
 pub enum CatchPanicError {
     Panic(PanicMessage),
@@ -165,6 +166,7 @@ impl std::fmt::Display for CatchPanicError {
     }
 }
 
+/// A printable panic payload.
 #[derive(Debug, Clone)]
 pub struct PanicMessage {
     msg: Option<String>,
