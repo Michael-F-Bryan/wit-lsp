@@ -39,6 +39,17 @@ impl Diagnostic {
             | Diagnostic::Bug(Bug { location, .. }) => location,
         }
     }
+
+    pub fn into_diagnostic(&self) -> codespan_reporting::diagnostic::Diagnostic<FilePath> {
+        match self {
+            Diagnostic::DuplicateName(diag) => diag.as_diagnostic(),
+            Diagnostic::MultipleConstructors(diag) => diag.as_diagnostic(),
+            Diagnostic::SyntaxError(diag) => diag.as_diagnostic(),
+            Diagnostic::UnknownName(diag) => diag.as_diagnostic(),
+            Diagnostic::Bug(diag) => diag.as_diagnostic(),
+            Diagnostic::MismatchedPackageDeclaration(diag) => diag.as_diagnostic(),
+        }
+    }
 }
 
 impl Bug {
@@ -64,7 +75,7 @@ pub trait IntoDiagnostic: Into<Diagnostic> {
     const ERROR_CODE: &'static str;
     const VERBOSE_DESCRIPTION: &'static str;
 
-    fn into_diagnostic(self) -> codespan_reporting::diagnostic::Diagnostic<FilePath>;
+    fn as_diagnostic(&self) -> codespan_reporting::diagnostic::Diagnostic<FilePath>;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -77,7 +88,7 @@ impl IntoDiagnostic for SyntaxError {
     const ERROR_CODE: &'static str = "E001";
     const VERBOSE_DESCRIPTION: &'static str = include_str!("E001-syntax-error.md");
 
-    fn into_diagnostic(self) -> codespan_reporting::diagnostic::Diagnostic<FilePath> {
+    fn as_diagnostic(&self) -> codespan_reporting::diagnostic::Diagnostic<FilePath> {
         todo!()
     }
 }
@@ -99,7 +110,7 @@ impl IntoDiagnostic for DuplicateName {
     const ERROR_CODE: &'static str = "E002";
     const VERBOSE_DESCRIPTION: &'static str = include_str!("E002-duplicate-name.md");
 
-    fn into_diagnostic(self) -> codespan_reporting::diagnostic::Diagnostic<FilePath> {
+    fn as_diagnostic(&self) -> codespan_reporting::diagnostic::Diagnostic<FilePath> {
         todo!()
     }
 }
@@ -120,7 +131,7 @@ impl IntoDiagnostic for MultipleConstructors {
     const ERROR_CODE: &'static str = "E003";
     const VERBOSE_DESCRIPTION: &'static str = include_str!("E003-multiple-constructors.md");
 
-    fn into_diagnostic(self) -> codespan_reporting::diagnostic::Diagnostic<FilePath> {
+    fn as_diagnostic(&self) -> codespan_reporting::diagnostic::Diagnostic<FilePath> {
         todo!()
     }
 }
@@ -143,7 +154,7 @@ impl IntoDiagnostic for UnknownName {
     const ERROR_CODE: &'static str = "E004";
     const VERBOSE_DESCRIPTION: &'static str = include_str!("E004-unknown-name.md");
 
-    fn into_diagnostic(self) -> codespan_reporting::diagnostic::Diagnostic<FilePath> {
+    fn as_diagnostic(&self) -> codespan_reporting::diagnostic::Diagnostic<FilePath> {
         todo!()
     }
 }
@@ -166,7 +177,7 @@ impl IntoDiagnostic for Bug {
     const ERROR_CODE: &'static str = "E500";
     const VERBOSE_DESCRIPTION: &'static str = include_str!("E500-bug.md");
 
-    fn into_diagnostic(self) -> codespan_reporting::diagnostic::Diagnostic<FilePath> {
+    fn as_diagnostic(&self) -> codespan_reporting::diagnostic::Diagnostic<FilePath> {
         todo!()
     }
 }
@@ -190,7 +201,7 @@ impl IntoDiagnostic for MismatchedPackageDeclaration {
     const VERBOSE_DESCRIPTION: &'static str =
         include_str!("E005-mismatched-package-declaration.md");
 
-    fn into_diagnostic(self) -> codespan_reporting::diagnostic::Diagnostic<FilePath> {
+    fn as_diagnostic(&self) -> codespan_reporting::diagnostic::Diagnostic<FilePath> {
         todo!()
     }
 }
