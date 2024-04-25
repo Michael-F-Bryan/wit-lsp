@@ -7,7 +7,7 @@ use crate::{
         WorldIndex,
     },
     ast::{self, AstNode, HasAttr, HasIdent},
-    diagnostics::{Diagnostic, Diagnostics, Location},
+    diagnostics::{Diagnostics, DuplicateName, Location, UnknownName},
     hir,
     queries::{items::NameTable, SourceFile, Workspace},
     Db, Text,
@@ -17,7 +17,8 @@ use crate::{
 /// [`crate::hir`] representation.
 ///
 /// Nodes that contain syntactic or semantic errors will be ignored and a
-/// corresponding [`Diagnostic`] will be emitted.
+/// corresponding [`Diagnostic`][crate::diagnostics::Diagnostic] will be
+/// emitted.
 #[salsa::tracked]
 #[tracing::instrument(level = "debug", skip_all, fields(file = %file.path(db).raw_path(db)))]
 pub fn lower(db: &dyn Db, _ws: Workspace, file: SourceFile) -> hir::Package {
@@ -339,12 +340,13 @@ fn lower_return_value(
                     let location = Location::new(path, pair.range());
                     let original_definition = Location::new(path, entry.get().1);
 
-                    let diag = Diagnostic::duplicate_name(
-                        entry.key().clone(),
+                    let name = entry.key().clone();
+                    let diag = DuplicateName {
+                        name,
                         location,
                         original_definition,
-                    );
-                    Diagnostics::push(db, diag);
+                    };
+                    Diagnostics::push(db, diag.into());
                 }
             }
         }
@@ -712,11 +714,15 @@ impl<'a> TypeResolver<'a> {
         match crate::queries::resolve_name(self.db, self.file, self.scope, name.clone()) {
             Some(reference) => Some(hir::Type::UserDefinedType(reference)),
             None => {
-                let diag = Diagnostic::unknown_name(
-                    self.file.path(self.db),
-                    name,
-                    user_defined_type.range(),
-                );
+                let diag = {
+                    let filename = self.file.path(self.db);
+                    let range = user_defined_type.range();
+                    UnknownName {
+                        name,
+                        location: Location::new(filename, range),
+                    }
+                    .into()
+                };
                 Diagnostics::push(self.db, diag);
                 Some(hir::Type::Error)
             }

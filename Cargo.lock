@@ -2027,6 +2027,7 @@ dependencies = [
  "paste",
  "salsa-2022",
  "serde",
+ "serde_json",
  "tracing",
  "tree-sitter",
  "tree-sitter-wit",

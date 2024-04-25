@@ -1,0 +1,32 @@
+[
+  {
+    "type_name": "wit_compiler::diagnostics::DuplicateName",
+    "error_code": "E002",
+    "description": "# E002: Duplicate Name\n\nItems with the same name were defined in the same scope.\n\n"
+  },
+  {
+    "type_name": "wit_compiler::diagnostics::MultipleConstructors",
+    "error_code": "E003",
+    "description": "# E003: Multiple Constructors\n\nA *Resource* contains multiple `constructor()` functions.\n"
+  },
+  {
+    "type_name": "wit_compiler::diagnostics::SyntaxError",
+    "error_code": "E001",
+    "description": "# E001: Syntax Error\n\nThe file contained invalid syntax.\n"
+  },
+  {
+    "type_name": "wit_compiler::diagnostics::UnknownName",
+    "error_code": "E004",
+    "description": "# E004: Unknown Name\n\nThe code referenced a name that doesn't exist in the current scope.\n"
+  },
+  {
+    "type_name": "wit_compiler::diagnostics::Bug",
+    "error_code": "E500",
+    "description": "# E500: Bug\n\nThis is a bug.\n"
+  },
+  {
+    "type_name": "wit_compiler::diagnostics::MismatchedPackageDeclaration",
+    "error_code": "E005",
+    "description": "# E005: Mismatched Package Declaration\n\nA directory contains multiple `*.wit` files with a `package` declaration, but\nthe package declarations aren't identical.\n"
+  }
+]

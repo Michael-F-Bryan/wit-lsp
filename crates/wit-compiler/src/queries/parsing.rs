@@ -1,6 +1,6 @@
 use crate::{
     ast::AstNode,
-    diagnostics::{Diagnostic, Diagnostics, Location},
+    diagnostics::{Diagnostics, Location, SyntaxError},
     queries::SourceFile,
     Db, Text, Tree,
 };
@@ -17,7 +17,11 @@ pub fn parse(db: &dyn Db, file: SourceFile) -> Ast {
         for error_node in tree.iter().filter(|node| node.is_error()) {
             if let Some(parent) = error_node.parent() {
                 let location = Location::new(file.path(db), error_node.range());
-                Diagnostics::push(db, Diagnostic::parse_error(parent.kind(), location));
+                let diag = SyntaxError {
+                    location,
+                    rule: parent.kind().to_string(),
+                };
+                Diagnostics::push(db, diag.into());
             }
         }
     }

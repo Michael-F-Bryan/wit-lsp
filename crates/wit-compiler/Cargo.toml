@@ -24,3 +24,4 @@ tree-sitter-wit = { version = "0.2.0", path = "../../tree-sitter-wit" }
 
 [dev-dependencies]
 insta = { workspace = true }
+serde_json = { workspace = true }

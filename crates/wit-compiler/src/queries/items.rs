@@ -12,7 +12,7 @@ use crate::{
         WorldIndex, WorldPtr,
     },
     ast::{self, AstNode, HasIdent},
-    diagnostics::{Diagnostic, Diagnostics, Location},
+    diagnostics::{Diagnostics, DuplicateName, Location, MultipleConstructors},
     hir,
     queries::SourceFile,
     Db, Text,
@@ -248,8 +248,12 @@ fn process_resource(
         if let Some(c) = m.resource_constructor() {
             if let Some(previous) = constructor {
                 let location = Location::new(file.path(db), c.range());
-                let original_location = Location::new(file.path(db), previous.range());
-                let diag = Diagnostic::multiple_constructors(location, original_location);
+                let original_definition = Location::new(file.path(db), previous.range());
+                let diag = MultipleConstructors {
+                    location,
+                    original_definition,
+                }
+                .into();
                 Diagnostics::push(db, diag);
                 continue;
             }
@@ -335,12 +339,18 @@ impl<'db, 'tree> NameTable<'db, 'tree> {
                 true
             }
             Entry::Occupied(entry) => {
-                let diag = Diagnostic::duplicate_name(
-                    entry.key().clone(),
-                    Location::new(self.file.path(self.db), node.range()),
-                    Location::new(self.file.path(self.db), entry.get().range()),
-                );
-                Diagnostics::push(self.db, diag);
+                let diag = {
+                    let name = entry.key().clone();
+                    let location = Location::new(self.file.path(self.db), node.range());
+                    let original_definition =
+                        Location::new(self.file.path(self.db), entry.get().range());
+                    DuplicateName {
+                        name,
+                        location,
+                        original_definition,
+                    }
+                };
+                Diagnostics::push(self.db, diag.into());
                 false
             }
         }
