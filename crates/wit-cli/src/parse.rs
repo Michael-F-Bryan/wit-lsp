@@ -3,8 +3,8 @@ use clap_stdin::{FileOrStdin, Source};
 use im::OrdMap;
 use wit_compiler::{
     diagnostics::Diagnostics,
-    queries::{SourceFile, Workspace},
-    Compiler, FilePath, Text,
+    queries::{FilePath, SourceFile, Workspace},
+    Compiler, Text,
 };
 
 use crate::Format;

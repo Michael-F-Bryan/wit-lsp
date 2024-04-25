@@ -1,11 +1,9 @@
 //! Errors and user-facing messages that may be generated as the result of
 //! analysis.
 
+use tree_sitter::Range;
 
-
-use tree_sitter::{Range};
-
-use crate::{FilePath, Text};
+use crate::{queries::FilePath, Text};
 
 /// An accumulator for all [`Diagnostic`]s that have been emitted.
 #[salsa::accumulator]

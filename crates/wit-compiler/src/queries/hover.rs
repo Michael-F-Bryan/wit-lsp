@@ -6,8 +6,8 @@ use crate::{
         RecordIndex, ResourceIndex, ScopeIndex, TypeAliasIndex, VariantIndex, WorldIndex,
     },
     ast::{AstNode, HasSource},
-    queries::{ItemDefinitionMetadata, Items, SourceFile},
-    Db, FilePath, Text, Tree,
+    queries::{FilePath, ItemDefinitionMetadata, Items, SourceFile},
+    Db, Text, Tree,
 };
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]

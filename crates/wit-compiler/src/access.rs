@@ -7,10 +7,10 @@ use crate::{
     ast::AstNode,
     hir,
     queries::{
-        InterfaceMetadata, ItemDefinitionMetadata, Items, ResourceMetadata, SourceFile, Workspace,
-        WorldMetadata,
+        FilePath, InterfaceMetadata, ItemDefinitionMetadata, Items, ResourceMetadata, SourceFile,
+        Workspace, WorldMetadata,
     },
-    Db, FilePath, Tree,
+    Db, Tree,
 };
 
 /// An index optimised for use in item IDs.

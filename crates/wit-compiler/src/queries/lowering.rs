@@ -777,7 +777,7 @@ impl<'a> TypeResolver<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{diagnostics::Diagnostics, Compiler, FilePath};
+    use crate::{diagnostics::Diagnostics, queries::FilePath, Compiler};
 
     use super::*;
 

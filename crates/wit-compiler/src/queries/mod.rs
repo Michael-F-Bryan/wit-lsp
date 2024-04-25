@@ -2,12 +2,12 @@
 
 mod hover;
 mod items;
+mod line_numbers;
 pub(crate) mod lowering;
 mod namespaces;
 mod parsing;
 mod selection;
 mod workspace;
-mod line_numbers;
 
 pub use self::{
     hover::{hover_info, HoverInfo, HoverTarget},
@@ -15,10 +15,10 @@ pub use self::{
         file_items, InterfaceMetadata, ItemDefinitionMetadata, Items, ResourceMetadata,
         WorldMetadata,
     },
+    line_numbers::{calculate_line_numbers, LineNumbers},
     lowering::lower,
     namespaces::{resolve_name, resolve_namespace, Namespace},
     parsing::{parse, Ast},
     selection::selection_ranges,
-    workspace::{workspace_packages, Package, PackageId, SourceFile, Workspace},
-    line_numbers::{LineNumbers, calculate_line_numbers},
+    workspace::{workspace_packages, FilePath, Package, PackageId, SourceFile, Workspace},
 };
