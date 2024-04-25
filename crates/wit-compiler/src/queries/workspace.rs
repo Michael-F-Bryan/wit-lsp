@@ -18,17 +18,29 @@ pub struct Workspace {
 
 impl Workspace {
     /// Update a file's contents.
-    pub fn update(self, db: &mut dyn Db, path: impl Into<FilePath>, text: impl Into<Text>) {
-        let mut files = self.files(db);
-        let path = path.into();
-        let file = SourceFile::new(db, path.clone(), text.into());
-        files.insert(path, file);
-        self.set_files(db).to(files);
+    pub fn update(self, db: &mut dyn Db, path: &str, text: impl Into<Text>) {
+        let text = text.into();
+
+        match self.lookup_by_path(db, path) {
+            Some(file) => {
+                file.set_contents(db).to(text);
+            }
+            None => {
+                let mut files = self.files(db);
+                let path = FilePath::new(db, path.into());
+                let file = SourceFile::new(db, path, text);
+                files.insert(path, file);
+                self.set_files(db).to(files);
+            }
+        }
     }
 
-    pub fn lookup(self, db: &dyn Db, path: &str) -> Option<SourceFile> {
+    pub fn lookup_by_path(self, db: &dyn Db, path: &str) -> Option<SourceFile> {
         let files = self.files(db);
-        files.get(path).cloned()
+
+        files
+            .iter()
+            .find_map(|(p, f)| (p.raw_path(db) == path).then_some(*f))
     }
 
     /// Get a view of this [`Workspace`] as a
@@ -55,7 +67,7 @@ fn resolve_id(db: &dyn Db, files: &Vector<SourceFile>) -> Option<PackageId> {
                     }
                     Some((original_id, original_definition)) => {
                         let diag = MismatchedPackageDeclaration {
-                            original_definition: original_definition.clone(),
+                            original_definition: *original_definition,
                             original_id: *original_id,
                             second_id: new_id,
                             second_location: location,
@@ -84,6 +96,7 @@ pub fn workspace_packages(db: &dyn Db, ws: Workspace) -> Vector<Package> {
         // slash-separated segments), but this should be okay because in
         // practice we'll only ever be receiving URIs or fs paths, and both
         // satisfy that assumption.
+        let path = path.raw_path(db);
         let dir = match path.rsplit_once(|c| c == '/' || c == '\\') {
             Some((dir, _)) => dir,
             None => ".",
@@ -97,7 +110,7 @@ pub fn workspace_packages(db: &dyn Db, ws: Workspace) -> Vector<Package> {
     folders
         .into_iter()
         .map(|(dir, files)| {
-            let dir = FilePath::from(dir);
+            let dir = FilePath::new(db, dir.into());
             let id = resolve_id(db, &files);
             Package::new(db, dir, id, files)
         })
@@ -140,7 +153,6 @@ pub struct PackageId {
 /// A file attached to a [`Workspace`].
 #[salsa::input]
 pub struct SourceFile {
-    #[return_ref]
     pub path: FilePath,
     #[return_ref]
     pub contents: Text,
@@ -153,41 +165,39 @@ struct Files<'db> {
 }
 
 impl<'db> Files<'db> {
-    fn file(&self, path: &'db FilePath) -> Result<SourceFile, CodespanError> {
+    fn file(&self, path: FilePath) -> Result<SourceFile, CodespanError> {
         let files = self.ws.files(self.db);
-        files.get(path).copied().ok_or(CodespanError::FileMissing)
+        files.get(&path).copied().ok_or(CodespanError::FileMissing)
     }
 }
 
 impl<'db> codespan_reporting::files::Files<'db> for Files<'db> {
-    type FileId = &'db FilePath;
-    type Name = &'db FilePath;
+    type FileId = FilePath;
+    type Name = Text;
     type Source = &'db str;
 
-    fn name(&'db self, id: &'db FilePath) -> Result<Self::Name, CodespanError> {
+    fn name(&'db self, id: FilePath) -> Result<Text, CodespanError> {
         let file = self.file(id)?;
-        Ok(file.path(self.db))
+        Ok(file.path(self.db).raw_path(self.db).clone())
     }
 
-    fn source(&'db self, id: &'db FilePath) -> Result<Self::Source, CodespanError> {
+    fn source(&'db self, id: FilePath) -> Result<&'db str, CodespanError> {
         let file = self.file(id)?;
-        Ok(file.path(self.db))
+        Ok(file.contents(self.db))
     }
 
-    fn line_index(
-        &'db self,
-        _id: Self::FileId,
-        _byte_index: usize,
-    ) -> Result<usize, CodespanError> {
-        todo!();
+    fn line_index(&'db self, path: FilePath, byte_index: usize) -> Result<usize, CodespanError> {
+        let file = self.file(path)?;
+        crate::queries::calculate_line_numbers(self.db, file).line_index(byte_index)
     }
 
     fn line_range(
         &'db self,
-        _id: Self::FileId,
-        _line_index: usize,
+        path: FilePath,
+        line_index: usize,
     ) -> Result<Range<usize>, CodespanError> {
-        todo!();
+        let file = self.file(path)?;
+        crate::queries::calculate_line_numbers(self.db, file).line_range(line_index)
     }
 }
 
@@ -203,8 +213,8 @@ mod tests {
         ($db:ident, { $( $path:expr => $contents:expr),* $(,)? }) => {{
             let mut files = OrdMap::new();
             $(
-                let path = FilePath::from($path);
-                let f = SourceFile::new(&$db, path.clone(), $contents.into());
+                let path = FilePath::new(&$db, $path.into());
+                let f = SourceFile::new(&$db, path, $contents.into());
                 files.insert(path, f);
             )*
             Workspace::new(&$db, files)

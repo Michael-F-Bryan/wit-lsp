@@ -10,7 +10,9 @@ info:
             name: foo,
             location: Location {
                 filename: FilePath(
-                    duplicate_identifiers_within_interface.wit,
+                    Id {
+                        value: 1,
+                    },
                 ),
                 range: Range {
                     start_byte: 28,
@@ -27,7 +29,9 @@ info:
             },
             original_definition: Location {
                 filename: FilePath(
-                    duplicate_identifiers_within_interface.wit,
+                    Id {
+                        value: 1,
+                    },
                 ),
                 range: Range {
                     start_byte: 14,

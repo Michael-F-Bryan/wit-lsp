@@ -19,7 +19,7 @@ use crate::{
 /// Nodes that contain syntactic or semantic errors will be ignored and a
 /// corresponding [`Diagnostic`] will be emitted.
 #[salsa::tracked]
-#[tracing::instrument(level = "debug", skip_all, fields(file = %file.path(db)))]
+#[tracing::instrument(level = "debug", skip_all, fields(file = %file.path(db).raw_path(db)))]
 pub fn lower(db: &dyn Db, _ws: Workspace, file: SourceFile) -> hir::Package {
     let ast = crate::queries::parse(db, file);
     let root = ast.source_file(db);
@@ -713,7 +713,7 @@ impl<'a> TypeResolver<'a> {
             Some(reference) => Some(hir::Type::UserDefinedType(reference)),
             None => {
                 let diag = Diagnostic::unknown_name(
-                    self.file.path(self.db).clone(),
+                    self.file.path(self.db),
                     name,
                     user_defined_type.range(),
                 );
@@ -777,7 +777,7 @@ impl<'a> TypeResolver<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{diagnostics::Diagnostics, Compiler};
+    use crate::{diagnostics::Diagnostics, Compiler, FilePath};
 
     use super::*;
 
@@ -797,7 +797,7 @@ mod tests {
 
                     let file = SourceFile::new(
                         &db,
-                        format!("{}.wit", stringify!($name)).into(),
+                        FilePath::new(&db, format!("{}.wit", stringify!($name)).into()),
                         $contents.into(),
                     );
                     let ws = Workspace::new(&db, [(file.path(&db), file)].into_iter().collect());
@@ -845,7 +845,7 @@ mod tests {
 
                     let file = SourceFile::new(
                         &db,
-                        format!("{}.wit", stringify!($name)).into(),
+                        FilePath::new(&db, format!("{}.wit", stringify!($name)).into()),
                         $contents.into(),
                     );
                     let ws = Workspace::new(&db, [(file.path(&db), file)].into_iter().collect());

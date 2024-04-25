@@ -10,7 +10,9 @@ info:
             rule: "source_file",
             location: Location {
                 filename: FilePath(
-                    syntax_errors_are_emitted.wit,
+                    Id {
+                        value: 1,
+                    },
                 ),
                 range: Range {
                     start_byte: 0,
@@ -32,7 +34,9 @@ info:
             rule: "ERROR",
             location: Location {
                 filename: FilePath(
-                    syntax_errors_are_emitted.wit,
+                    Id {
+                        value: 1,
+                    },
                 ),
                 range: Range {
                     start_byte: 0,

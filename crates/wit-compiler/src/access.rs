@@ -10,7 +10,7 @@ use crate::{
         InterfaceMetadata, ItemDefinitionMetadata, Items, ResourceMetadata, SourceFile, Workspace,
         WorldMetadata,
     },
-    Db, Text, Tree,
+    Db, FilePath, Tree,
 };
 
 /// An index optimised for use in item IDs.
@@ -236,20 +236,20 @@ impl GetByIndex<InterfaceIndex> for Items {
     }
 }
 
-impl<ScopeIndex> GetByIndex<(Text, ScopeIndex)> for Workspace
+impl<ScopeIndex> GetByIndex<(FilePath, ScopeIndex)> for Workspace
 where
     SourceFile: GetByIndex<ScopeIndex>,
 {
     type Metadata = Option<<SourceFile as GetByIndex<ScopeIndex>>::Metadata>;
 
-    fn get_by_index(&self, db: &dyn Db, (filename, ix): (Text, ScopeIndex)) -> Self::Metadata {
+    fn get_by_index(&self, db: &dyn Db, (path, ix): (FilePath, ScopeIndex)) -> Self::Metadata {
         let files = self.files(db);
-        let f = files.get(&filename)?;
+        let f = files.get(&path)?;
         Some(f.get_by_index(db, ix))
     }
 }
 
-impl<ScopeIndex, ItemIndex> GetByIndex<(Text, ScopeIndex, ItemIndex)> for Workspace
+impl<ScopeIndex, ItemIndex> GetByIndex<(FilePath, ScopeIndex, ItemIndex)> for Workspace
 where
     SourceFile: GetByIndex<(ScopeIndex, ItemIndex)>,
 {
@@ -258,12 +258,10 @@ where
     fn get_by_index(
         &self,
         db: &dyn Db,
-        (filename, scope, index): (Text, ScopeIndex, ItemIndex),
+        (path, scope, index): (FilePath, ScopeIndex, ItemIndex),
     ) -> Self::Metadata {
         let files = self.files(db);
-        files
-            .get(&filename)
-            .map(|f| f.get_by_index(db, (scope, index)))
+        files.get(&path).map(|f| f.get_by_index(db, (scope, index)))
     }
 }
 

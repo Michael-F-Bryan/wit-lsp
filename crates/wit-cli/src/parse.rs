@@ -23,8 +23,8 @@ impl Parse {
         let db = Compiler::default();
 
         let path = match &self.input.source {
-            Source::Arg(path) => FilePath::from(path),
-            Source::Stdin => FilePath::from("unnamed.wit"),
+            Source::Arg(path) => FilePath::new(&db, path.into()),
+            Source::Stdin => FilePath::new(&db, "<stdin>".into()),
         };
 
         let input = self.input.contents()?;
@@ -36,7 +36,7 @@ impl Parse {
         let diags = wit_compiler::queries::parse::accumulated::<Diagnostics>(&db, file);
 
         let mut stderr = std::io::stderr();
-        let ws = Workspace::new(&db, OrdMap::unit(file.path(&db).clone(), file));
+        let ws = Workspace::new(&db, OrdMap::unit(file.path(&db), file));
         crate::print_diags(&mut stderr, &db, ws, &diags)?;
 
         let root = ast.root_node(&db);

@@ -28,7 +28,7 @@ pub fn resolve_namespace(db: &dyn Db, file: SourceFile, scope: ScopeIndex) -> Na
 
     for (name, item) in defined_types.reference_kinds() {
         let reference = hir::ItemReference {
-            file: file.path(db).clone(),
+            file: file.path(db),
             scope,
             item,
         };

@@ -9,7 +9,9 @@ info:
         MultipleConstructors {
             location: Location {
                 filename: FilePath(
-                    resource_with_multiple_constructors.wit,
+                    Id {
+                        value: 1,
+                    },
                 ),
                 range: Range {
                     start_byte: 42,
@@ -26,7 +28,9 @@ info:
             },
             original_definition: Location {
                 filename: FilePath(
-                    resource_with_multiple_constructors.wit,
+                    Id {
+                        value: 1,
+                    },
                 ),
                 range: Range {
                     start_byte: 27,

@@ -20,7 +20,7 @@ use crate::{
 
 /// Parse a file and walk its AST to find the names of all the items it contains.
 #[salsa::tracked]
-#[tracing::instrument(level = "debug", skip_all, fields(file = %file.path(db)))]
+#[tracing::instrument(level = "debug", skip_all, fields(file = %file.path(db).raw_path(db)))]
 pub fn file_items(db: &dyn Db, file: SourceFile) -> Items {
     let ast = crate::queries::parse(db, file);
     let src = ast.src(db);

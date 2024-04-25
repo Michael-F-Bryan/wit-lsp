@@ -5,9 +5,10 @@ expression: debug
 [
     Package {
         [salsa id]: 0,
-        dir: FilePath(
-            .,
-        ),
+        dir: FilePath {
+            [salsa id]: 6,
+            raw_path: .,
+        },
         id: None,
         files: [
             SourceFile(
@@ -19,9 +20,10 @@ expression: debug
     },
     Package {
         [salsa id]: 1,
-        dir: FilePath(
-            merge,
-        ),
+        dir: FilePath {
+            [salsa id]: 7,
+            raw_path: merge,
+        },
         id: Some(
             PackageId {
                 [salsa id]: 0,
@@ -49,9 +51,10 @@ expression: debug
     },
     Package {
         [salsa id]: 2,
-        dir: FilePath(
-            named,
-        ),
+        dir: FilePath {
+            [salsa id]: 8,
+            raw_path: named,
+        },
         id: Some(
             PackageId {
                 [salsa id]: 1,
@@ -74,9 +77,10 @@ expression: debug
     },
     Package {
         [salsa id]: 3,
-        dir: FilePath(
-            named/with,
-        ),
+        dir: FilePath {
+            [salsa id]: 9,
+            raw_path: named/with,
+        },
         id: Some(
             PackageId {
                 [salsa id]: 2,
@@ -102,9 +106,10 @@ expression: debug
     },
     Package {
         [salsa id]: 4,
-        dir: FilePath(
-            simple,
-        ),
+        dir: FilePath {
+            [salsa id]: 10,
+            raw_path: simple,
+        },
         id: None,
         files: [
             SourceFile(

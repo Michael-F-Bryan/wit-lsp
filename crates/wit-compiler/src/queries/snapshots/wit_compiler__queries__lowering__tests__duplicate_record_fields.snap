@@ -10,7 +10,9 @@ info:
             name: field,
             location: Location {
                 filename: FilePath(
-                    duplicate_record_fields.wit,
+                    Id {
+                        value: 1,
+                    },
                 ),
                 range: Range {
                     start_byte: 37,
@@ -27,7 +29,9 @@ info:
             },
             original_definition: Location {
                 filename: FilePath(
-                    duplicate_record_fields.wit,
+                    Id {
+                        value: 1,
+                    },
                 ),
                 range: Range {
                     start_byte: 25,

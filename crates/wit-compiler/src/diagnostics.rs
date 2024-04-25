@@ -1,9 +1,9 @@
 //! Errors and user-facing messages that may be generated as the result of
 //! analysis.
 
-use std::fmt::Display;
 
-use tree_sitter::{Point, Range};
+
+use tree_sitter::{Range};
 
 use crate::{FilePath, Text};
 
@@ -72,7 +72,7 @@ impl Diagnostic {
         let message = message.into();
 
         if cfg!(debug_assertions) {
-            panic!("BUG: {message} at {location}");
+            panic!("BUG: {message} at {location:?}");
         }
 
         let backtrace = std::panic::Location::caller();
@@ -83,6 +83,13 @@ impl Diagnostic {
             caller: backtrace,
         })
     }
+}
+
+trait IntoDiagnostic: Into<Diagnostic> {
+    const ERROR_CODE: &'static str;
+    const VERBOSE_DESCRIPTION: &'static str;
+
+    fn into_diagnostic(self) -> codespan_reporting::diagnostic::Diagnostic<FilePath>;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -152,7 +159,7 @@ impl From<MismatchedPackageDeclaration> for Diagnostic {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Location {
     /// The file this error came from.
     pub filename: FilePath,
@@ -161,25 +168,7 @@ pub struct Location {
 }
 
 impl Location {
-    pub fn new(filename: impl Into<FilePath>, range: Range) -> Self {
-        Location {
-            filename: filename.into(),
-            range,
-        }
-    }
-}
-
-impl Display for Location {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let Location {
-            filename,
-            range:
-                Range {
-                    start_point: Point { column, row },
-                    ..
-                },
-        } = self;
-
-        write!(f, "{filename}:{row}:{column}")
+    pub fn new(filename: FilePath, range: Range) -> Self {
+        Location { filename, range }
     }
 }

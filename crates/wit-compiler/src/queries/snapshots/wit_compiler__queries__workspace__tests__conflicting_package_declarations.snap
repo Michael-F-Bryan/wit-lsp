@@ -12,7 +12,9 @@ expression: diags
             ),
             second_location: Location {
                 filename: FilePath(
-                    second.wit,
+                    Id {
+                        value: 2,
+                    },
                 ),
                 range: Range {
                     start_byte: 0,
@@ -34,7 +36,9 @@ expression: diags
             ),
             original_definition: Location {
                 filename: FilePath(
-                    first.wit,
+                    Id {
+                        value: 1,
+                    },
                 ),
                 range: Range {
                     start_byte: 0,

@@ -43,7 +43,9 @@ pub struct Jar(
     crate::queries::SourceFile,
     crate::queries::Workspace,
     crate::queries::workspace_packages,
+    crate::queries::calculate_line_numbers,
     crate::queries::WorldMetadata,
+    crate::FilePath,
 );
 
 /// The trait that all [`salsa::Database`] implementations must implement to
