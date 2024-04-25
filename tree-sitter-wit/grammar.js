@@ -143,6 +143,7 @@ module.exports = grammar({
         named_result_list: $ => $._named_type_list,
         _named_type_list: $ => prec.left(punctuated($.named_type, ",")),
         named_type: $ => seq(
+            field("attributes", repeat($.attribute)),
             field("name", $.identifier),
             ":",
             field("ty", $.ty),

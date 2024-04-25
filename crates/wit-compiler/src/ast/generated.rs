@@ -907,6 +907,15 @@ impl<'tree> super::AstNode<'tree> for NamedResultList<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct NamedType<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> NamedType<'tree> {
+    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
+        let mut cursor = self.0.walk();
+        let children: Vec<_> = self
+            .0
+            .children_by_field_name("attributes", &mut cursor)
+            .filter_map(<Attribute as super::AstNode>::cast)
+            .collect();
+        children.into_iter()
+    }
     pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
@@ -919,6 +928,11 @@ impl super::HasIdent for NamedType<'_> {
         let node = self.name()?.0;
         let ident = node.utf8_text(src.as_bytes()).unwrap();
         Some(ident)
+    }
+}
+impl<'tree> super::HasAttr<'tree> for NamedType<'tree> {
+    fn attributes(self) -> impl Iterator<Item = Attribute<'tree>> + 'tree {
+        self.iter_attributes()
     }
 }
 impl<'tree> super::AstNode<'tree> for NamedType<'tree> {
