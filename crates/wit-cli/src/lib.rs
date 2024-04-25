@@ -2,7 +2,7 @@ mod diags;
 mod language_server;
 mod parse;
 
-pub(crate) use self::diags::print_diags;
+pub(crate) use self::diags::print_diagnostics;
 
 use std::fmt::Display;
 
@@ -44,6 +44,7 @@ enum Cmd {
     /// Start the language server.
     #[clap(alias = "serve")]
     LanguageServer(LanguageServer),
+    /// Parse a file and dump its syntax tree.
     Parse(Parse),
 }
 

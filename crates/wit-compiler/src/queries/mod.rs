@@ -20,5 +20,7 @@ pub use self::{
     namespaces::{resolve_name, resolve_namespace, Namespace},
     parsing::{parse, Ast},
     selection::selection_ranges,
-    workspace::{workspace_packages, FilePath, Package, PackageId, SourceFile, Workspace},
+    workspace::{
+        workspace_packages, FilePath, Package, PackageId, SourceFile, Workspace, WorkspaceFiles,
+    },
 };

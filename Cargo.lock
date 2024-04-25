@@ -2007,6 +2007,8 @@ dependencies = [
  "codespan-reporting",
  "color-eyre",
  "im",
+ "serde",
+ "serde_json",
  "tokio",
  "tower-lsp",
  "tracing",

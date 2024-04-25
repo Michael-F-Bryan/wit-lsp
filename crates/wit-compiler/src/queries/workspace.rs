@@ -56,8 +56,8 @@ impl Workspace {
     /// Get a view of this [`Workspace`] as a
     /// [`codespan_reporting::files::Files`] database that can be used when
     /// rendering [`Diagnostics`].
-    pub fn as_files(self, db: &dyn Db) -> impl codespan_reporting::files::Files + '_ {
-        Files { db, ws: self }
+    pub fn as_codespan_files(self, db: &dyn Db) -> WorkspaceFiles<'_> {
+        WorkspaceFiles { db, ws: self }
     }
 }
 
@@ -168,20 +168,22 @@ pub struct SourceFile {
     pub contents: Text,
 }
 
-#[derive(Clone)]
-struct Files<'db> {
+/// An implementation of [`codespan_reporting::files::Files`] which will query
+/// the [`Db`] as required.
+#[derive(Copy, Clone)]
+pub struct WorkspaceFiles<'db> {
     ws: Workspace,
     db: &'db dyn Db,
 }
 
-impl<'db> Files<'db> {
+impl<'db> WorkspaceFiles<'db> {
     fn file(&self, path: FilePath) -> Result<SourceFile, CodespanError> {
         let files = self.ws.files(self.db);
         files.get(&path).copied().ok_or(CodespanError::FileMissing)
     }
 }
 
-impl<'db> codespan_reporting::files::Files<'db> for Files<'db> {
+impl<'db> codespan_reporting::files::Files<'db> for WorkspaceFiles<'db> {
     type FileId = FilePath;
     type Name = Text;
     type Source = &'db str;

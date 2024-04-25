@@ -62,12 +62,11 @@ fn lsp_diagnostic(
         }
         wit_compiler::diagnostics::Diagnostic::SyntaxError(SyntaxError {
             location: Location { range, .. },
-            rule,
+            ..
         }) => {
-            let msg = format!("Syntax error while parsing \"{rule}\"");
             let diagnostic = tower_lsp::lsp_types::Diagnostic {
                 range: utils::ts_to_range(range),
-                message: msg,
+                message: "Syntax error".into(),
                 severity: Some(DiagnosticSeverity::ERROR),
                 ..Default::default()
             };

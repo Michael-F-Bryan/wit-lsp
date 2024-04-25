@@ -17,10 +17,12 @@ pub fn parse(db: &dyn Db, file: SourceFile) -> Ast {
         for error_node in tree.iter().filter(|node| node.is_error()) {
             if let Some(parent) = error_node.parent() {
                 let location = Location::new(file.path(db), error_node.range());
-                let diag = SyntaxError {
-                    location,
-                    rule: parent.kind().to_string(),
+                let rule = if parent.is_error() {
+                    None
+                } else {
+                    Some(parent.kind().to_string())
                 };
+                let diag = SyntaxError { location, rule };
                 Diagnostics::push(db, diag.into());
             }
         }

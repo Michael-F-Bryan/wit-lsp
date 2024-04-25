@@ -5,9 +5,12 @@ mod all;
 
 pub use self::all::all_diagnostics;
 
+use codespan_reporting::diagnostic::Label;
 use tree_sitter::Range;
 
 use crate::{queries::FilePath, Text};
+
+type Diag = codespan_reporting::diagnostic::Diagnostic<FilePath>;
 
 /// An accumulator for all [`Diagnostic`]s that have been emitted.
 #[salsa::accumulator]
@@ -40,7 +43,7 @@ impl Diagnostic {
         }
     }
 
-    pub fn into_diagnostic(&self) -> codespan_reporting::diagnostic::Diagnostic<FilePath> {
+    pub fn as_diagnostic(&self) -> Diag {
         match self {
             Diagnostic::DuplicateName(diag) => diag.as_diagnostic(),
             Diagnostic::MultipleConstructors(diag) => diag.as_diagnostic(),
@@ -72,24 +75,38 @@ impl Bug {
 }
 
 pub trait IntoDiagnostic: Into<Diagnostic> {
+    /// A unique code which can be used when referring to this error.
     const ERROR_CODE: &'static str;
+    /// A simple message that is displayed with the error.
+    const MESSAGE: &'static str;
+    /// A verbose explanation of the error.
     const VERBOSE_DESCRIPTION: &'static str;
 
-    fn as_diagnostic(&self) -> codespan_reporting::diagnostic::Diagnostic<FilePath>;
+    fn as_diagnostic(&self) -> Diag;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SyntaxError {
-    pub rule: String,
+    pub rule: Option<String>,
     pub location: Location,
 }
 
 impl IntoDiagnostic for SyntaxError {
     const ERROR_CODE: &'static str = "E001";
+    const MESSAGE: &'static str = "Syntax error";
     const VERBOSE_DESCRIPTION: &'static str = include_str!("E001-syntax-error.md");
 
-    fn as_diagnostic(&self) -> codespan_reporting::diagnostic::Diagnostic<FilePath> {
-        todo!()
+    fn as_diagnostic(&self) -> Diag {
+        let mut label = self.location.label();
+
+        if let Some(rule) = &self.rule {
+            label = label.with_message(format!("Expected a \"{rule}\""))
+        }
+
+        Diag::error()
+            .with_message(Self::MESSAGE)
+            .with_code(Self::ERROR_CODE)
+            .with_labels(vec![label])
     }
 }
 
@@ -108,10 +125,21 @@ pub struct DuplicateName {
 
 impl IntoDiagnostic for DuplicateName {
     const ERROR_CODE: &'static str = "E002";
+    const MESSAGE: &'static str = "Name defined multiple times";
     const VERBOSE_DESCRIPTION: &'static str = include_str!("E002-duplicate-name.md");
 
-    fn as_diagnostic(&self) -> codespan_reporting::diagnostic::Diagnostic<FilePath> {
-        todo!()
+    fn as_diagnostic(&self) -> Diag {
+        Diag::error()
+            .with_message(Self::MESSAGE)
+            .with_code(Self::ERROR_CODE)
+            .with_labels(vec![
+                self.location
+                    .label()
+                    .with_message("The duplicate was defined here"),
+                self.original_definition
+                    .secondary_label()
+                    .with_message("Original definition is here"),
+            ])
     }
 }
 
@@ -129,10 +157,21 @@ pub struct MultipleConstructors {
 
 impl IntoDiagnostic for MultipleConstructors {
     const ERROR_CODE: &'static str = "E003";
+    const MESSAGE: &'static str = "Resource has multiple constructors";
     const VERBOSE_DESCRIPTION: &'static str = include_str!("E003-multiple-constructors.md");
 
-    fn as_diagnostic(&self) -> codespan_reporting::diagnostic::Diagnostic<FilePath> {
-        todo!()
+    fn as_diagnostic(&self) -> Diag {
+        Diag::error()
+            .with_message(Self::MESSAGE)
+            .with_code(Self::ERROR_CODE)
+            .with_labels(vec![
+                self.location
+                    .label()
+                    .with_message("The duplicate was defined here"),
+                self.original_definition
+                    .secondary_label()
+                    .with_message("Original constructor was defined is here"),
+            ])
     }
 }
 
@@ -152,10 +191,14 @@ pub struct UnknownName {
 
 impl IntoDiagnostic for UnknownName {
     const ERROR_CODE: &'static str = "E004";
+    const MESSAGE: &'static str = "Reference to unknown name";
     const VERBOSE_DESCRIPTION: &'static str = include_str!("E004-unknown-name.md");
 
-    fn as_diagnostic(&self) -> codespan_reporting::diagnostic::Diagnostic<FilePath> {
-        todo!()
+    fn as_diagnostic(&self) -> Diag {
+        Diag::error()
+            .with_message(Self::MESSAGE)
+            .with_code(Self::ERROR_CODE)
+            .with_labels(vec![self.location.label()])
     }
 }
 
@@ -175,10 +218,15 @@ pub struct Bug {
 
 impl IntoDiagnostic for Bug {
     const ERROR_CODE: &'static str = "E500";
+    const MESSAGE: &'static str = "You ran into a bug 🐛";
     const VERBOSE_DESCRIPTION: &'static str = include_str!("E500-bug.md");
 
-    fn as_diagnostic(&self) -> codespan_reporting::diagnostic::Diagnostic<FilePath> {
-        todo!()
+    fn as_diagnostic(&self) -> Diag {
+        Diag::error()
+            .with_message(Self::MESSAGE)
+            .with_code(Self::ERROR_CODE)
+            .with_labels(vec![self.location.label()])
+            .with_notes(vec![format!("Triggered from {}", self.caller)])
     }
 }
 
@@ -198,11 +246,20 @@ pub struct MismatchedPackageDeclaration {
 
 impl IntoDiagnostic for MismatchedPackageDeclaration {
     const ERROR_CODE: &'static str = "E005";
+    const MESSAGE: &'static str = "Mismatched package declarations";
     const VERBOSE_DESCRIPTION: &'static str =
         include_str!("E005-mismatched-package-declaration.md");
 
-    fn as_diagnostic(&self) -> codespan_reporting::diagnostic::Diagnostic<FilePath> {
-        todo!()
+    fn as_diagnostic(&self) -> Diag {
+        Diag::error()
+            .with_message(Self::MESSAGE)
+            .with_code(Self::ERROR_CODE)
+            .with_labels(vec![
+                self.second_location.label().with_message("Defined here"),
+                self.original_definition
+                    .secondary_label()
+                    .with_message("Originally defined here"),
+            ])
     }
 }
 
@@ -223,6 +280,24 @@ pub struct Location {
 impl Location {
     pub fn new(filename: FilePath, range: Range) -> Self {
         Location { filename, range }
+    }
+
+    fn label(&self) -> Label<FilePath> {
+        let Range {
+            start_byte,
+            end_byte,
+            ..
+        } = self.range;
+        Label::primary(self.filename, start_byte..end_byte)
+    }
+
+    fn secondary_label(&self) -> Label<FilePath> {
+        let Range {
+            start_byte,
+            end_byte,
+            ..
+        } = self.range;
+        Label::secondary(self.filename, start_byte..end_byte)
     }
 }
 

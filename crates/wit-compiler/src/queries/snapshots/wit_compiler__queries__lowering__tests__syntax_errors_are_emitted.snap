@@ -7,7 +7,9 @@ info:
 [
     SyntaxError(
         SyntaxError {
-            rule: "source_file",
+            rule: Some(
+                "source_file",
+            ),
             location: Location {
                 filename: FilePath(
                     Id {
@@ -31,7 +33,7 @@ info:
     ),
     SyntaxError(
         SyntaxError {
-            rule: "ERROR",
+            rule: None,
             location: Location {
                 filename: FilePath(
                     Id {

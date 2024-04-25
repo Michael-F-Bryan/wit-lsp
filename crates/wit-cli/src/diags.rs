@@ -1,34 +1,20 @@
-use std::io::Write;
-
+use codespan_reporting::term::{termcolor::WriteColor, Config};
 use wit_compiler::{diagnostics::Diagnostic, queries::Workspace, Db};
 
 #[tracing::instrument(skip_all)]
-pub(crate) fn print_diags(
-    writer: &mut dyn Write,
+pub(crate) fn print_diagnostics(
+    writer: &mut dyn WriteColor,
     db: &dyn Db,
     ws: Workspace,
     diags: &[Diagnostic],
 ) -> color_eyre::Result<()> {
+    let config = Config::default();
+    let files = ws.as_codespan_files(db);
+
     for diag in diags {
-        print_diag(writer, db, ws, diag)?;
+        let diag = diag.as_diagnostic();
+        codespan_reporting::term::emit(writer, &config, &files, &diag)?;
     }
 
     Ok(())
-}
-
-fn print_diag(
-    _writer: &mut dyn Write,
-    _db: &dyn Db,
-    _ws: Workspace,
-    diag: &Diagnostic,
-) -> color_eyre::Result<()> {
-    match diag {
-        Diagnostic::DuplicateName(_) => todo!(),
-        Diagnostic::MultipleConstructors(_) => todo!(),
-        Diagnostic::SyntaxError(_) => todo!(),
-        Diagnostic::UnknownName(_) => todo!(),
-        Diagnostic::Bug(_) => todo!(),
-        Diagnostic::MismatchedPackageDeclaration(_) => todo!(),
-        _other => todo!(),
-    }
 }
