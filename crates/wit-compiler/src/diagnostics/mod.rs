@@ -245,15 +245,17 @@ impl DiagnosticInfo {
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
+    use std::{collections::HashMap, path::Path};
 
     use super::*;
 
     #[test]
     fn diagnostic_codes_are_well_formed() {
+        let mut codes = HashMap::new();
+
         for diag in all_diagnostics() {
             let DiagnosticInfo {
-                type_name: _,
+                type_name,
                 error_code,
                 description,
             } = diag;
@@ -270,6 +272,19 @@ mod tests {
                 opening_line.contains(&expected),
                 "Expected {expected:?} in {opening_line:?}"
             );
+
+            match codes.entry(error_code) {
+                std::collections::hash_map::Entry::Occupied(entry) => {
+                    panic!(
+                        "Duplicate entries for {error_code}: {} and {}",
+                        entry.get(),
+                        type_name,
+                    );
+                }
+                std::collections::hash_map::Entry::Vacant(entry) => {
+                    entry.insert(type_name);
+                }
+            }
         }
     }
 
