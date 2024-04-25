@@ -49,7 +49,7 @@ impl LanguageServer {
         let ws = snap.ws;
         let db = snap.wit_db();
 
-        let Some(file) = snap.ws.lookup(db, &path) else {
+        let Some(file) = snap.ws.lookup_by_path(db, &path) else {
             let msg = format!("\"{path}\" isn't in the workspace");
             tracing::warn!(%path, "File not found in database");
             tracing::debug!(
@@ -194,7 +194,7 @@ impl tower_lsp::LanguageServer for LanguageServer {
         let snap = self.snapshot().await;
         let db = snap.wit_db();
 
-        let Some(file) = snap.ws.lookup(db, path) else {
+        let Some(file) = snap.ws.lookup_by_path(db, path) else {
             return Ok(None);
         };
 
@@ -218,7 +218,7 @@ impl tower_lsp::LanguageServer for LanguageServer {
         let snap = self.snapshot().await;
 
         let db = snap.wit_db();
-        let Some(file) = snap.ws.lookup(db, path) else {
+        let Some(file) = snap.ws.lookup_by_path(db, path) else {
             return Ok(None);
         };
 
@@ -260,7 +260,7 @@ impl tower_lsp::LanguageServer for LanguageServer {
         let snap = self.snapshot().await;
         let db = snap.wit_db();
         let path = &params.text_document.uri;
-        let Some(file) = snap.ws.lookup(db, path.as_str()) else {
+        let Some(file) = snap.ws.lookup_by_path(db, path.as_str()) else {
             return Err(Error::invalid_params(format!(
                 "\"{path}\" isn't tracked by the workspace"
             )));
@@ -278,7 +278,7 @@ impl tower_lsp::LanguageServer for LanguageServer {
         tracing::debug!(document.uri=%path);
         let snap = self.snapshot().await;
 
-        let Some(file) = snap.ws.lookup(snap.wit_db(), path.as_str()) else {
+        let Some(file) = snap.ws.lookup_by_path(snap.wit_db(), path.as_str()) else {
             return Ok(None);
         };
 

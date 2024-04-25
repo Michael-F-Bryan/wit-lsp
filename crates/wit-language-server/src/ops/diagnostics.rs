@@ -17,7 +17,7 @@ pub fn file_diagnostics(
     let diags = wit_compiler::queries::lower::accumulated::<Diagnostics>(db, ws, file);
     let items = diags
         .into_iter()
-        .filter_map(|diag| lsp_diagnostic(diag, file.path(db)))
+        .filter_map(|diag| lsp_diagnostic(db, diag, file.path(db).raw_path(db)))
         .collect();
 
     DocumentDiagnosticReportResult::Report(DocumentDiagnosticReport::Full(
@@ -34,10 +34,11 @@ pub fn file_diagnostics(
 /// Convert a [`wit_compiler::diagnostics::Diagnostic`] to a
 /// [`tower_lsp::lsp_types::Diagnostic`].
 fn lsp_diagnostic(
+    db: &dyn wit_compiler::Db,
     diag: wit_compiler::diagnostics::Diagnostic,
     uri: &str,
 ) -> Option<tower_lsp::lsp_types::Diagnostic> {
-    if diag.location().filename.as_str() != uri {
+    if diag.location().filename.raw_path(db) != uri {
         return None;
     }
 
@@ -51,7 +52,7 @@ fn lsp_diagnostic(
                 range: utils::ts_to_range(range),
                 message: format!("\"{name}\" is already defined"),
                 related_information: Some(vec![DiagnosticRelatedInformation {
-                    location: utils::location_to_lsp(original_definition),
+                    location: utils::location_to_lsp(db, original_definition),
                     message: "Original definition".into(),
                 }]),
                 severity: Some(DiagnosticSeverity::ERROR),

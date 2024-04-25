@@ -20,12 +20,16 @@ pub fn ts_to_position(point: tree_sitter::Point) -> tower_lsp::lsp_types::Positi
 }
 
 pub fn location_to_lsp(
+    db: &dyn wit_compiler::Db,
     location: wit_compiler::diagnostics::Location,
 ) -> tower_lsp::lsp_types::Location {
     let wit_compiler::diagnostics::Location { filename, range } = location;
 
     tower_lsp::lsp_types::Location {
-        uri: filename.parse().expect("All filenames should be URIs"),
+        uri: filename
+            .raw_path(db)
+            .parse()
+            .expect("All filenames should be URIs"),
         range: ts_to_range(range),
     }
 }
