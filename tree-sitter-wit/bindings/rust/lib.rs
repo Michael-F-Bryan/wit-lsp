@@ -26,7 +26,9 @@
 //! "#;
 //!
 //! let mut parser = tree_sitter::Parser::new();
-//! parser.set_language(&tree_sitter_wit::language()).expect("Error loading Wit grammar");
+//! let language = tree_sitter_wit::language();
+//! parser.set_language(&language).expect("Error loading Wit grammar");
+//!
 //! let tree = parser.parse(code, None).unwrap();
 //!
 //! assert!(!tree.root_node().has_error());

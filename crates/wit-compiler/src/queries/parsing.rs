@@ -53,6 +53,6 @@ impl Ast {
 
     pub fn source_file(self, db: &dyn Db) -> crate::ast::SourceFile<'_> {
         let root = self.root_node(db);
-        crate::ast::SourceFile::cast(root).unwrap()
+        crate::ast::SourceFile::cast(root).expect("The root node is always a source_file")
     }
 }

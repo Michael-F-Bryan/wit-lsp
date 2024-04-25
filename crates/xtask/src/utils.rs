@@ -91,7 +91,7 @@ pub fn copy_dir(
         let entry = entry?;
         let meta = entry.metadata()?;
         let path = entry.path();
-        let dest = path.strip_prefix(from).unwrap();
+        let dest = path.strip_prefix(from)?;
 
         if meta.is_dir() {
             tracing::debug!(dir=%dest.display(), "Creating directory");
