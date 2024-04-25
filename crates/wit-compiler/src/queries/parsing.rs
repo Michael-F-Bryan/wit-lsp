@@ -5,6 +5,8 @@ use crate::{
     Db, Text, Tree,
 };
 
+/// Parse a [`SourceFile`] into an [`Ast`], emitting any [`SyntaxError`]s as
+/// they occur.
 #[salsa::tracked]
 #[tracing::instrument(level = "debug", skip_all, fields(file = %file.path(db).raw_path(db)))]
 pub fn parse(db: &dyn Db, file: SourceFile) -> Ast {
@@ -14,21 +16,25 @@ pub fn parse(db: &dyn Db, file: SourceFile) -> Ast {
     let root = tree.root_node();
 
     if root.has_error() {
-        for error_node in tree.iter().filter(|node| node.is_error()) {
-            if let Some(parent) = error_node.parent() {
-                let location = Location::new(file.path(db), error_node.range());
-                let rule = if parent.is_error() {
-                    None
-                } else {
-                    Some(parent.kind().to_string())
-                };
-                let diag = SyntaxError { location, rule };
-                Diagnostics::push(db, diag.into());
-            }
-        }
+        emit_syntax_errors(db, &tree, file);
     }
 
     Ast::new(db, tree, src.clone())
+}
+
+fn emit_syntax_errors(db: &dyn Db, tree: &Tree, file: SourceFile) {
+    for error_node in tree.iter().filter(|node| node.is_error()) {
+        if let Some(parent) = error_node.parent() {
+            let location = Location::new(file.path(db), error_node.range());
+            let rule = if parent.is_error() {
+                None
+            } else {
+                Some(parent.kind().to_string())
+            };
+            let diag = SyntaxError { location, rule };
+            Diagnostics::push(db, diag.into());
+        }
+    }
 }
 
 #[salsa::tracked]
