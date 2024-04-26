@@ -4,7 +4,7 @@ mod hover;
 mod items;
 mod line_numbers;
 pub(crate) mod lowering;
-pub(crate) mod metadata;
+pub mod metadata;
 mod namespaces;
 mod parsing;
 mod selection;
