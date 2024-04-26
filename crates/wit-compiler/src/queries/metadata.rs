@@ -11,17 +11,9 @@ use crate::{
     },
     ast::{self, AstNode, HasIdent},
     diagnostics::{Diagnostics, DuplicateName, Location, MultipleConstructors},
-    hir,
-    queries::{Package, SourceFile, Workspace},
+    queries::{Package, SourceFile},
     Db, Text,
 };
-
-#[salsa::tracked]
-#[tracing::instrument(level = "debug", skip_all, fields(dir = %pkg.dir(db).raw_path(db)))]
-pub fn lower_package(db: &dyn Db, _ws: Workspace, pkg: Package) -> hir::Package {
-    let _items = package_items(db, pkg);
-    todo!();
-}
 
 /// Find all the top-level items exposed by a [`Package`].
 ///
