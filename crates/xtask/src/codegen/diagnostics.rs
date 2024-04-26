@@ -34,6 +34,7 @@ impl Diagnostics {
         tracing::debug!(path=%diagnostics.display(), "Extracting all diagnostic types");
         let src = std::fs::read_to_string(&diagnostics)
             .with_context(|| format!("Unable to read \"{}\"", diagnostics.display()))?;
+
         let diagnostic_types = extract_diagnostic_types(&src)?;
         tracing::debug!(?diagnostic_types);
 
@@ -91,5 +92,15 @@ fn codegen(diagnostic_types: &[&str]) -> TokenStream {
                 ),*
             ])
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn diagnostics_are_up_to_date() {
+        Diagnostics::default().generate().unwrap();
     }
 }
