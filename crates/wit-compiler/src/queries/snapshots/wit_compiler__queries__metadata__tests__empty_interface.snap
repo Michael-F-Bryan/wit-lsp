@@ -1,0 +1,15 @@
+---
+source: crates/wit-compiler/src/queries/metadata.rs
+info:
+  src: "interface empty {}"
+  ast: "(source_file (top_level_item (interface_item name: (identifier))))"
+---
+[
+    Node {
+        name: "empty",
+        type_name: "wit_compiler::queries::metadata::InterfaceMetadata",
+        file: "empty_interface.wit",
+        range: 0..18,
+        children: [],
+    },
+]

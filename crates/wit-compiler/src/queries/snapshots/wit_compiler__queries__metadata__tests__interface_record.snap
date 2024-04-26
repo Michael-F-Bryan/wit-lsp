@@ -1,0 +1,38 @@
+---
+source: crates/wit-compiler/src/queries/metadata.rs
+info:
+  src: "interface i { record point { x: float64, y: float64 } }"
+  ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (typedef_item (record_item name: (identifier) fields: (record_field name: (identifier) ty: (ty (builtins))) fields: (record_field name: (identifier) ty: (ty (builtins)))))))))"
+---
+[
+    Node {
+        name: "i",
+        type_name: "wit_compiler::queries::metadata::InterfaceMetadata",
+        file: "interface_record.wit",
+        range: 0..55,
+        children: [
+            Node {
+                name: "point",
+                type_name: "wit_compiler::queries::metadata::RecordMetadata",
+                file: "interface_record.wit",
+                range: 14..53,
+                children: [
+                    Node {
+                        name: "x",
+                        type_name: "wit_compiler::queries::metadata::FieldMetadata",
+                        file: "interface_record.wit",
+                        range: 29..39,
+                        children: [],
+                    },
+                    Node {
+                        name: "y",
+                        type_name: "wit_compiler::queries::metadata::FieldMetadata",
+                        file: "interface_record.wit",
+                        range: 41..51,
+                        children: [],
+                    },
+                ],
+            },
+        ],
+    },
+]

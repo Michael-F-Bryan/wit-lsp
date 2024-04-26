@@ -1,0 +1,23 @@
+---
+source: crates/wit-compiler/src/queries/metadata.rs
+info:
+  src: "interface i { type x = string; }"
+  ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (typedef_item (type_item name: (identifier) ty: (ty (builtins))))))))"
+---
+[
+    Node {
+        name: "i",
+        type_name: "wit_compiler::queries::metadata::InterfaceMetadata",
+        file: "interface_type_alias.wit",
+        range: 0..32,
+        children: [
+            Node {
+                name: "x",
+                type_name: "wit_compiler::queries::metadata::TypeAliasMetadata",
+                file: "interface_type_alias.wit",
+                range: 14..30,
+                children: [],
+            },
+        ],
+    },
+]

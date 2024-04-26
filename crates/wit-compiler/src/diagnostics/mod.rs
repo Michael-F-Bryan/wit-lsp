@@ -269,6 +269,9 @@ impl From<MismatchedPackageDeclaration> for Diagnostic {
     }
 }
 
+/// The location of an element within the workspace.
+///
+/// Typically used for debugging purposes.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Location {
     /// The file this error came from.

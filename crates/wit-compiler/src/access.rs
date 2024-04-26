@@ -162,6 +162,10 @@ item_pointers! {
     ConstructorPtr => ResourceConstructor,
     MethodPtr => FuncItem,
     StaticMethodPtr => StaticMethod,
+    RecordFieldPtr => RecordField,
+    VariantCasePtr => VariantCase,
+    EnumCasePtr => EnumCase,
+    FlagsCasePtr => FlagsCase,
 }
 
 /// Look up an item's metadata using its [`Index`].

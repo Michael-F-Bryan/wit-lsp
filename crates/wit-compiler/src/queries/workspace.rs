@@ -31,6 +31,8 @@ impl Workspace {
     pub fn update(self, db: &mut dyn Db, path: &str, text: impl Into<Text>) {
         let text = text.into();
 
+        // Note: we want to avoid invalidating the entire `files` map because
+        // that means we'll need to re-parse and re-analyse all files.
         match self.lookup_by_path(db, path) {
             Some(file) => {
                 file.set_contents(db).to(text);
@@ -151,6 +153,12 @@ pub struct Package {
     pub dir: FilePath,
     pub id: Option<PackageId>,
     pub files: Vector<SourceFile>,
+}
+
+impl Package {
+    pub fn contains(&self, db: &dyn Db, path: FilePath) -> bool {
+        self.files(db).iter().any(|f| f.path(db) == path)
+    }
 }
 
 #[salsa::interned]

@@ -1,0 +1,38 @@
+---
+source: crates/wit-compiler/src/queries/metadata.rs
+info:
+  src: "interface i { variant foo { first, second(u32) } }"
+  ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (typedef_item (variant_item name: (identifier) cases: (variant_case name: (identifier)) cases: (variant_case name: (identifier) ty: (ty (builtins)))))))))"
+---
+[
+    Node {
+        name: "i",
+        type_name: "wit_compiler::queries::metadata::InterfaceMetadata",
+        file: "interface_variant.wit",
+        range: 0..50,
+        children: [
+            Node {
+                name: "foo",
+                type_name: "wit_compiler::queries::metadata::VariantMetadata",
+                file: "interface_variant.wit",
+                range: 14..48,
+                children: [
+                    Node {
+                        name: "first",
+                        type_name: "wit_compiler::queries::metadata::VariantCaseMetadata",
+                        file: "interface_variant.wit",
+                        range: 28..33,
+                        children: [],
+                    },
+                    Node {
+                        name: "second",
+                        type_name: "wit_compiler::queries::metadata::VariantCaseMetadata",
+                        file: "interface_variant.wit",
+                        range: 35..46,
+                        children: [],
+                    },
+                ],
+            },
+        ],
+    },
+]
