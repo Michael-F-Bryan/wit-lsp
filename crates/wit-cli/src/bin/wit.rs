@@ -17,13 +17,13 @@ const RUST_LOG: &[&str] = &[
     "wit_compiler=info",
 ];
 
-fn main() -> Result<(), color_eyre::Report> {
+fn main() -> color_eyre::Result<()> {
     initialize_logging()?;
 
     Args::parse().run()
 }
 
-fn initialize_logging() -> Result<(), color_eyre::Report> {
+fn initialize_logging() -> color_eyre::Result<()> {
     let isatty = std::io::stderr().is_terminal();
 
     let theme = if isatty {

@@ -2,7 +2,6 @@ mod ast;
 mod diagnostics;
 
 use clap::Parser;
-use color_eyre::Report;
 
 use crate::codegen::{ast::Ast, diagnostics::Diagnostics};
 
@@ -15,7 +14,7 @@ pub struct Codegen {
 
 impl Codegen {
     #[tracing::instrument(skip_all)]
-    pub fn run(self) -> Result<(), Report> {
+    pub fn run(self) -> color_eyre::Result<()> {
         let Codegen { target } = self;
 
         match target {
@@ -27,7 +26,7 @@ impl Codegen {
 
 /// Run all code generators using the default settings.
 #[tracing::instrument(skip_all)]
-fn run_all_generators() -> Result<(), Report> {
+fn run_all_generators() -> color_eyre::Result<()> {
     Ast::default().generate()?;
     Diagnostics::default().generate()?;
 
@@ -42,7 +41,7 @@ enum Target {
 }
 
 impl Target {
-    fn generate(self) -> Result<(), Report> {
+    fn generate(self) -> color_eyre::Result<()> {
         match self {
             Target::Ast(a) => a.generate(),
             Target::Diagnostics(d) => d.generate(),

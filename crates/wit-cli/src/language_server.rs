@@ -53,7 +53,7 @@ enum Mode {
     Stdio,
 }
 
-async fn serve(mode: Mode) -> Result<(), color_eyre::Report> {
+async fn serve(mode: Mode) -> color_eyre::Result<()> {
     let (service, socket) = wit_language_server::service();
 
     match mode {

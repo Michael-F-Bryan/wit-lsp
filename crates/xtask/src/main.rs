@@ -35,7 +35,7 @@ enum Cmd {
     Doc(Doc),
 }
 
-fn initialize_logging() -> Result<(), color_eyre::Report> {
+fn initialize_logging() -> color_eyre::Result<()> {
     let isatty = std::io::stderr().is_terminal();
 
     if std::env::var_os("RUST_LOG").is_none() {
