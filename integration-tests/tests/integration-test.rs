@@ -7,7 +7,7 @@ use tracing_subscriber::{
     fmt::format::FmtSpan, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter,
 };
 
-const RUST_LOG: &[&str] = &["info", "wit-compiler=debug"];
+const RUST_LOG: &[&str] = &["info", "wit_compiler=info", "salsa_2022=warn"];
 
 #[derive(Debug, Parser)]
 struct Args {

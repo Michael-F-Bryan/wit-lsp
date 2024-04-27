@@ -37,7 +37,7 @@ fn discover_compile_pass(dir: impl AsRef<Path>) -> color_eyre::Result<Vec<Trial>
         let meta = entry.metadata()?;
 
         let filename = path.file_stem().unwrap().to_str().unwrap();
-        let (name, ignored) = match filename.strip_suffix('_') {
+        let (name, ignored) = match filename.strip_prefix('_') {
             Some(n) => (n, true),
             None => (filename, false),
         };

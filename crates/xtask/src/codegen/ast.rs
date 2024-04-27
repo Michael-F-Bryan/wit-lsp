@@ -162,9 +162,9 @@ fn generate_helper_trait_impls(ident: &Ident, node: &NodeType) -> TokenStream {
         tokens.extend(quote! {
             impl super::HasIdent for #ident<'_> {
                 fn identifier(self, src: &str) -> Option<&str> {
-                    let node = self.name()?.0;
-                    let ident = node.utf8_text(src.as_bytes()).unwrap();
-                    Some(ident)
+                    let node = self.name()?;
+                    let raw = node.0.utf8_text(src.as_bytes()).unwrap();
+                    Some(crate::ast::ident(raw))
                 }
             }
         });

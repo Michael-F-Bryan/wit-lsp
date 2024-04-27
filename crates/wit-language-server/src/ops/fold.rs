@@ -99,7 +99,7 @@ mod tests {
 
     #[test]
     fn fold_all_resources() {
-        let src = include_str!("../../../../integration-tests/compile-pass/all-resources.wit");
+        let src = include_str!("../../../../integration-tests/compile-pass/_all-resources.wit");
         let tree = Tree::parse(src);
 
         let got = folding_range_impl(tree.root_node(), src);

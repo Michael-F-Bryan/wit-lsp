@@ -1,4 +1,14 @@
-world wasi {
-    type foo = bar;
-}
+interface fs {
+    resource file {
+        open: static func(path: string) -> result<file, errno>;
+        read: func(len: u32) -> result<list<u8>, errno>;
+        write: func(data: list<u8>) -> result<_, errno>;
+        close: func() -> result<_, errno>;
+    }
 
+    enum errno {
+        not-found,
+        already-closed,
+        unknown,
+    }
+}
