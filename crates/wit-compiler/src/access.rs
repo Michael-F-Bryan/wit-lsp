@@ -119,53 +119,79 @@ pub trait GetAstNode {
 pub trait Pointer: GetAstNode {
     fn for_node(node: Self::Node<'_>) -> Self;
     fn range(self) -> tree_sitter::Range;
+    fn into_any(self) -> AnyPointer;
 }
 
 macro_rules! item_pointers {
-    ($( $pointer:ident => $ast_node:ident),+ $(,)?) => {
-        $(
-            #[doc = concat!("A strongly-typed reference to a [`crate::ast::", stringify!($ast_node), "`].")]
-            #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-            pub struct $pointer(tree_sitter::Range);
-
-            impl GetAstNode for $pointer {
-                type Node<'tree> = crate::ast::$ast_node<'tree>;
-
-                fn ast_node(self, tree: &Tree) -> Self::Node<'_> {
-                    tree.find(self.0)
-                }
+    ($( $name:ident => $ast_node:ident),+ $(,)?) => {
+        paste::paste! {
+            /// A [`Pointer`] that could point to anything.
+            #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+            pub enum AnyPointer {
+                $(
+                    $name([< $name Ptr >]),
+                )*
             }
 
-            impl Pointer for $pointer {
-                fn for_node(node: crate::ast::$ast_node<'_>) -> Self {
-                    $pointer(node.syntax().range())
+            impl AnyPointer {
+                $(
+                    pub fn [< as_ $name:snake >](self) -> Option<[< $name Ptr >]> {
+                        match self {
+                            AnyPointer::$name(ptr) => Some(ptr),
+                            _ => None,
+                        }
+                    }
+                )*
+            }
+
+            $(
+                #[doc = concat!("A strongly-typed reference to a [`crate::ast::", stringify!($ast_node), "`].")]
+                #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+                pub struct [< $name Ptr >](tree_sitter::Range);
+
+                impl GetAstNode for [< $name Ptr >] {
+                    type Node<'tree> = crate::ast::$ast_node<'tree>;
+
+                    fn ast_node(self, tree: &Tree) -> Self::Node<'_> {
+                        tree.find(self.0)
+                    }
                 }
 
-                fn range(self) -> tree_sitter::Range {
-                    self.0
+                impl Pointer for [< $name Ptr >] {
+                    fn for_node(node: crate::ast::$ast_node<'_>) -> Self {
+                        [< $name Ptr >](node.syntax().range())
+                    }
+
+                    fn range(self) -> tree_sitter::Range {
+                        self.0
+                    }
+
+                    fn into_any(self) -> AnyPointer {
+                        AnyPointer::$name(self)
+                    }
                 }
-            }
-        )*
+            )*
+        }
     };
 }
 
 item_pointers! {
-    WorldPtr => WorldItem,
-    InterfacePtr => InterfaceItem,
-    RecordPtr => RecordItem,
-    TypeAliasPtr => TypeItem,
-    EnumPtr => EnumItem,
-    FlagsPtr => FlagsItem,
-    ResourcePtr => ResourceItem,
-    VariantPtr => VariantItem,
-    FunctionPtr => FuncItem,
-    ConstructorPtr => ResourceConstructor,
-    MethodPtr => FuncItem,
-    StaticMethodPtr => StaticMethod,
-    RecordFieldPtr => RecordField,
-    VariantCasePtr => VariantCase,
-    EnumCasePtr => EnumCase,
-    FlagsCasePtr => FlagsCase,
+    World => WorldItem,
+    Interface => InterfaceItem,
+    Record => RecordItem,
+    TypeAlias => TypeItem,
+    Enum => EnumItem,
+    Flags => FlagsItem,
+    Resource => ResourceItem,
+    Variant => VariantItem,
+    Function => FuncItem,
+    Constructor => ResourceConstructor,
+    Method => FuncItem,
+    StaticMethod => StaticMethod,
+    RecordField => RecordField,
+    VariantCase => VariantCase,
+    EnumCase => EnumCase,
+    FlagsCase => FlagsCase,
 }
 
 /// Look up an item's metadata using its [`Index`].

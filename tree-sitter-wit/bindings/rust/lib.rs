@@ -25,11 +25,7 @@
 //!   }
 //! "#;
 //!
-//! let mut parser = tree_sitter::Parser::new();
-//! let language = tree_sitter_wit::language();
-//! parser.set_language(&language).expect("Error loading Wit grammar");
-//!
-//! let tree = parser.parse(code, None).unwrap();
+//! let tree = tree_sitter_wit::parse(code);
 //!
 //! assert!(!tree.root_node().has_error());
 //! ```
@@ -38,7 +34,7 @@
 
 pub extern crate tree_sitter;
 
-use tree_sitter::Language;
+use tree_sitter::{Language, Parser};
 
 extern "C" {
     fn tree_sitter_wit() -> Language;
@@ -46,9 +42,30 @@ extern "C" {
 
 /// Get the tree-sitter [Language][lang] for this grammar.
 ///
+/// # Exampl
+///
 /// [lang]: https://docs.rs/tree-sitter/*/tree_sitter/struct.Language.html
 pub fn language() -> Language {
     unsafe { tree_sitter_wit() }
+}
+
+/// Parse a WIT file into a *Concrete Syntax Tree*.
+///
+/// This is just shorthand for creating a new [`tree_sitter::Parser`] and
+/// initializing it with [`language()`].
+///
+/// ```
+/// let mut parser = tree_sitter::Parser::new();
+/// let language = tree_sitter_wit::language();
+/// parser.set_language(&language).expect("Error loading Wit grammar");
+///
+/// let tree = parser.parse("...", None).unwrap();
+/// ```
+pub fn parse(src: &str) -> tree_sitter::Tree {
+    let mut p = Parser::new();
+    let lang = language();
+    p.set_language(&lang).unwrap();
+    p.parse(src, None).unwrap()
 }
 
 /// The content of the [`node-types.json`][node-types] file for this grammar.
