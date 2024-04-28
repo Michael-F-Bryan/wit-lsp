@@ -1,6 +1,7 @@
 # wit-lsp
 
 [![Continuous Integration](https://github.com/Michael-F-Bryan/wit-lsp/actions/workflows/ci.yml/badge.svg)](https://github.com/Michael-F-Bryan/wit-lsp/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/Michael-F-Bryan/wit-lsp/graph/badge.svg?token=0HHP8EX5UY)](https://codecov.io/gh/Michael-F-Bryan/wit-lsp)
 
 ([API Docs][api-docs] | [Code Coverage][coverage])
 
