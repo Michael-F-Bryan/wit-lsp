@@ -115,6 +115,28 @@ jobs:
       - name: Build
         run: npm run compile
 
+  code-coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Rust Cache
+        uses: taiki-e/install-action@nextest
+      - name: Install llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+      - name: Setup Rust
+        uses: dsherret/rust-toolchain-file@v1
+      - name: Generate Code Coverage
+        run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: lcov.info
+          fail_ci_if_error: true
+
   api-docs:
     name: Publish API Docs to GitHub Pages
     runs-on: ubuntu-latest
@@ -132,7 +154,7 @@ jobs:
         run: cargo xtask doc
         env:
           RUST_LOG: debug
-      - name: Upload API Docs
+      - name: Upload Docs
         uses: JamesIves/github-pages-deploy-action@v4
         if: github.ref == 'refs/heads/main'
         with:
