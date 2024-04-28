@@ -7,10 +7,14 @@ info:
 [
     SyntaxError(
         SyntaxError {
-            rule: "source_file",
+            rule: Some(
+                "source_file",
+            ),
             location: Location {
                 filename: FilePath(
-                    syntax_errors_are_emitted.wit,
+                    Id {
+                        value: 1,
+                    },
                 ),
                 range: Range {
                     start_byte: 0,
@@ -29,10 +33,12 @@ info:
     ),
     SyntaxError(
         SyntaxError {
-            rule: "ERROR",
+            rule: None,
             location: Location {
                 filename: FilePath(
-                    syntax_errors_are_emitted.wit,
+                    Id {
+                        value: 1,
+                    },
                 ),
                 range: Range {
                     start_byte: 0,

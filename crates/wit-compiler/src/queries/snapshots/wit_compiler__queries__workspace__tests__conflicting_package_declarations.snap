@@ -1,0 +1,58 @@
+---
+source: crates/wit-compiler/src/queries/workspace.rs
+expression: diags
+---
+[
+    MismatchedPackageDeclaration(
+        MismatchedPackageDeclaration {
+            second_id: PackageId(
+                Id {
+                    value: 2,
+                },
+            ),
+            second_location: Location {
+                filename: FilePath(
+                    Id {
+                        value: 2,
+                    },
+                ),
+                range: Range {
+                    start_byte: 0,
+                    end_byte: 23,
+                    start_point: Point {
+                        row: 0,
+                        column: 0,
+                    },
+                    end_point: Point {
+                        row: 0,
+                        column: 23,
+                    },
+                },
+            },
+            original_id: PackageId(
+                Id {
+                    value: 1,
+                },
+            ),
+            original_definition: Location {
+                filename: FilePath(
+                    Id {
+                        value: 1,
+                    },
+                ),
+                range: Range {
+                    start_byte: 0,
+                    end_byte: 22,
+                    start_point: Point {
+                        row: 0,
+                        column: 0,
+                    },
+                    end_point: Point {
+                        row: 0,
+                        column: 22,
+                    },
+                },
+            },
+        },
+    ),
+]

@@ -1,0 +1,122 @@
+---
+source: crates/wit-compiler/src/queries/workspace.rs
+expression: debug
+---
+[
+    Package {
+        [salsa id]: 0,
+        dir: FilePath {
+            [salsa id]: 6,
+            raw_path: .,
+        },
+        id: None,
+        files: [
+            SourceFile(
+                Id {
+                    value: 1,
+                },
+            ),
+        ],
+    },
+    Package {
+        [salsa id]: 1,
+        dir: FilePath {
+            [salsa id]: 7,
+            raw_path: merge,
+        },
+        id: Some(
+            PackageId {
+                [salsa id]: 0,
+                package: [
+                    merge,
+                ],
+                path: [
+                    some-package,
+                ],
+                version: None,
+            },
+        ),
+        files: [
+            SourceFile(
+                Id {
+                    value: 5,
+                },
+            ),
+            SourceFile(
+                Id {
+                    value: 6,
+                },
+            ),
+        ],
+    },
+    Package {
+        [salsa id]: 2,
+        dir: FilePath {
+            [salsa id]: 8,
+            raw_path: named,
+        },
+        id: Some(
+            PackageId {
+                [salsa id]: 1,
+                package: [
+                    named,
+                ],
+                path: [
+                    package,
+                ],
+                version: None,
+            },
+        ),
+        files: [
+            SourceFile(
+                Id {
+                    value: 3,
+                },
+            ),
+        ],
+    },
+    Package {
+        [salsa id]: 3,
+        dir: FilePath {
+            [salsa id]: 9,
+            raw_path: named/with,
+        },
+        id: Some(
+            PackageId {
+                [salsa id]: 2,
+                package: [
+                    named,
+                ],
+                path: [
+                    with,
+                    version,
+                ],
+                version: Some(
+                    1.2.3,
+                ),
+            },
+        ),
+        files: [
+            SourceFile(
+                Id {
+                    value: 4,
+                },
+            ),
+        ],
+    },
+    Package {
+        [salsa id]: 4,
+        dir: FilePath {
+            [salsa id]: 10,
+            raw_path: simple,
+        },
+        id: None,
+        files: [
+            SourceFile(
+                Id {
+                    value: 2,
+                },
+            ),
+        ],
+    },
+]

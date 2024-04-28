@@ -5,7 +5,7 @@ mod utils;
 use std::io::IsTerminal;
 
 use clap::Parser;
-use color_eyre::{config::Theme, Report};
+use color_eyre::Report;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{
     fmt::format::FmtSpan, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter,
@@ -35,28 +35,16 @@ enum Cmd {
     Doc(Doc),
 }
 
-fn initialize_logging() -> Result<(), color_eyre::Report> {
+fn initialize_logging() -> color_eyre::Result<()> {
     let isatty = std::io::stderr().is_terminal();
 
     if std::env::var_os("RUST_LOG").is_none() {
         std::env::set_var("RUST_LOG", RUST_LOG.join(","));
     }
 
-    let theme = if isatty {
-        Theme::dark()
-    } else {
-        Theme::default()
-    };
-
     color_eyre::config::HookBuilder::default()
         .capture_span_trace_by_default(true)
-        .issue_url(concat!(env!("CARGO_PKG_REPOSITORY"), "/issues/new"))
         .add_default_filters()
-        .add_issue_metadata("arch", std::env::consts::ARCH)
-        .add_issue_metadata("os", std::env::consts::OS)
-        .add_issue_metadata("package", env!("CARGO_PKG_NAME"))
-        .add_issue_metadata("version", env!("CARGO_PKG_VERSION"))
-        .theme(theme)
         .install()?;
 
     tracing_subscriber::fmt()

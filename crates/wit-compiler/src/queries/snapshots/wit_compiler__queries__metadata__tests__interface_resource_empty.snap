@@ -1,0 +1,23 @@
+---
+source: crates/wit-compiler/src/queries/metadata.rs
+info:
+  src: "interface i { resource foo {} }"
+  ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (typedef_item (resource_item name: (identifier)))))))"
+---
+[
+    Node {
+        name: "i",
+        type_name: "wit_compiler::queries::metadata::InterfaceMetadata",
+        file: "interface_resource_empty.wit",
+        range: 0..31,
+        children: [
+            Node {
+                name: "foo",
+                type_name: "wit_compiler::queries::metadata::TypeDefinitionMetadata",
+                file: "interface_resource_empty.wit",
+                range: 14..29,
+                children: [],
+            },
+        ],
+    },
+]

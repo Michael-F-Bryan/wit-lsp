@@ -7,10 +7,10 @@ use crate::{
     ast::AstNode,
     hir,
     queries::{
-        InterfaceMetadata, ItemDefinitionMetadata, Items, ResourceMetadata, SourceFile, Workspace,
-        WorldMetadata,
+        FilePath, InterfaceMetadata, ItemDefinitionMetadata, Items, ResourceMetadata, SourceFile,
+        Workspace, WorldMetadata,
     },
-    Db, Text, Tree,
+    Db, Tree,
 };
 
 /// An index optimised for use in item IDs.
@@ -119,49 +119,79 @@ pub trait GetAstNode {
 pub trait Pointer: GetAstNode {
     fn for_node(node: Self::Node<'_>) -> Self;
     fn range(self) -> tree_sitter::Range;
+    fn into_any(self) -> AnyPointer;
 }
 
 macro_rules! item_pointers {
-    ($( $pointer:ident => $ast_node:ident),+ $(,)?) => {
-        $(
-            #[doc = concat!("A strongly-typed reference to a [`crate::ast::", stringify!($ast_node), "`].")]
-            #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-            pub struct $pointer(tree_sitter::Range);
-
-            impl GetAstNode for $pointer {
-                type Node<'tree> = crate::ast::$ast_node<'tree>;
-
-                fn ast_node(self, tree: &Tree) -> Self::Node<'_> {
-                    tree.find(self.0)
-                }
+    ($( $name:ident => $ast_node:ident),+ $(,)?) => {
+        paste::paste! {
+            /// A [`Pointer`] that could point to anything.
+            #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+            pub enum AnyPointer {
+                $(
+                    $name([< $name Ptr >]),
+                )*
             }
 
-            impl Pointer for $pointer {
-                fn for_node(node: crate::ast::$ast_node<'_>) -> Self {
-                    $pointer(node.syntax().range())
+            impl AnyPointer {
+                $(
+                    pub fn [< as_ $name:snake >](self) -> Option<[< $name Ptr >]> {
+                        match self {
+                            AnyPointer::$name(ptr) => Some(ptr),
+                            _ => None,
+                        }
+                    }
+                )*
+            }
+
+            $(
+                #[doc = concat!("A strongly-typed reference to a [`crate::ast::", stringify!($ast_node), "`].")]
+                #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+                pub struct [< $name Ptr >](tree_sitter::Range);
+
+                impl GetAstNode for [< $name Ptr >] {
+                    type Node<'tree> = crate::ast::$ast_node<'tree>;
+
+                    fn ast_node(self, tree: &Tree) -> Self::Node<'_> {
+                        tree.find(self.0)
+                    }
                 }
 
-                fn range(self) -> tree_sitter::Range {
-                    self.0
+                impl Pointer for [< $name Ptr >] {
+                    fn for_node(node: crate::ast::$ast_node<'_>) -> Self {
+                        [< $name Ptr >](node.syntax().range())
+                    }
+
+                    fn range(self) -> tree_sitter::Range {
+                        self.0
+                    }
+
+                    fn into_any(self) -> AnyPointer {
+                        AnyPointer::$name(self)
+                    }
                 }
-            }
-        )*
+            )*
+        }
     };
 }
 
 item_pointers! {
-    WorldPtr => WorldItem,
-    InterfacePtr => InterfaceItem,
-    RecordPtr => RecordItem,
-    TypeAliasPtr => TypeItem,
-    EnumPtr => EnumItem,
-    FlagsPtr => FlagsItem,
-    ResourcePtr => ResourceItem,
-    VariantPtr => VariantItem,
-    FunctionPtr => FuncItem,
-    ConstructorPtr => ResourceConstructor,
-    MethodPtr => FuncItem,
-    StaticMethodPtr => StaticMethod,
+    World => WorldItem,
+    Interface => InterfaceItem,
+    Record => RecordItem,
+    TypeAlias => TypeItem,
+    Enum => EnumItem,
+    Flags => FlagsItem,
+    Resource => ResourceItem,
+    Variant => VariantItem,
+    Function => FuncItem,
+    Constructor => ResourceConstructor,
+    Method => FuncItem,
+    StaticMethod => StaticMethod,
+    RecordField => RecordField,
+    VariantCase => VariantCase,
+    EnumCase => EnumCase,
+    FlagsCase => FlagsCase,
 }
 
 /// Look up an item's metadata using its [`Index`].
@@ -236,20 +266,20 @@ impl GetByIndex<InterfaceIndex> for Items {
     }
 }
 
-impl<ScopeIndex> GetByIndex<(Text, ScopeIndex)> for Workspace
+impl<ScopeIndex> GetByIndex<(FilePath, ScopeIndex)> for Workspace
 where
     SourceFile: GetByIndex<ScopeIndex>,
 {
     type Metadata = Option<<SourceFile as GetByIndex<ScopeIndex>>::Metadata>;
 
-    fn get_by_index(&self, db: &dyn Db, (filename, ix): (Text, ScopeIndex)) -> Self::Metadata {
+    fn get_by_index(&self, db: &dyn Db, (path, ix): (FilePath, ScopeIndex)) -> Self::Metadata {
         let files = self.files(db);
-        let f = files.get(&filename)?;
+        let f = files.get(&path)?;
         Some(f.get_by_index(db, ix))
     }
 }
 
-impl<ScopeIndex, ItemIndex> GetByIndex<(Text, ScopeIndex, ItemIndex)> for Workspace
+impl<ScopeIndex, ItemIndex> GetByIndex<(FilePath, ScopeIndex, ItemIndex)> for Workspace
 where
     SourceFile: GetByIndex<(ScopeIndex, ItemIndex)>,
 {
@@ -258,12 +288,10 @@ where
     fn get_by_index(
         &self,
         db: &dyn Db,
-        (filename, scope, index): (Text, ScopeIndex, ItemIndex),
+        (path, scope, index): (FilePath, ScopeIndex, ItemIndex),
     ) -> Self::Metadata {
         let files = self.files(db);
-        files
-            .get(&filename)
-            .map(|f| f.get_by_index(db, (scope, index)))
+        files.get(&path).map(|f| f.get_by_index(db, (scope, index)))
     }
 }
 

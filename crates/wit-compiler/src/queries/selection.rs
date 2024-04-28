@@ -36,7 +36,7 @@ mod tests {
 
     #[test]
     fn calculate_selection_ranges() {
-        let src = include_str!("../../../../integration-tests/compile-pass/all-resources.wit");
+        let src = include_str!("../../../../integration-tests/compile-pass/_all-resources.wit");
         let tree = Tree::parse(src);
         let point = Point {
             row: 10,

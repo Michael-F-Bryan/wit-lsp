@@ -1,0 +1,31 @@
+---
+source: crates/wit-compiler/src/queries/metadata.rs
+info:
+  src: "interface i { resource foo { constructor(); } }"
+  ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (typedef_item (resource_item name: (identifier) methods: (resource_method (resource_constructor params: (param_list)))))))))"
+---
+[
+    Node {
+        name: "i",
+        type_name: "wit_compiler::queries::metadata::InterfaceMetadata",
+        file: "interface_resource_with_constructor.wit",
+        range: 0..47,
+        children: [
+            Node {
+                name: "foo",
+                type_name: "wit_compiler::queries::metadata::TypeDefinitionMetadata",
+                file: "interface_resource_with_constructor.wit",
+                range: 14..45,
+                children: [
+                    Node {
+                        name: "$constructor",
+                        type_name: "wit_compiler::queries::metadata::ConstructorMetadata",
+                        file: "interface_resource_with_constructor.wit",
+                        range: 29..43,
+                        children: [],
+                    },
+                ],
+            },
+        ],
+    },
+]

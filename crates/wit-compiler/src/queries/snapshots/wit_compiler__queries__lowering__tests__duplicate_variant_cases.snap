@@ -10,7 +10,9 @@ info:
             name: var,
             location: Location {
                 filename: FilePath(
-                    duplicate_variant_cases.wit,
+                    Id {
+                        value: 1,
+                    },
                 ),
                 range: Range {
                     start_byte: 40,
@@ -27,7 +29,9 @@ info:
             },
             original_definition: Location {
                 filename: FilePath(
-                    duplicate_variant_cases.wit,
+                    Id {
+                        value: 1,
+                    },
                 ),
                 range: Range {
                     start_byte: 26,

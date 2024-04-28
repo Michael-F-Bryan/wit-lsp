@@ -82,7 +82,7 @@ impl<'db> State<'db> {
         let node = ptr.ast_node(self.tree);
 
         HoverInfo {
-            filename: self.file.path(self.db).clone(),
+            filename: self.file.path(self.db),
             definition: node.range(),
             content: self.source(node).into(),
         }
@@ -94,7 +94,7 @@ fn hover_interface(index: InterfaceIndex, s: State<'_>) -> HoverInfo {
     let node = meta.location(s.db).ast_node(s.tree);
 
     HoverInfo {
-        filename: s.file.path(s.db).clone(),
+        filename: s.file.path(s.db),
         definition: node.range(),
         content: s.source(node).into(),
     }
@@ -105,7 +105,7 @@ fn hover_world(index: WorldIndex, s: State<'_>) -> HoverInfo {
     let node = meta.location(s.db).ast_node(s.tree);
 
     HoverInfo {
-        filename: s.file.path(s.db).clone(),
+        filename: s.file.path(s.db),
         definition: node.range(),
         content: s.source(node).into(),
     }

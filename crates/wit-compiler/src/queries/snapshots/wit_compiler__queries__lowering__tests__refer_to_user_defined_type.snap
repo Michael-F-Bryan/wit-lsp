@@ -29,7 +29,9 @@ Package {
                             UserDefinedType(
                                 ItemReference {
                                     file: FilePath(
-                                        refer_to_user_defined_type.wit,
+                                        Id {
+                                            value: 1,
+                                        },
                                     ),
                                     scope: Interface(
                                         InterfaceIndex(0),

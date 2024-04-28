@@ -7,10 +7,10 @@ use tower_lsp::{
         CompletionOptions, CompletionParams, CompletionResponse, DiagnosticOptions,
         DiagnosticServerCapabilities, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
         DidOpenTextDocumentParams, DidSaveTextDocumentParams, DocumentDiagnosticParams,
-        DocumentDiagnosticReportResult, FoldingRange, FoldingRangeParams, InitializeParams,
-        InitializeResult, SelectionRange, SelectionRangeParams, ServerCapabilities, ServerInfo,
-        TextDocumentContentChangeEvent, TextDocumentItem, TextDocumentSyncCapability,
-        TextDocumentSyncKind, Url,
+        DocumentDiagnosticReportResult, FoldingRange, FoldingRangeParams, GotoDefinitionParams,
+        GotoDefinitionResponse, InitializeParams, InitializeResult, OneOf, SelectionRange,
+        SelectionRangeParams, ServerCapabilities, ServerInfo, TextDocumentContentChangeEvent,
+        TextDocumentItem, TextDocumentSyncCapability, TextDocumentSyncKind, Url,
     },
     Client, ClientSocket, LspService,
 };
@@ -49,7 +49,7 @@ impl LanguageServer {
         let ws = snap.ws;
         let db = snap.wit_db();
 
-        let Some(file) = snap.ws.lookup(db, &path) else {
+        let Some(file) = snap.ws.lookup_by_path(db, &path) else {
             let msg = format!("\"{path}\" isn't in the workspace");
             tracing::warn!(%path, "File not found in database");
             tracing::debug!(
@@ -109,6 +109,7 @@ impl tower_lsp::LanguageServer for LanguageServer {
                         ..Default::default()
                     },
                 )),
+                definition_provider: Some(OneOf::Left(true)),
                 completion_provider: Some(CompletionOptions::default()),
                 ..Default::default()
             },
@@ -194,7 +195,7 @@ impl tower_lsp::LanguageServer for LanguageServer {
         let snap = self.snapshot().await;
         let db = snap.wit_db();
 
-        let Some(file) = snap.ws.lookup(db, path) else {
+        let Some(file) = snap.ws.lookup_by_path(db, path) else {
             return Ok(None);
         };
 
@@ -218,7 +219,7 @@ impl tower_lsp::LanguageServer for LanguageServer {
         let snap = self.snapshot().await;
 
         let db = snap.wit_db();
-        let Some(file) = snap.ws.lookup(db, path) else {
+        let Some(file) = snap.ws.lookup_by_path(db, path) else {
             return Ok(None);
         };
 
@@ -260,7 +261,7 @@ impl tower_lsp::LanguageServer for LanguageServer {
         let snap = self.snapshot().await;
         let db = snap.wit_db();
         let path = &params.text_document.uri;
-        let Some(file) = snap.ws.lookup(db, path.as_str()) else {
+        let Some(file) = snap.ws.lookup_by_path(db, path.as_str()) else {
             return Err(Error::invalid_params(format!(
                 "\"{path}\" isn't tracked by the workspace"
             )));
@@ -278,11 +279,34 @@ impl tower_lsp::LanguageServer for LanguageServer {
         tracing::debug!(document.uri=%path);
         let snap = self.snapshot().await;
 
-        let Some(file) = snap.ws.lookup(snap.wit_db(), path.as_str()) else {
+        let Some(file) = snap.ws.lookup_by_path(snap.wit_db(), path.as_str()) else {
             return Ok(None);
         };
 
-        Ok(crate::ops::complete(snap.wit_db(), snap.ws, file, params))
+        let point = crate::utils::position_to_ts(params.text_document_position.position);
+        let completions = crate::ops::complete(snap.wit_db(), snap.ws, file, point)
+            .into_iter()
+            .map(Into::into)
+            .collect();
+
+        Ok(Some(CompletionResponse::Array(completions)))
+    }
+
+    #[tracing::instrument(level = "debug", skip_all)]
+    async fn goto_definition(
+        &self,
+        params: GotoDefinitionParams,
+    ) -> Result<Option<GotoDefinitionResponse>, Error> {
+        let path = &params.text_document_position_params.text_document.uri;
+        tracing::debug!(document.uri=%path);
+        let snap = self.snapshot().await;
+
+        let Some(_file) = snap.ws.lookup_by_path(snap.wit_db(), path.as_str()) else {
+            return Ok(None);
+        };
+
+        // TODO: Finish wiring this up
+        Err(Error::method_not_found())
     }
 }
 
@@ -313,27 +337,7 @@ struct DumpAstResponse {
     ast: String,
 }
 
-/// A readonly snapshot of the [`State`].
-///
-/// This is often used when you want to do something that doesn't require update
-/// inputs. By using a [`Snapshot`] instead of holding onto the [`State`]
-/// directly you allow other readonly queries to run in parallel.
-#[derive(Debug)]
-struct Snapshot {
-    ws: Workspace,
-    db: salsa::Snapshot<Database>,
-}
-
-impl Snapshot {
-    fn db(&self) -> &dyn crate::Db {
-        &*self.db
-    }
-
-    fn wit_db(&self) -> &dyn wit_compiler::Db {
-        self.db().as_wit()
-    }
-}
-
+/// The language server's internal state.
 #[derive(Debug)]
 struct State {
     ws: Workspace,
@@ -362,5 +366,26 @@ impl Default for State {
         let db = Database::default();
         let workspace = Workspace::new(&db, OrdMap::new());
         Self { ws: workspace, db }
+    }
+}
+
+/// A readonly snapshot of the [`State`].
+///
+/// This is often used when you want to do something that doesn't require update
+/// inputs. By using a [`Snapshot`] instead of holding onto the [`State`]
+/// directly you allow other readonly queries to run in parallel.
+#[derive(Debug)]
+struct Snapshot {
+    ws: Workspace,
+    db: salsa::Snapshot<Database>,
+}
+
+impl Snapshot {
+    fn db(&self) -> &dyn crate::Db {
+        &*self.db
+    }
+
+    fn wit_db(&self) -> &dyn wit_compiler::Db {
+        self.db().as_wit()
     }
 }

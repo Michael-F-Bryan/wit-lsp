@@ -1,0 +1,38 @@
+---
+source: crates/wit-compiler/src/queries/metadata.rs
+info:
+  src: "interface i { flags foo {first, second } }"
+  ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (typedef_item (flags_item name: (identifier) cases: (flags_case name: (identifier)) cases: (flags_case name: (identifier))))))))"
+---
+[
+    Node {
+        name: "i",
+        type_name: "wit_compiler::queries::metadata::InterfaceMetadata",
+        file: "interface_flags.wit",
+        range: 0..42,
+        children: [
+            Node {
+                name: "foo",
+                type_name: "wit_compiler::queries::metadata::FlagsMetadata",
+                file: "interface_flags.wit",
+                range: 14..40,
+                children: [
+                    Node {
+                        name: "first",
+                        type_name: "wit_compiler::queries::metadata::FlagsCaseMetadata",
+                        file: "interface_flags.wit",
+                        range: 25..30,
+                        children: [],
+                    },
+                    Node {
+                        name: "second",
+                        type_name: "wit_compiler::queries::metadata::FlagsCaseMetadata",
+                        file: "interface_flags.wit",
+                        range: 32..38,
+                        children: [],
+                    },
+                ],
+            },
+        ],
+    },
+]

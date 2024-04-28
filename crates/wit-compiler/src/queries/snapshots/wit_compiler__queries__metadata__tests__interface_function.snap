@@ -1,0 +1,23 @@
+---
+source: crates/wit-compiler/src/queries/metadata.rs
+info:
+  src: "interface i { x: func(); }"
+  ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (func_item name: (identifier) ty: (func_type params: (param_list)))))))"
+---
+[
+    Node {
+        name: "i",
+        type_name: "wit_compiler::queries::metadata::InterfaceMetadata",
+        file: "interface_function.wit",
+        range: 0..26,
+        children: [
+            Node {
+                name: "x",
+                type_name: "wit_compiler::queries::metadata::FuncItemMetadata",
+                file: "interface_function.wit",
+                range: 14..24,
+                children: [],
+            },
+        ],
+    },
+]

@@ -1,0 +1,464 @@
+---
+source: crates/wit-language-server/src/ops/completion.rs
+expression: result
+---
+{
+    "first": [
+        Completion {
+            text: "as",
+            kind: Keyword,
+        },
+        Completion {
+            text: "bool",
+            kind: Keyword,
+        },
+        Completion {
+            text: "borrow",
+            kind: Keyword,
+        },
+        Completion {
+            text: "char",
+            kind: Keyword,
+        },
+        Completion {
+            text: "constructor",
+            kind: Keyword,
+        },
+        Completion {
+            text: "enum",
+            kind: Keyword,
+        },
+        Completion {
+            text: "export",
+            kind: Keyword,
+        },
+        Completion {
+            text: "flags",
+            kind: Keyword,
+        },
+        Completion {
+            text: "float32",
+            kind: Keyword,
+        },
+        Completion {
+            text: "float64",
+            kind: Keyword,
+        },
+        Completion {
+            text: "func",
+            kind: Keyword,
+        },
+        Completion {
+            text: "import",
+            kind: Keyword,
+        },
+        Completion {
+            text: "include",
+            kind: Keyword,
+        },
+        Completion {
+            text: "interface",
+            kind: Keyword,
+        },
+        Completion {
+            text: "list",
+            kind: Keyword,
+        },
+        Completion {
+            text: "option",
+            kind: Keyword,
+        },
+        Completion {
+            text: "own",
+            kind: Keyword,
+        },
+        Completion {
+            text: "package",
+            kind: Keyword,
+        },
+        Completion {
+            text: "record",
+            kind: Keyword,
+        },
+        Completion {
+            text: "resource",
+            kind: Keyword,
+        },
+        Completion {
+            text: "result",
+            kind: Keyword,
+        },
+        Completion {
+            text: "s16",
+            kind: Keyword,
+        },
+        Completion {
+            text: "s32",
+            kind: Keyword,
+        },
+        Completion {
+            text: "s64",
+            kind: Keyword,
+        },
+        Completion {
+            text: "s8",
+            kind: Keyword,
+        },
+        Completion {
+            text: "static",
+            kind: Keyword,
+        },
+        Completion {
+            text: "string",
+            kind: Keyword,
+        },
+        Completion {
+            text: "tuple",
+            kind: Keyword,
+        },
+        Completion {
+            text: "type",
+            kind: Keyword,
+        },
+        Completion {
+            text: "u16",
+            kind: Keyword,
+        },
+        Completion {
+            text: "u32",
+            kind: Keyword,
+        },
+        Completion {
+            text: "u64",
+            kind: Keyword,
+        },
+        Completion {
+            text: "u8",
+            kind: Keyword,
+        },
+        Completion {
+            text: "use",
+            kind: Keyword,
+        },
+        Completion {
+            text: "variant",
+            kind: Keyword,
+        },
+        Completion {
+            text: "with",
+            kind: Keyword,
+        },
+        Completion {
+            text: "world",
+            kind: Keyword,
+        },
+        Completion {
+            text: "x",
+            kind: TypeName,
+        },
+    ],
+    "second": [
+        Completion {
+            text: "as",
+            kind: Keyword,
+        },
+        Completion {
+            text: "bool",
+            kind: Keyword,
+        },
+        Completion {
+            text: "borrow",
+            kind: Keyword,
+        },
+        Completion {
+            text: "char",
+            kind: Keyword,
+        },
+        Completion {
+            text: "constructor",
+            kind: Keyword,
+        },
+        Completion {
+            text: "enum",
+            kind: Keyword,
+        },
+        Completion {
+            text: "export",
+            kind: Keyword,
+        },
+        Completion {
+            text: "flags",
+            kind: Keyword,
+        },
+        Completion {
+            text: "float32",
+            kind: Keyword,
+        },
+        Completion {
+            text: "float64",
+            kind: Keyword,
+        },
+        Completion {
+            text: "func",
+            kind: Keyword,
+        },
+        Completion {
+            text: "import",
+            kind: Keyword,
+        },
+        Completion {
+            text: "include",
+            kind: Keyword,
+        },
+        Completion {
+            text: "interface",
+            kind: Keyword,
+        },
+        Completion {
+            text: "list",
+            kind: Keyword,
+        },
+        Completion {
+            text: "option",
+            kind: Keyword,
+        },
+        Completion {
+            text: "own",
+            kind: Keyword,
+        },
+        Completion {
+            text: "package",
+            kind: Keyword,
+        },
+        Completion {
+            text: "record",
+            kind: Keyword,
+        },
+        Completion {
+            text: "resource",
+            kind: Keyword,
+        },
+        Completion {
+            text: "result",
+            kind: Keyword,
+        },
+        Completion {
+            text: "s16",
+            kind: Keyword,
+        },
+        Completion {
+            text: "s32",
+            kind: Keyword,
+        },
+        Completion {
+            text: "s64",
+            kind: Keyword,
+        },
+        Completion {
+            text: "s8",
+            kind: Keyword,
+        },
+        Completion {
+            text: "static",
+            kind: Keyword,
+        },
+        Completion {
+            text: "string",
+            kind: Keyword,
+        },
+        Completion {
+            text: "tuple",
+            kind: Keyword,
+        },
+        Completion {
+            text: "type",
+            kind: Keyword,
+        },
+        Completion {
+            text: "u16",
+            kind: Keyword,
+        },
+        Completion {
+            text: "u32",
+            kind: Keyword,
+        },
+        Completion {
+            text: "u64",
+            kind: Keyword,
+        },
+        Completion {
+            text: "u8",
+            kind: Keyword,
+        },
+        Completion {
+            text: "use",
+            kind: Keyword,
+        },
+        Completion {
+            text: "variant",
+            kind: Keyword,
+        },
+        Completion {
+            text: "with",
+            kind: Keyword,
+        },
+        Completion {
+            text: "world",
+            kind: Keyword,
+        },
+        Completion {
+            text: "x",
+            kind: TypeName,
+        },
+    ],
+    "third": [
+        Completion {
+            text: "as",
+            kind: Keyword,
+        },
+        Completion {
+            text: "bool",
+            kind: Keyword,
+        },
+        Completion {
+            text: "borrow",
+            kind: Keyword,
+        },
+        Completion {
+            text: "char",
+            kind: Keyword,
+        },
+        Completion {
+            text: "constructor",
+            kind: Keyword,
+        },
+        Completion {
+            text: "enum",
+            kind: Keyword,
+        },
+        Completion {
+            text: "export",
+            kind: Keyword,
+        },
+        Completion {
+            text: "flags",
+            kind: Keyword,
+        },
+        Completion {
+            text: "float32",
+            kind: Keyword,
+        },
+        Completion {
+            text: "float64",
+            kind: Keyword,
+        },
+        Completion {
+            text: "func",
+            kind: Keyword,
+        },
+        Completion {
+            text: "import",
+            kind: Keyword,
+        },
+        Completion {
+            text: "include",
+            kind: Keyword,
+        },
+        Completion {
+            text: "interface",
+            kind: Keyword,
+        },
+        Completion {
+            text: "list",
+            kind: Keyword,
+        },
+        Completion {
+            text: "option",
+            kind: Keyword,
+        },
+        Completion {
+            text: "own",
+            kind: Keyword,
+        },
+        Completion {
+            text: "package",
+            kind: Keyword,
+        },
+        Completion {
+            text: "record",
+            kind: Keyword,
+        },
+        Completion {
+            text: "resource",
+            kind: Keyword,
+        },
+        Completion {
+            text: "result",
+            kind: Keyword,
+        },
+        Completion {
+            text: "s16",
+            kind: Keyword,
+        },
+        Completion {
+            text: "s32",
+            kind: Keyword,
+        },
+        Completion {
+            text: "s64",
+            kind: Keyword,
+        },
+        Completion {
+            text: "s8",
+            kind: Keyword,
+        },
+        Completion {
+            text: "static",
+            kind: Keyword,
+        },
+        Completion {
+            text: "string",
+            kind: Keyword,
+        },
+        Completion {
+            text: "tuple",
+            kind: Keyword,
+        },
+        Completion {
+            text: "type",
+            kind: Keyword,
+        },
+        Completion {
+            text: "u16",
+            kind: Keyword,
+        },
+        Completion {
+            text: "u32",
+            kind: Keyword,
+        },
+        Completion {
+            text: "u64",
+            kind: Keyword,
+        },
+        Completion {
+            text: "u8",
+            kind: Keyword,
+        },
+        Completion {
+            text: "use",
+            kind: Keyword,
+        },
+        Completion {
+            text: "variant",
+            kind: Keyword,
+        },
+        Completion {
+            text: "with",
+            kind: Keyword,
+        },
+        Completion {
+            text: "world",
+            kind: Keyword,
+        },
+    ],
+}

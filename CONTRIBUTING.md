@@ -7,6 +7,7 @@ This project contains several releasable components,
 - `tree-sitter-wit` - a [Tree Sitter][tree-sitter] parser for [the WIT format][wit]
 - `crates/wit-compiler` - an incremental compiler for the WIT language
 - `crates/wit-language-server` - the actual [Language Server][ls] implementation
+- `crates/wit` - a monolithic command-line tool for end users
 - `plugins/vscode` - an extension for VS Code which uses the language server
 
 It also contains a `crates/xtask` crate for running useful internal commands.

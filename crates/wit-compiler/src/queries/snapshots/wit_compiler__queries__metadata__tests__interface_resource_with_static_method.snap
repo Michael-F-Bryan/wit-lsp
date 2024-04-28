@@ -1,0 +1,31 @@
+---
+source: crates/wit-compiler/src/queries/metadata.rs
+info:
+  src: "interface i { resource foo { method: static func(); } }"
+  ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (typedef_item (resource_item name: (identifier) methods: (resource_method (static_method name: (identifier) (func_type params: (param_list))))))))))"
+---
+[
+    Node {
+        name: "i",
+        type_name: "wit_compiler::queries::metadata::InterfaceMetadata",
+        file: "interface_resource_with_static_method.wit",
+        range: 0..55,
+        children: [
+            Node {
+                name: "foo",
+                type_name: "wit_compiler::queries::metadata::TypeDefinitionMetadata",
+                file: "interface_resource_with_static_method.wit",
+                range: 14..53,
+                children: [
+                    Node {
+                        name: "method",
+                        type_name: "wit_compiler::queries::metadata::StaticMethodMetadata",
+                        file: "interface_resource_with_static_method.wit",
+                        range: 29..51,
+                        children: [],
+                    },
+                ],
+            },
+        ],
+    },
+]

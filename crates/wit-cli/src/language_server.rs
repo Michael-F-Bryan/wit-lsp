@@ -5,7 +5,7 @@ use color_eyre::eyre::Report;
 use tower_lsp::Server;
 
 #[derive(Debug, Clone, Parser)]
-pub struct LanguageServer {
+pub(crate) struct LanguageServer {
     /// Connect to a port that the client is serving on.
     #[clap(short, long, env, group = "mode")]
     connect: Option<SocketAddr>,
@@ -53,7 +53,7 @@ enum Mode {
     Stdio,
 }
 
-async fn serve(mode: Mode) -> Result<(), color_eyre::Report> {
+async fn serve(mode: Mode) -> color_eyre::Result<()> {
     let (service, socket) = wit_language_server::service();
 
     match mode {
