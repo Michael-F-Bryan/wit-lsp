@@ -4,26 +4,19 @@ use im::{OrdMap, Vector};
 
 use crate::{
     access::{
-        AnyFuncItemIndex, EnumIndex, FlagsIndex, FuncItemIndex, InterfaceIndex, RecordIndex,
+        AnyFuncItemIndex, EnumIndex, FlagsIndex, FunctionIndex, InterfaceIndex, RecordIndex,
         ResourceIndex, ScopeIndex, TypeAliasIndex, VariantIndex, WorldIndex,
     },
-    queries::FilePath,
+    queries::{FilePath, PackageId},
     Text,
 };
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Package {
-    pub decl: Option<PackageDeclaration>,
+    pub docs: Option<Text>,
+    pub id: Option<PackageId>,
     pub worlds: OrdMap<WorldIndex, World>,
     pub interfaces: OrdMap<InterfaceIndex, Interface>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PackageDeclaration {
-    pub docs: Option<Text>,
-    pub package: Text,
-    pub path: Vector<Text>,
-    pub version: Option<Text>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -185,7 +178,7 @@ pub enum ItemReferenceKind {
     Flags(FlagsIndex),
     Record(RecordIndex),
     Resource(ResourceIndex),
-    Func(FuncItemIndex),
+    Func(FunctionIndex),
     TypeAlias(TypeAliasIndex),
 }
 
@@ -201,8 +194,8 @@ impl From<TypeAliasIndex> for ItemReferenceKind {
     }
 }
 
-impl From<FuncItemIndex> for ItemReferenceKind {
-    fn from(v: FuncItemIndex) -> Self {
+impl From<FunctionIndex> for ItemReferenceKind {
+    fn from(v: FunctionIndex) -> Self {
         Self::Func(v)
     }
 }

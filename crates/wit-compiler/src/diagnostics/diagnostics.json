@@ -28,5 +28,10 @@
     "type_name": "wit_compiler::diagnostics::MismatchedPackageDeclaration",
     "error_code": "E005",
     "description": "# E005: Mismatched Package Declaration\n\nA directory contains multiple `*.wit` files with a `package` declaration, but\nthe package declarations aren't identical.\n"
+  },
+  {
+    "type_name": "wit_compiler::diagnostics::MultiplePackageDocs",
+    "error_code": "E006",
+    "description": "# E006: Multiple Package Docs\n\nOnly one file is allowed to document a package.\n"
   }
 ]

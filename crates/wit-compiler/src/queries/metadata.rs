@@ -1,17 +1,14 @@
-use std::collections::HashMap;
+use std::{any::TypeId, collections::HashMap};
 
-use im::Vector;
+use im::{OrdMap, Vector};
 use salsa::DebugWithDb;
+use tree_sitter::Point;
 
 use crate::{
-    access::{
-        ConstructorPtr, EnumCasePtr, EnumPtr, FlagsCasePtr, FlagsPtr, FunctionPtr, InterfacePtr,
-        MethodPtr, Pointer, RecordFieldPtr, RecordPtr, ResourcePtr, StaticMethodPtr, TypeAliasPtr,
-        VariantCasePtr, VariantPtr, WorldPtr,
-    },
+    access::*,
     ast::{self, AstNode, HasIdent},
     diagnostics::{Diagnostics, DuplicateName, Location, MultipleConstructors},
-    queries::{Package, SourceFile},
+    queries::{FilePath, Package, SourceFile},
     Db, Text,
 };
 
@@ -21,7 +18,7 @@ use crate::{
 /// emitted.
 #[salsa::tracked]
 #[tracing::instrument(level = "debug", skip_all, fields(dir = %pkg.dir(db).raw_path(db)))]
-pub fn package_items(db: &dyn Db, pkg: Package) -> Vector<TopLevelItemMetadata> {
+pub fn package_items(db: &dyn Db, pkg: Package) -> Metadata {
     let mut items: HashMap<Ident, TopLevelItemMetadata> = HashMap::new();
 
     for file in pkg.files(db) {
@@ -30,7 +27,23 @@ pub fn package_items(db: &dyn Db, pkg: Package) -> Vector<TopLevelItemMetadata> 
         }
     }
 
-    items.into_values().collect()
+    let mut worlds = OrdMap::new();
+    let mut interfaces = OrdMap::new();
+
+    for item in items.values().copied() {
+        match item {
+            TopLevelItemMetadata::World(w) => {
+                let index = w.index(db);
+                worlds.insert(index, w);
+            }
+            TopLevelItemMetadata::Interface(i) => {
+                let index = i.index(db);
+                interfaces.insert(index, i);
+            }
+        }
+    }
+
+    Metadata::new(db, items.into_iter().collect(), worlds, interfaces)
 }
 
 /// Find all the top-level items in a single file.
@@ -41,15 +54,17 @@ pub fn package_items(db: &dyn Db, pkg: Package) -> Vector<TopLevelItemMetadata> 
 #[tracing::instrument(level = "debug", skip_all, fields(file = %file.path(db).raw_path(db)))]
 pub fn file_items(db: &dyn Db, file: SourceFile) -> Vector<TopLevelItemMetadata> {
     let ast = crate::queries::parse(db, file);
-    let ctx = Context {
+    let mut ctx = Context {
         db,
         file,
+        path: file.path(db),
         src: ast.src(db),
+        next_indices: OrdMap::new(),
     };
     let mut items = HashMap::new();
 
     for node in ast.source_file(db).iter_top_level_items() {
-        if let Some(item) = top_level_item_metadata(ctx, node) {
+        if let Some(item) = top_level_item_metadata(&mut ctx, node) {
             push_item(ctx.db, &mut items, item);
         }
     }
@@ -57,15 +72,62 @@ pub fn file_items(db: &dyn Db, file: SourceFile) -> Vector<TopLevelItemMetadata>
     items.into_values().collect()
 }
 
-#[derive(Copy, Clone)]
+#[salsa::tracked]
+pub struct Metadata {
+    pub items_by_name: OrdMap<Ident, TopLevelItemMetadata>,
+    pub worlds: OrdMap<WorldIndex, WorldMetadata>,
+    pub interfaces: OrdMap<InterfaceIndex, InterfaceMetadata>,
+}
+
+impl Metadata {
+    pub fn enclosing_item(self, db: &dyn Db, point: Point) -> Option<ScopeIndex> {
+        self.items_by_name(db)
+            .into_iter()
+            .map(|(_, item)| item)
+            .find_map(|meta| {
+                let location = meta.definition(db);
+                if location.contains(point) {
+                    Some(meta.index(db))
+                } else {
+                    None
+                }
+            })
+    }
+
+    pub fn get_world(self, db: &dyn Db, index: WorldIndex) -> WorldMetadata {
+        self.worlds(db).get(&index).copied().unwrap()
+    }
+
+    pub fn get_interface(self, db: &dyn Db, index: InterfaceIndex) -> InterfaceMetadata {
+        self.interfaces(db).get(&index).copied().unwrap()
+    }
+}
+
+#[derive(Clone)]
 struct Context<'db> {
     db: &'db dyn Db,
+    path: FilePath,
     file: SourceFile,
     src: &'db str,
+    next_indices: OrdMap<TypeId, RawIndex>,
+}
+
+impl<'db> Context<'db> {
+    fn next_index<K: NodeKind + 'static>(&mut self) -> Index<K> {
+        let next_ix = self
+            .next_indices
+            .entry(TypeId::of::<K>())
+            .or_insert(RawIndex::ZERO);
+
+        let index = Index::new(self.path, *next_ix);
+        *next_ix = next_ix.next();
+
+        index
+    }
 }
 
 fn top_level_item_metadata(
-    ctx: Context<'_>,
+    ctx: &mut Context<'_>,
     node: ast::TopLevelItem<'_>,
 ) -> Option<TopLevelItemMetadata> {
     if let Some(interface) = node.interface_item() {
@@ -77,7 +139,10 @@ fn top_level_item_metadata(
     }
 }
 
-fn interface_metadata(ctx: Context<'_>, node: ast::InterfaceItem<'_>) -> Option<InterfaceMetadata> {
+fn interface_metadata(
+    ctx: &mut Context<'_>,
+    node: ast::InterfaceItem<'_>,
+) -> Option<InterfaceMetadata> {
     let name = node.identifier(ctx.src)?;
     let name = Ident::new(ctx.db, name.into());
     let mut items = HashMap::new();
@@ -91,13 +156,13 @@ fn interface_metadata(ctx: Context<'_>, node: ast::InterfaceItem<'_>) -> Option<
     Some(InterfaceMetadata::new(
         ctx.db,
         name,
-        ctx.file,
-        InterfacePtr::for_node(node),
+        ctx.next_index(),
+        InterfacePtr::for_node(ctx.path, node),
         items.into_values().collect(),
     ))
 }
 
-fn world_metadata(ctx: Context<'_>, node: ast::WorldItem<'_>) -> Option<WorldMetadata> {
+fn world_metadata(ctx: &mut Context<'_>, node: ast::WorldItem<'_>) -> Option<WorldMetadata> {
     let name = node.identifier(ctx.src)?;
     let name = Ident::new(ctx.db, name.into());
 
@@ -112,14 +177,14 @@ fn world_metadata(ctx: Context<'_>, node: ast::WorldItem<'_>) -> Option<WorldMet
     Some(WorldMetadata::new(
         ctx.db,
         name,
-        ctx.file,
-        WorldPtr::for_node(node),
+        ctx.next_index(),
+        WorldPtr::for_node(ctx.path, node),
         definitions.into_values().collect(),
     ))
 }
 
 fn interface_item_metadata(
-    ctx: Context<'_>,
+    ctx: &mut Context<'_>,
     node: ast::InterfaceItems<'_>,
 ) -> Option<InterfaceItemMetadata> {
     if let Some(func) = node.func_item() {
@@ -132,7 +197,7 @@ fn interface_item_metadata(
 }
 
 fn typedef_metadata(
-    ctx: Context<'_>,
+    ctx: &mut Context<'_>,
     node: ast::TypedefItem<'_>,
 ) -> Option<TypeDefinitionMetadata> {
     if let Some(node) = node.enum_item() {
@@ -152,7 +217,7 @@ fn typedef_metadata(
     }
 }
 
-fn enum_metadata(ctx: Context<'_>, node: ast::EnumItem<'_>) -> Option<EnumMetadata> {
+fn enum_metadata(ctx: &mut Context<'_>, node: ast::EnumItem<'_>) -> Option<EnumMetadata> {
     let name = node.identifier(ctx.src)?;
     let cases = node
         .iter_cases()
@@ -162,13 +227,13 @@ fn enum_metadata(ctx: Context<'_>, node: ast::EnumItem<'_>) -> Option<EnumMetada
     Some(EnumMetadata::new(
         ctx.db,
         Ident::new(ctx.db, name.into()),
-        ctx.file,
-        EnumPtr::for_node(node),
+        ctx.next_index(),
+        EnumPtr::for_node(ctx.path, node),
         cases,
     ))
 }
 
-fn flags_metadata(ctx: Context<'_>, node: ast::FlagsItem<'_>) -> Option<FlagsMetadata> {
+fn flags_metadata(ctx: &mut Context<'_>, node: ast::FlagsItem<'_>) -> Option<FlagsMetadata> {
     let name = node.identifier(ctx.src)?;
     let cases = node
         .iter_cases()
@@ -178,13 +243,13 @@ fn flags_metadata(ctx: Context<'_>, node: ast::FlagsItem<'_>) -> Option<FlagsMet
     Some(FlagsMetadata::new(
         ctx.db,
         Ident::new(ctx.db, name.into()),
-        ctx.file,
-        FlagsPtr::for_node(node),
+        ctx.next_index(),
+        FlagsPtr::for_node(ctx.path, node),
         cases,
     ))
 }
 
-fn record_metadata(ctx: Context<'_>, node: ast::RecordItem<'_>) -> Option<RecordMetadata> {
+fn record_metadata(ctx: &mut Context<'_>, node: ast::RecordItem<'_>) -> Option<RecordMetadata> {
     let name = node.identifier(ctx.src)?;
     let cases = node
         .iter_fields()
@@ -195,12 +260,12 @@ fn record_metadata(ctx: Context<'_>, node: ast::RecordItem<'_>) -> Option<Record
         ctx.db,
         Ident::new(ctx.db, name.into()),
         ctx.file,
-        RecordPtr::for_node(node),
+        RecordPtr::for_node(ctx.path, node),
         cases,
     ))
 }
 
-fn variant_metadata(ctx: Context<'_>, node: ast::VariantItem<'_>) -> Option<VariantMetadata> {
+fn variant_metadata(ctx: &mut Context<'_>, node: ast::VariantItem<'_>) -> Option<VariantMetadata> {
     let name = node.identifier(ctx.src)?;
     let cases = node
         .iter_cases()
@@ -210,13 +275,16 @@ fn variant_metadata(ctx: Context<'_>, node: ast::VariantItem<'_>) -> Option<Vari
     Some(VariantMetadata::new(
         ctx.db,
         Ident::new(ctx.db, name.into()),
-        ctx.file,
-        VariantPtr::for_node(node),
+        ctx.next_index(),
+        VariantPtr::for_node(ctx.path, node),
         cases,
     ))
 }
 
-fn resource_metadata(ctx: Context<'_>, node: ast::ResourceItem<'_>) -> Option<ResourceMetadata> {
+fn resource_metadata(
+    ctx: &mut Context<'_>,
+    node: ast::ResourceItem<'_>,
+) -> Option<ResourceMetadata> {
     let name = node.identifier(ctx.src)?;
 
     enum AnyMethod {
@@ -247,7 +315,8 @@ fn resource_metadata(ctx: Context<'_>, node: ast::ResourceItem<'_>) -> Option<Re
 
     for method in node.iter_methods() {
         if let Some(c) = method.resource_constructor() {
-            let c = ConstructorMetadata::new(ctx.db, ctx.file, ConstructorPtr::for_node(c));
+            let c =
+                ConstructorMetadata::new(ctx.db, ctx.file, ConstructorPtr::for_node(ctx.path, c));
 
             if let Some(previous_constructor) = &constructor {
                 let diag = MultipleConstructors {
@@ -283,33 +352,36 @@ fn resource_metadata(ctx: Context<'_>, node: ast::ResourceItem<'_>) -> Option<Re
         ctx.db,
         Ident::new(ctx.db, name.into()),
         ctx.file,
-        ResourcePtr::for_node(node),
+        ResourcePtr::for_node(ctx.path, node),
         constructor,
         methods,
         static_methods,
     ))
 }
 
-fn type_alias_metadata(ctx: Context<'_>, node: ast::TypeItem<'_>) -> Option<TypeAliasMetadata> {
+fn type_alias_metadata(
+    ctx: &mut Context<'_>,
+    node: ast::TypeItem<'_>,
+) -> Option<TypeAliasMetadata> {
     simple_item_metadata(ctx, node, TypeAliasMetadata::new)
 }
 
-fn simple_item_metadata<'db, N, Ptr, Meta>(
-    ctx: Context<'db>,
-    node: N,
-    constructor: impl FnOnce(&dyn Db, Ident, SourceFile, Ptr) -> Meta,
-) -> Option<Meta>
+fn simple_item_metadata<'tree, 'db: 'tree, K>(
+    ctx: &mut Context<'db>,
+    node: K::Ast<'tree>,
+    constructor: impl FnOnce(&dyn Db, Ident, Index<K>, Pointer<K>) -> K::Metadata,
+) -> Option<K::Metadata>
 where
-    N: AstNode<'db> + HasIdent + Copy,
-    Ptr: Pointer<Node<'db> = N>,
+    K: NodeKind + 'static,
+    K::Ast<'tree>: AstNode<'tree> + HasIdent + Copy,
 {
     let name = node.identifier(ctx.src)?;
 
     Some(constructor(
         ctx.db,
         Ident::new(ctx.db, name.into()),
-        ctx.file,
-        Ptr::for_node(node),
+        ctx.next_index(),
+        Pointer::for_node(ctx.path, node),
     ))
 }
 
@@ -327,7 +399,7 @@ macro_rules! impl_common {
     ($name:ty) => {
         impl HasDefinition for $name {
             fn definition(&self, db: &dyn Db) -> Location {
-                Location::new(self.file(db).path(db), self.ptr(db).range())
+                self.ptr(db).location()
             }
         }
 
@@ -346,6 +418,15 @@ pub struct PackageMetadata {}
 pub enum TopLevelItemMetadata {
     World(WorldMetadata),
     Interface(InterfaceMetadata),
+}
+
+impl TopLevelItemMetadata {
+    pub fn index(self, db: &dyn Db) -> ScopeIndex {
+        match self {
+            TopLevelItemMetadata::World(w) => w.index(db).into(),
+            TopLevelItemMetadata::Interface(i) => i.index(db).into(),
+        }
+    }
 }
 
 impl HasDefinition for TopLevelItemMetadata {
@@ -384,7 +465,7 @@ impl DebugWithDb<dyn Db> for TopLevelItemMetadata {
 pub struct WorldMetadata {
     #[id]
     pub name: Ident,
-    pub file: SourceFile,
+    pub index: WorldIndex,
     pub ptr: WorldPtr,
     pub definitions: Vector<TypeDefinitionMetadata>,
 }
@@ -395,7 +476,7 @@ impl_common!(WorldMetadata);
 pub struct InterfaceMetadata {
     #[id]
     pub name: Ident,
-    pub file: SourceFile,
+    pub index: InterfaceIndex,
     pub ptr: InterfacePtr,
     pub items: Vector<InterfaceItemMetadata>,
 }
@@ -406,6 +487,22 @@ impl_common!(InterfaceMetadata);
 pub enum InterfaceItemMetadata {
     Func(FuncItemMetadata),
     Type(TypeDefinitionMetadata),
+}
+
+impl InterfaceItemMetadata {
+    pub fn as_func(self) -> Option<FuncItemMetadata> {
+        match self {
+            Self::Func(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub fn as_type(self) -> Option<TypeDefinitionMetadata> {
+        match self {
+            Self::Type(v) => Some(v),
+            _ => None,
+        }
+    }
 }
 
 impl HasDefinition for InterfaceItemMetadata {
@@ -531,7 +628,7 @@ impl HasDefinition for ConstructorMetadata {
 }
 
 macro_rules! simple_metadata {
-    ($( $name:ident => $ptr:ty ),* $(,)?) => {
+    ($( $name:ident => $kind:ty ),* $(,)?) => {
         $(
             // Note: We use paste to force the macro substitutions to be
             // evaluated before #[salsa::tracked].
@@ -540,8 +637,8 @@ macro_rules! simple_metadata {
                 pub struct [< $name >] {
                     #[id]
                     pub name: Ident,
-                    pub file: SourceFile,
-                    pub ptr: [< $ptr >],
+                    pub index: [< $kind Index >],
+                    pub ptr: [< $kind Ptr >],
                 }
             }
 
@@ -551,15 +648,15 @@ macro_rules! simple_metadata {
 }
 
 simple_metadata! {
-    FuncItemMetadata => FunctionPtr,
-    TypeAliasMetadata => TypeAliasPtr,
-    FieldMetadata => RecordFieldPtr,
-    MethodMetadata => MethodPtr,
-    StaticMethodMetadata => StaticMethodPtr,
+    FuncItemMetadata => Function,
+    TypeAliasMetadata => TypeAlias,
+    FieldMetadata => RecordField,
+    MethodMetadata => Method,
+    StaticMethodMetadata => StaticMethod,
 }
 
 macro_rules! enum_like_metadata {
-    ($( $name:ident => ($ptr:ty, $case:ty) ),* $(,)?) => {
+    ($( $name:ident => ($kind:ty, $case:ty) ),* $(,)?) => {
         $(
             // Note: We use paste to force the macro substitutions to be
             // evaluated before #[salsa::tracked].
@@ -568,8 +665,8 @@ macro_rules! enum_like_metadata {
                 pub struct [< $name Metadata >] {
                     #[id]
                     pub name: Ident,
-                    pub file: SourceFile,
-                    pub ptr: [< $ptr >],
+                    pub index: [< $kind Index >],
+                    pub ptr: [< $kind Ptr >],
                     pub cases: Vector<[< $name CaseMetadata >]>,
                 }
 
@@ -579,8 +676,8 @@ macro_rules! enum_like_metadata {
                 pub struct [< $name CaseMetadata >] {
                     #[id]
                     pub name: Ident,
-                    pub file: SourceFile,
-                    pub ptr: [< $case >],
+                    pub index: [< $case Index >],
+                    pub ptr: [< $case Ptr >],
                 }
 
                 impl_common!([< $name CaseMetadata >]);
@@ -590,9 +687,9 @@ macro_rules! enum_like_metadata {
 }
 
 enum_like_metadata! {
-    Variant => (VariantPtr, VariantCasePtr),
-    Enum => (EnumPtr, EnumCasePtr),
-    Flags => (FlagsPtr, FlagsCasePtr),
+    Variant => (Variant, VariantCase),
+    Enum => (Enum, EnumCase),
+    Flags => (Flags, FlagsCase),
 }
 
 /// An interned identifier.

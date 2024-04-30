@@ -1,93 +1,83 @@
 //! Indirection used when navigating the [`crate::hir`] and
 //! [`crate::queries::Items`].
 
-use std::num::NonZeroU16;
+use std::{marker::PhantomData, num::NonZeroU16};
 
 use crate::{
     ast::AstNode,
-    hir,
-    queries::{
-        FilePath, InterfaceMetadata, ItemDefinitionMetadata, Items, ResourceMetadata, SourceFile,
-        Workspace, WorldMetadata,
-    },
-    Db, Tree,
+    diagnostics::Location,
+    queries::{metadata::HasDefinition, FilePath},
+    Tree,
 };
 
-/// An index optimised for use in item IDs.
-///
-/// You typically won't use this directly, and instead rely on strongly-typed
-/// wrappers.
-///
-/// # Implementation
-///
-/// Under the hood, the index is represented as a [`NonZeroU16`].  We make the
-/// assumption that no file will contain more than `2^16-2` sequential elements
-/// of the same type, so we can get away with only using 2 bytes for our indices
-/// rather than the 8 we would need if we stored a `usize`.
-///
-/// Strongly typed wrappers will sometimes include enums, so by using
-/// [`NonZeroU16`] over [`u16`], we are more likely to benefit from niche
-/// optimisations.
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-#[repr(transparent)]
-pub struct RawIndex(NonZeroU16);
+pub trait NodeKind {
+    type Ast<'tree>: AstNode<'tree>;
+    type Metadata: HasDefinition;
+}
 
-impl RawIndex {
-    const MAX: u16 = u16::MAX - 1;
-    pub const ZERO: RawIndex = RawIndex::new(0);
+macro_rules! node_kinds {
+    ($( $name:ident => ($ast_node:ident, $meta:path)),+ $(,)?) => {
+        paste::paste! {
+            $(
+                #[doc = "A type tag for a [`" $ast_node "`] node."]
+                #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+                pub enum $name {}
 
-    pub(crate) const fn new(raw: usize) -> Self {
-        assert!(raw <= RawIndex::MAX as usize);
-        match NonZeroU16::new(raw as u16 + 1) {
-            Some(raw) => RawIndex(raw),
-            None => panic!(),
+                impl NodeKind for $name {
+                    type Ast<'tree> = crate::ast::$ast_node<'tree>;
+                    type Metadata = $meta;
+                }
+
+                pub type [< $name Ptr >] = Pointer<$name>;
+                pub type [< $name Index >] = Index<$name>;
+            )*
+
         }
-    }
-
-    pub const fn as_usize(self) -> usize {
-        self.0.get() as usize - 1
-    }
-}
-
-/// An index that can be used alongside [`GetByIndex`] to access a
-/// [`crate::hir`] item.
-pub trait Index: Copy {
-    type Hir;
-
-    fn from_raw(raw: RawIndex) -> Self;
-    fn raw(self) -> RawIndex;
-}
-
-macro_rules! indices {
-    ($( $name:ident),* $(,)? ) => {
-        $(
-            paste::paste! {
-                #[doc = concat!("The index of a [`crate::hir::", stringify!($name), "`].")]
-                #[derive(Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-                pub struct [< $name "Index" >](RawIndex);
-
-                impl Index for [< $name "Index" >] {
-                    type Hir = hir::$name;
-
-                    fn from_raw(raw: RawIndex) -> Self { Self(raw) }
-
-                    fn raw(self) -> RawIndex { self.0 }
-                }
-
-                impl std::fmt::Debug for [< $name "Index" >] {
-                    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                        write!(f, "{}({})", stringify!([< $name "Index" >]), self.raw().as_usize())
-                    }
-                }
-            }
-        )*
     };
 }
 
-indices! {
-    Enum, Flags, Resource, Variant, FuncItem, TypeAlias, Record, World,
-    Interface, ResourceMethod, StaticResourceMethod,
+node_kinds! {
+    World => (WorldItem, crate::queries::metadata::WorldMetadata),
+    Interface => (InterfaceItem, crate::queries::metadata::InterfaceMetadata),
+    Record => (RecordItem, crate::queries::metadata::RecordMetadata),
+    TypeAlias => (TypeItem, crate::queries::metadata::TypeAliasMetadata),
+    Enum => (EnumItem, crate::queries::metadata::EnumMetadata),
+    Flags => (FlagsItem, crate::queries::metadata::FlagsMetadata),
+    Resource => (ResourceItem, crate::queries::metadata::ResourceMetadata),
+    Variant => (VariantItem, crate::queries::metadata::VariantMetadata),
+    Function => (FuncItem, crate::queries::metadata::FuncItemMetadata),
+    Constructor => (ResourceConstructor, crate::queries::metadata::ConstructorMetadata),
+    Method => (FuncItem, crate::queries::metadata::MethodMetadata),
+    StaticMethod => (StaticMethod, crate::queries::metadata::StaticMethodMetadata),
+    RecordField => (RecordField, crate::queries::metadata::FieldMetadata),
+    VariantCase => (VariantCase, crate::queries::metadata::VariantCaseMetadata),
+    EnumCase => (EnumCase, crate::queries::metadata::EnumCaseMetadata),
+    FlagsCase => (FlagsCase, crate::queries::metadata::FlagsCaseMetadata),
 }
+
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Index<K> {
+    file: FilePath,
+    index: RawIndex,
+    _ty: PhantomData<K>,
+}
+
+impl<K: NodeKind> Index<K> {
+    pub(crate) fn new(file: FilePath, index: RawIndex) -> Self {
+        Index {
+            file,
+            index,
+            _ty: PhantomData,
+        }
+    }
+
+    pub fn file(self) -> FilePath {
+        self.file
+    }
+}
+
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub enum AnyFuncItemIndex {}
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ScopeIndex {
@@ -107,248 +97,84 @@ impl From<WorldIndex> for ScopeIndex {
     }
 }
 
-/// Get the [`crate::ast::AstNode`] that is referred to by this type.
-pub trait GetAstNode {
-    type Node<'tree>: crate::ast::AstNode<'tree>;
+/// An index optimised for use in item IDs.
+///
+/// You typically won't use this directly, and instead rely on strongly-typed
+/// wrappers.
+///
+/// # Implementation
+///
+/// Under the hood, the index is represented as a [`NonZeroU16`].  We make the
+/// assumption that no file will contain more than `2^16-2` sequential elements
+/// of the same type, so we can get away with only using 2 bytes for our indices
+/// rather than the 8 we would need if we stored a `usize`.
+///
+/// Strongly typed wrappers will sometimes include enums, so by using
+/// [`NonZeroU16`] over [`u16`], we are more likely to benefit from niche
+/// optimisations.
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(transparent)]
+pub(crate) struct RawIndex(NonZeroU16);
+
+impl RawIndex {
+    const MAX: u16 = u16::MAX - 1;
+    pub const ZERO: RawIndex = RawIndex::new(0);
+
+    pub(crate) const fn new(raw: usize) -> Self {
+        assert!(raw <= RawIndex::MAX as usize);
+
+        let raw = match (raw as u16).checked_add(1) {
+            Some(raw) => raw,
+            None => panic!(),
+        };
+
+        match NonZeroU16::new(raw) {
+            Some(raw) => RawIndex(raw),
+            None => panic!(),
+        }
+    }
+
+    pub(crate) fn next(self) -> Self {
+        RawIndex::new(self.as_usize().checked_add(1).unwrap())
+    }
+
+    pub const fn as_usize(self) -> usize {
+        self.0.get() as usize - 1
+    }
+}
+
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+pub struct Pointer<K> {
+    location: Location,
+    _ty: PhantomData<K>,
+}
+
+impl<K: NodeKind> Pointer<K> {
+    pub fn for_node(file: FilePath, node: K::Ast<'_>) -> Self {
+        let range = node.range();
+        let location = Location::new(file, range);
+
+        Pointer {
+            location,
+            _ty: PhantomData,
+        }
+    }
+
+    pub fn file(self) -> FilePath {
+        self.location.filename
+    }
+
+    pub fn range(self) -> tree_sitter::Range {
+        self.location.range
+    }
+
+    pub fn location(self) -> crate::diagnostics::Location {
+        self.location
+    }
 
     /// Get the [`crate::ast`] node from the AST [`Tree`].
-    fn ast_node(self, tree: &Tree) -> Self::Node<'_>;
-}
-
-/// A reference to an AST node.
-pub trait Pointer: GetAstNode {
-    fn for_node(node: Self::Node<'_>) -> Self;
-    fn range(self) -> tree_sitter::Range;
-    fn into_any(self) -> AnyPointer;
-}
-
-macro_rules! item_pointers {
-    ($( $name:ident => $ast_node:ident),+ $(,)?) => {
-        paste::paste! {
-            /// A [`Pointer`] that could point to anything.
-            #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-            pub enum AnyPointer {
-                $(
-                    $name([< $name Ptr >]),
-                )*
-            }
-
-            impl AnyPointer {
-                $(
-                    pub fn [< as_ $name:snake >](self) -> Option<[< $name Ptr >]> {
-                        match self {
-                            AnyPointer::$name(ptr) => Some(ptr),
-                            _ => None,
-                        }
-                    }
-                )*
-            }
-
-            $(
-                #[doc = concat!("A strongly-typed reference to a [`crate::ast::", stringify!($ast_node), "`].")]
-                #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-                pub struct [< $name Ptr >](tree_sitter::Range);
-
-                impl GetAstNode for [< $name Ptr >] {
-                    type Node<'tree> = crate::ast::$ast_node<'tree>;
-
-                    fn ast_node(self, tree: &Tree) -> Self::Node<'_> {
-                        tree.find(self.0)
-                    }
-                }
-
-                impl Pointer for [< $name Ptr >] {
-                    fn for_node(node: crate::ast::$ast_node<'_>) -> Self {
-                        [< $name Ptr >](node.syntax().range())
-                    }
-
-                    fn range(self) -> tree_sitter::Range {
-                        self.0
-                    }
-
-                    fn into_any(self) -> AnyPointer {
-                        AnyPointer::$name(self)
-                    }
-                }
-            )*
-        }
-    };
-}
-
-item_pointers! {
-    World => WorldItem,
-    Interface => InterfaceItem,
-    Record => RecordItem,
-    TypeAlias => TypeItem,
-    Enum => EnumItem,
-    Flags => FlagsItem,
-    Resource => ResourceItem,
-    Variant => VariantItem,
-    Function => FuncItem,
-    Constructor => ResourceConstructor,
-    Method => FuncItem,
-    StaticMethod => StaticMethod,
-    RecordField => RecordField,
-    VariantCase => VariantCase,
-    EnumCase => EnumCase,
-    FlagsCase => FlagsCase,
-}
-
-/// Look up an item's metadata using its [`Index`].
-pub trait GetByIndex<Index> {
-    type Metadata;
-
-    fn get_by_index(&self, db: &dyn Db, index: Index) -> Self::Metadata;
-}
-
-macro_rules! get_metadata {
-    ($( $index:ty => $field:ident => $meta:ty  ),+ $(,)?) => {
-        $(
-            impl GetByIndex<$index> for ItemDefinitionMetadata {
-                type Metadata = $meta;
-
-                #[allow(unused_variables)]
-                fn get_by_index(&self, db: &dyn Db, index: $index) -> Self::Metadata {
-                    let index = index.raw().as_usize();
-                    self.$field[index].clone()
-                }
-            }
-        )*
-    };
-}
-
-get_metadata! {
-    EnumIndex => enums => EnumPtr,
-    FlagsIndex => flags => FlagsPtr,
-    FuncItemIndex => functions => FunctionPtr,
-    RecordIndex => records => RecordPtr,
-    ResourceIndex => resources => ResourceMetadata,
-    TypeAliasIndex => typedefs => TypeAliasPtr,
-    VariantIndex => variants => VariantPtr,
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum AnyFuncItemIndex {
-    TopLevel(InterfaceIndex, FuncItemIndex),
-    Method(ScopeIndex, ResourceIndex, ResourceMethodIndex),
-    StaticMethod(ScopeIndex, ResourceIndex, StaticResourceMethodIndex),
-}
-
-impl AnyFuncItemIndex {
-    /// Get the scope this [`crate::hir::FuncItem`] is defined in.
-    pub fn scope(self) -> ScopeIndex {
-        match self {
-            AnyFuncItemIndex::TopLevel(i, _) => ScopeIndex::Interface(i),
-            AnyFuncItemIndex::Method(scope, _, _) | AnyFuncItemIndex::StaticMethod(scope, _, _) => {
-                scope
-            }
-        }
-    }
-}
-
-impl GetByIndex<WorldIndex> for Items {
-    type Metadata = WorldMetadata;
-
-    fn get_by_index(&self, db: &dyn Db, index: WorldIndex) -> Self::Metadata {
-        let index = index.raw().as_usize();
-        let worlds = self.worlds(db);
-        worlds[index]
-    }
-}
-
-impl GetByIndex<InterfaceIndex> for Items {
-    type Metadata = InterfaceMetadata;
-
-    fn get_by_index(&self, db: &dyn Db, index: InterfaceIndex) -> Self::Metadata {
-        let index = index.raw().as_usize();
-        let interfaces = self.interfaces(db);
-        interfaces[index]
-    }
-}
-
-impl<ScopeIndex> GetByIndex<(FilePath, ScopeIndex)> for Workspace
-where
-    SourceFile: GetByIndex<ScopeIndex>,
-{
-    type Metadata = Option<<SourceFile as GetByIndex<ScopeIndex>>::Metadata>;
-
-    fn get_by_index(&self, db: &dyn Db, (path, ix): (FilePath, ScopeIndex)) -> Self::Metadata {
-        let files = self.files(db);
-        let f = files.get(&path)?;
-        Some(f.get_by_index(db, ix))
-    }
-}
-
-impl<ScopeIndex, ItemIndex> GetByIndex<(FilePath, ScopeIndex, ItemIndex)> for Workspace
-where
-    SourceFile: GetByIndex<(ScopeIndex, ItemIndex)>,
-{
-    type Metadata = Option<<SourceFile as GetByIndex<(ScopeIndex, ItemIndex)>>::Metadata>;
-
-    fn get_by_index(
-        &self,
-        db: &dyn Db,
-        (path, scope, index): (FilePath, ScopeIndex, ItemIndex),
-    ) -> Self::Metadata {
-        let files = self.files(db);
-        files.get(&path).map(|f| f.get_by_index(db, (scope, index)))
-    }
-}
-
-impl<Ix> GetByIndex<Ix> for SourceFile
-where
-    Items: GetByIndex<Ix>,
-{
-    type Metadata = <Items as GetByIndex<Ix>>::Metadata;
-
-    fn get_by_index(&self, db: &dyn Db, index: Ix) -> Self::Metadata {
-        crate::queries::file_items(db, *self).get_by_index(db, index)
-    }
-}
-
-impl<Ix> GetByIndex<(WorldIndex, Ix)> for Items
-where
-    WorldMetadata: GetByIndex<Ix>,
-{
-    type Metadata = <WorldMetadata as GetByIndex<Ix>>::Metadata;
-
-    fn get_by_index(&self, db: &dyn Db, index: (WorldIndex, Ix)) -> Self::Metadata {
-        self.get_by_index(db, index.0).get_by_index(db, index.1)
-    }
-}
-
-impl<Ix> GetByIndex<(InterfaceIndex, Ix)> for Items
-where
-    InterfaceMetadata: GetByIndex<Ix>,
-{
-    type Metadata = <InterfaceMetadata as GetByIndex<Ix>>::Metadata;
-
-    fn get_by_index(&self, db: &dyn Db, index: (InterfaceIndex, Ix)) -> Self::Metadata {
-        self.get_by_index(db, index.0).get_by_index(db, index.1)
-    }
-}
-
-impl<Ix> GetByIndex<Ix> for WorldMetadata
-where
-    ItemDefinitionMetadata: GetByIndex<Ix>,
-{
-    type Metadata = <ItemDefinitionMetadata as GetByIndex<Ix>>::Metadata;
-
-    fn get_by_index(&self, db: &dyn Db, index: Ix) -> Self::Metadata {
-        let items = self.items(db);
-        items.get_by_index(db, index)
-    }
-}
-
-impl<Ix> GetByIndex<Ix> for InterfaceMetadata
-where
-    ItemDefinitionMetadata: GetByIndex<Ix>,
-{
-    type Metadata = <ItemDefinitionMetadata as GetByIndex<Ix>>::Metadata;
-
-    fn get_by_index(&self, db: &dyn Db, index: Ix) -> Self::Metadata {
-        let items = self.items(db);
-        items.get_by_index(db, index)
+    pub fn ast_node(self, tree: &Tree) -> K::Ast<'_> {
+        tree.find(self.location.range)
     }
 }
 
