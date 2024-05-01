@@ -28,7 +28,9 @@ pub fn complete(
         .into_iter()
         .find(|pkg| pkg.contains(db, path))
         .expect("unreachable");
+
     let items = wit_compiler::queries::package_items(db, pkg);
+
     if let Some(index) = items.enclosing_item(db, point) {
         let types = match index {
             ScopeIndex::World(index) => items.get_world(db, index).definitions(db),
@@ -38,7 +40,7 @@ pub fn complete(
                 .into_iter()
                 .filter_map(|item| match item {
                     wit_compiler::queries::metadata::InterfaceItemMetadata::Func(_) => None,
-                    wit_compiler::queries::metadata::InterfaceItemMetadata::Type(_) => todo!(),
+                    wit_compiler::queries::metadata::InterfaceItemMetadata::Type(ty) => Some(ty),
                 })
                 .collect(),
         };
@@ -62,6 +64,8 @@ pub fn complete(
         // to whatever might match what they've written.
         completions.retain(|c| c.text.starts_with(ident));
     }
+
+    // completions.sort_by(|left, right| left.text.cmp(&right.text));
 
     completions
 }

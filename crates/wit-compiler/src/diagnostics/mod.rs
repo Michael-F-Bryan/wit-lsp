@@ -345,7 +345,7 @@ impl Location {
             end_point,
             ..
         } = self.range;
-        start_point <= point && end_point < point
+        start_point <= point && point < end_point
     }
 }
 
