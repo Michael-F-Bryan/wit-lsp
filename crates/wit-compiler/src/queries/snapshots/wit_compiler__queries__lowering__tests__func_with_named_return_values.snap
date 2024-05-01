@@ -5,19 +5,45 @@ info:
   ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (func_item name: (identifier) ty: (func_type params: (param_list) result: (result_list (named_result_list (named_type name: (identifier) ty: (ty (builtins))) (named_type name: (identifier) ty: (ty (option (ty (builtins)))))))))))))"
 ---
 Package {
-    decl: None,
+    docs: None,
+    id: None,
     worlds: {},
     interfaces: {
-        InterfaceIndex(0): Interface {
-            name: i,
+        InterfaceIndex {
+            file: FilePath(
+                Id {
+                    value: 1,
+                },
+            ),
+            index: RawIndex(
+                1,
+            ),
+        }: Interface {
+            name: Ident(
+                Id {
+                    value: 1,
+                },
+            ),
             docs: None,
             items: [
                 Func(
                     FuncItem {
-                        name: f,
-                        index: TopLevel(
-                            InterfaceIndex(0),
-                            FuncItemIndex(0),
+                        name: Ident(
+                            Id {
+                                value: 2,
+                            },
+                        ),
+                        index: Standalone(
+                            FunctionIndex {
+                                file: FilePath(
+                                    Id {
+                                        value: 1,
+                                    },
+                                ),
+                                index: RawIndex(
+                                    1,
+                                ),
+                            },
                         ),
                         docs: None,
                         params: [],

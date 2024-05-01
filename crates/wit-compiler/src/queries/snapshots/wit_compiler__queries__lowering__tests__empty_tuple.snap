@@ -5,22 +5,51 @@ info:
   ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (typedef_item (type_item name: (identifier) ty: (ty (tuple))))))))"
 ---
 Package {
-    decl: None,
+    docs: None,
+    id: None,
     worlds: {},
     interfaces: {
-        InterfaceIndex(0): Interface {
-            name: i,
+        InterfaceIndex {
+            file: FilePath(
+                Id {
+                    value: 1,
+                },
+            ),
+            index: RawIndex(
+                1,
+            ),
+        }: Interface {
+            name: Ident(
+                Id {
+                    value: 1,
+                },
+            ),
             docs: None,
             items: [
-                TypeAlias(
-                    TypeAlias {
-                        name: x,
-                        index: TypeAliasIndex(0),
-                        docs: None,
-                        ty: Tuple(
-                            [],
-                        ),
-                    },
+                Type(
+                    TypeAlias(
+                        TypeAlias {
+                            name: Ident(
+                                Id {
+                                    value: 2,
+                                },
+                            ),
+                            index: TypeAliasIndex {
+                                file: FilePath(
+                                    Id {
+                                        value: 1,
+                                    },
+                                ),
+                                index: RawIndex(
+                                    1,
+                                ),
+                            },
+                            docs: None,
+                            ty: Tuple(
+                                [],
+                            ),
+                        },
+                    ),
                 ),
             ],
         },

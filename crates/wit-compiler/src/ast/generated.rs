@@ -1410,8 +1410,8 @@ impl<'tree> StaticMethod<'tree> {
     pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
-    pub fn func_type(self) -> Option<FuncType<'tree>> {
-        super::children(self.0).filter_map(<FuncType as super::AstNode<'_>>::cast).next()
+    pub fn ty(&self) -> Option<FuncType<'tree>> {
+        self.0.child_by_field_name("ty").and_then(<FuncType as super::AstNode>::cast)
     }
 }
 impl super::HasIdent for StaticMethod<'_> {

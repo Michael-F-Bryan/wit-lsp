@@ -2,7 +2,7 @@
 source: crates/wit-compiler/src/queries/lowering.rs
 info:
   src: "interface i {\n            resource r {\n                method: func();\n                method: static func();\n            }\n        }"
-  ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (typedef_item (resource_item name: (identifier) methods: (resource_method (func_item name: (identifier) ty: (func_type params: (param_list)))) methods: (resource_method (static_method name: (identifier) (func_type params: (param_list))))))))))"
+  ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (typedef_item (resource_item name: (identifier) methods: (resource_method (func_item name: (identifier) ty: (func_type params: (param_list)))) methods: (resource_method (static_method name: (identifier) ty: (func_type params: (param_list))))))))))"
 ---
 [
     DuplicateName(

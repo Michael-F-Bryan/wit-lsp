@@ -61,6 +61,10 @@ impl Workspace {
     pub fn as_codespan_files(self, db: &dyn Db) -> WorkspaceFiles<'_> {
         WorkspaceFiles { db, ws: self }
     }
+
+    pub(crate) fn file(self, db: &dyn Db, path: FilePath) -> SourceFile {
+        self.files(db).get(&path).copied().unwrap()
+    }
 }
 
 fn resolve_id(db: &dyn Db, files: &Vector<SourceFile>) -> Option<PackageId> {

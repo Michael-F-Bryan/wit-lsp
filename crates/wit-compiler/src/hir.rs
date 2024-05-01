@@ -1,5 +1,7 @@
 //! The high-level intermediate representation.
 
+use std::fmt::Debug;
+
 use im::{OrdMap, Vector};
 
 use crate::{
@@ -7,7 +9,7 @@ use crate::{
         AnyFuncItemIndex, EnumIndex, FlagsIndex, FunctionIndex, InterfaceIndex, RecordIndex,
         ResourceIndex, ScopeIndex, TypeAliasIndex, VariantIndex, WorldIndex,
     },
-    queries::{FilePath, PackageId},
+    queries::{metadata::Ident, FilePath, PackageId},
     Text,
 };
 
@@ -21,9 +23,9 @@ pub struct Package {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct World {
-    pub name: Text,
+    pub name: Ident,
     pub docs: Option<Text>,
-    pub items: Vector<WorldItem>,
+    pub type_definitions: Vector<TypeDefinition>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -53,7 +55,7 @@ pub enum ExposableItem {
     Named(ModulePath),
     /// An item that is defined in the [`World`] itself.
     Inline {
-        name: Text,
+        name: Ident,
         value: ExternType,
     },
 }
@@ -66,7 +68,7 @@ pub enum ExternType {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Interface {
-    pub name: Text,
+    pub name: Ident,
     pub docs: Option<Text>,
     pub items: Vector<InterfaceItem>,
 }
@@ -74,18 +76,7 @@ pub struct Interface {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum InterfaceItem {
     Func(FuncItem),
-    Enum(Enum),
-    Flags(Flags),
-    Resource(Resource),
-    TypeAlias(TypeAlias),
-    Variant(Variant),
-    Record(Record),
-}
-
-impl From<Enum> for InterfaceItem {
-    fn from(value: Enum) -> Self {
-        InterfaceItem::Enum(value)
-    }
+    Type(TypeDefinition),
 }
 
 impl From<FuncItem> for InterfaceItem {
@@ -94,39 +85,61 @@ impl From<FuncItem> for InterfaceItem {
     }
 }
 
-impl From<Flags> for InterfaceItem {
+impl From<TypeDefinition> for InterfaceItem {
+    fn from(value: TypeDefinition) -> Self {
+        InterfaceItem::Type(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TypeDefinition {
+    Enum(Enum),
+    Flags(Flags),
+    Resource(Resource),
+    TypeAlias(TypeAlias),
+    Variant(Variant),
+    Record(Record),
+}
+
+impl From<Enum> for TypeDefinition {
+    fn from(value: Enum) -> Self {
+        TypeDefinition::Enum(value)
+    }
+}
+
+impl From<Flags> for TypeDefinition {
     fn from(value: Flags) -> Self {
-        InterfaceItem::Flags(value)
+        TypeDefinition::Flags(value)
     }
 }
 
-impl From<Resource> for InterfaceItem {
+impl From<Resource> for TypeDefinition {
     fn from(value: Resource) -> Self {
-        InterfaceItem::Resource(value)
+        TypeDefinition::Resource(value)
     }
 }
 
-impl From<TypeAlias> for InterfaceItem {
+impl From<TypeAlias> for TypeDefinition {
     fn from(value: TypeAlias) -> Self {
-        InterfaceItem::TypeAlias(value)
+        TypeDefinition::TypeAlias(value)
     }
 }
 
-impl From<Variant> for InterfaceItem {
+impl From<Variant> for TypeDefinition {
     fn from(value: Variant) -> Self {
-        InterfaceItem::Variant(value)
+        TypeDefinition::Variant(value)
     }
 }
 
-impl From<Record> for InterfaceItem {
+impl From<Record> for TypeDefinition {
     fn from(value: Record) -> Self {
-        InterfaceItem::Record(value)
+        TypeDefinition::Record(value)
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FuncItem {
-    pub name: Text,
+    pub name: Ident,
     pub index: AnyFuncItemIndex,
     pub docs: Option<Text>,
     pub params: Vector<Parameter>,
@@ -135,7 +148,8 @@ pub struct FuncItem {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Parameter {
-    pub name: Text,
+    pub name: Ident,
+    pub docs: Option<Text>,
     pub ty: Type,
 }
 
@@ -249,7 +263,7 @@ pub enum Builtin {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Record {
-    pub name: Text,
+    pub name: Ident,
     pub index: RecordIndex,
     pub docs: Option<Text>,
     pub fields: Vector<RecordField>,
@@ -257,14 +271,14 @@ pub struct Record {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RecordField {
-    pub name: Text,
+    pub name: Ident,
     pub docs: Option<Text>,
     pub ty: Type,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Enum {
-    pub name: Text,
+    pub name: Ident,
     pub index: EnumIndex,
     pub docs: Option<Text>,
     pub cases: Vector<EnumCase>,
@@ -272,13 +286,13 @@ pub struct Enum {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EnumCase {
-    pub name: Text,
+    pub name: Ident,
     pub docs: Option<Text>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Flags {
-    pub name: Text,
+    pub name: Ident,
     pub index: FlagsIndex,
     pub docs: Option<Text>,
     pub cases: Vector<FlagsCase>,
@@ -286,13 +300,13 @@ pub struct Flags {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FlagsCase {
-    pub name: Text,
+    pub name: Ident,
     pub docs: Option<Text>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Variant {
-    pub name: Text,
+    pub name: Ident,
     pub index: VariantIndex,
     pub docs: Option<Text>,
     pub cases: Vector<VariantCase>,
@@ -300,14 +314,14 @@ pub struct Variant {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VariantCase {
-    pub name: Text,
+    pub name: Ident,
     pub docs: Option<Text>,
     pub ty: Option<Type>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TypeAlias {
-    pub name: Text,
+    pub name: Ident,
     pub index: TypeAliasIndex,
     pub docs: Option<Text>,
     pub ty: Type,
@@ -315,7 +329,7 @@ pub struct TypeAlias {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Resource {
-    pub name: Text,
+    pub name: Ident,
     pub index: ResourceIndex,
     pub docs: Option<Text>,
     pub constructor: Option<Constructor>,

@@ -5,28 +5,61 @@ info:
   ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (typedef_item (record_item name: (identifier) fields: (record_field name: (identifier) ty: (ty (builtins)))))))))"
 ---
 Package {
-    decl: None,
+    docs: None,
+    id: None,
     worlds: {},
     interfaces: {
-        InterfaceIndex(0): Interface {
-            name: i,
+        InterfaceIndex {
+            file: FilePath(
+                Id {
+                    value: 1,
+                },
+            ),
+            index: RawIndex(
+                1,
+            ),
+        }: Interface {
+            name: Ident(
+                Id {
+                    value: 1,
+                },
+            ),
             docs: None,
             items: [
-                Record(
-                    Record {
-                        name: foo,
-                        index: RecordIndex(0),
-                        docs: None,
-                        fields: [
-                            RecordField {
-                                name: field,
-                                docs: None,
-                                ty: Builtin(
-                                    String,
+                Type(
+                    Record(
+                        Record {
+                            name: Ident(
+                                Id {
+                                    value: 3,
+                                },
+                            ),
+                            index: RecordIndex {
+                                file: FilePath(
+                                    Id {
+                                        value: 1,
+                                    },
+                                ),
+                                index: RawIndex(
+                                    1,
                                 ),
                             },
-                        ],
-                    },
+                            docs: None,
+                            fields: [
+                                RecordField {
+                                    name: Ident(
+                                        Id {
+                                            value: 2,
+                                        },
+                                    ),
+                                    docs: None,
+                                    ty: Builtin(
+                                        String,
+                                    ),
+                                },
+                            ],
+                        },
+                    ),
                 ),
             ],
         },

@@ -363,8 +363,12 @@
           }
         },
         {
-          "type": "SYMBOL",
-          "name": "exported_path"
+          "type": "PREC",
+          "value": 0,
+          "content": {
+            "type": "SYMBOL",
+            "name": "exported_path"
+          }
         }
       ]
     },
@@ -1175,8 +1179,12 @@
           "value": "static"
         },
         {
-          "type": "SYMBOL",
-          "name": "func_type"
+          "type": "FIELD",
+          "name": "ty",
+          "content": {
+            "type": "SYMBOL",
+            "name": "func_type"
+          }
         },
         {
           "type": "STRING",

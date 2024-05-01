@@ -1,7 +1,9 @@
 //! Indirection used when navigating the [`crate::hir`] and
-//! [`crate::queries::Items`].
+//! [`crate::queries::metadata`].
 
-use std::{marker::PhantomData, num::NonZeroU16};
+use std::{fmt::Debug, marker::PhantomData, num::NonZeroU16};
+
+use salsa::DebugWithDb;
 
 use crate::{
     ast::AstNode,
@@ -19,7 +21,7 @@ macro_rules! node_kinds {
     ($( $name:ident => ($ast_node:ident, $meta:path)),+ $(,)?) => {
         paste::paste! {
             $(
-                #[doc = "A type tag for a [`" $ast_node "`] node."]
+                #[doc = "A type tag for a [`crate::ast::" $ast_node "`] node."]
                 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
                 pub enum $name {}
 
@@ -28,10 +30,38 @@ macro_rules! node_kinds {
                     type Metadata = $meta;
                 }
 
+                #[doc = "A [`Pointer`] for a [`" $name "`]."]
                 pub type [< $name Ptr >] = Pointer<$name>;
+
+                #[doc = "An [`Index`] for a [`" $name "`]."]
                 pub type [< $name Index >] = Index<$name>;
             )*
 
+            #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+            pub enum AnyIndex {
+                $(
+                    $name(Index<$name>),
+                )*
+            }
+
+            impl AnyIndex {
+                $(
+                    pub fn [< as_ $name:snake >](self) -> Option<Index<$name>> {
+                        match self {
+                            AnyIndex::$name(ix) => Some(ix),
+                            _ => None,
+                        }
+                    }
+                )*
+            }
+
+            $(
+                impl From<Index<$name>> for AnyIndex {
+                    fn from(value: Index<$name>) -> Self {
+                        AnyIndex::$name(value)
+                    }
+                }
+            )*
         }
     };
 }
@@ -53,9 +83,10 @@ node_kinds! {
     VariantCase => (VariantCase, crate::queries::metadata::VariantCaseMetadata),
     EnumCase => (EnumCase, crate::queries::metadata::EnumCaseMetadata),
     FlagsCase => (FlagsCase, crate::queries::metadata::FlagsCaseMetadata),
+    Export => (ExportItem, crate::queries::metadata::ExportMetadata),
+    Import => (ImportItem, crate::queries::metadata::ImportMetadata),
 }
 
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Index<K> {
     file: FilePath,
     index: RawIndex,
@@ -76,8 +107,75 @@ impl<K: NodeKind> Index<K> {
     }
 }
 
+impl<K> Ord for Index<K> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        let Index { file, index, _ty } = self;
+        file.cmp(&other.file).then(index.cmp(&other.index))
+    }
+}
+
+impl<K> PartialOrd for Index<K> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl<K> Eq for Index<K> {}
+
+impl<K> PartialEq for Index<K> {
+    fn eq(&self, other: &Self) -> bool {
+        let Index { file, index, _ty } = *self;
+        file == other.file && index == other.index
+    }
+}
+
+impl<K> std::hash::Hash for Index<K> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        let Index { file, index, _ty } = self;
+        file.hash(state);
+        index.hash(state);
+    }
+}
+
+impl<K> Clone for Index<K> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<K> Copy for Index<K> {}
+
+impl<K> Debug for Index<K> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let name = std::any::type_name::<K>().split("::").last().unwrap();
+        let index_name = format!("{name}Index");
+
+        let Index { file, index, _ty } = self;
+
+        f.debug_struct(&index_name)
+            .field("file", file)
+            .field("index", index)
+            .finish()
+    }
+}
+
+impl<D: ?Sized, K> DebugWithDb<D> for Index<K> {
+    fn fmt(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+        _db: &D,
+        _include_all_fields: bool,
+    ) -> std::fmt::Result {
+        Debug::fmt(self, f)
+    }
+}
+
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub enum AnyFuncItemIndex {}
+pub enum AnyFuncItemIndex {
+    Standalone(FunctionIndex),
+    Method(MethodIndex),
+    StaticMethod(StaticMethodIndex),
+}
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ScopeIndex {
@@ -143,7 +241,6 @@ impl RawIndex {
     }
 }
 
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub struct Pointer<K> {
     location: Location,
     _ty: PhantomData<K>,
@@ -160,6 +257,13 @@ impl<K: NodeKind> Pointer<K> {
         }
     }
 
+    /// Get the [`crate::ast`] node from the AST [`Tree`].
+    pub fn ast_node(self, tree: &Tree) -> K::Ast<'_> {
+        tree.find(self.location.range)
+    }
+}
+
+impl<K> Pointer<K> {
     pub fn file(self) -> FilePath {
         self.location.filename
     }
@@ -171,10 +275,42 @@ impl<K: NodeKind> Pointer<K> {
     pub fn location(self) -> crate::diagnostics::Location {
         self.location
     }
+}
 
-    /// Get the [`crate::ast`] node from the AST [`Tree`].
-    pub fn ast_node(self, tree: &Tree) -> K::Ast<'_> {
-        tree.find(self.location.range)
+impl<K> Eq for Pointer<K> {}
+
+impl<K> PartialEq for Pointer<K> {
+    fn eq(&self, other: &Self) -> bool {
+        let Pointer { location, _ty } = *self;
+        location == other.location
+    }
+}
+
+impl<K> std::hash::Hash for Pointer<K> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        let Pointer { location, _ty } = self;
+        location.hash(state);
+    }
+}
+
+impl<K> Clone for Pointer<K> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<K> Copy for Pointer<K> {}
+
+impl<K> Debug for Pointer<K> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let name = std::any::type_name::<K>().split("::").last().unwrap();
+        let pointer_name = format!("{name}Ptr");
+
+        let Pointer { location, _ty } = self;
+
+        f.debug_struct(&pointer_name)
+            .field("location", location)
+            .finish()
     }
 }
 

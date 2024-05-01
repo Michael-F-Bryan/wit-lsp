@@ -2,7 +2,7 @@ use tower_lsp::lsp_types::{CompletionItem, CompletionItemKind};
 use wit_compiler::{
     access::ScopeIndex,
     ast::{self, AstNode},
-    queries::{metadata::HasName, SourceFile, Workspace},
+    queries::{metadata::HasIdent, SourceFile, Workspace},
     Db,
 };
 
@@ -45,7 +45,7 @@ pub fn complete(
 
         let names = types
             .iter()
-            .map(|t| t.name(db).raw(db).to_string())
+            .map(|t| t.ident(db).raw(db).to_string())
             .map(Completion::type_name);
         completions.extend(names);
     }

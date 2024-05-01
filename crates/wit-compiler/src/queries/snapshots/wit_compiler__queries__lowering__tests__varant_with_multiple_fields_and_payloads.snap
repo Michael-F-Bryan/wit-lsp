@@ -5,52 +5,93 @@ info:
   ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (typedef_item (variant_item attributes: (attribute (doc_comment (docs))) name: (identifier) cases: (variant_case attributes: (attribute (doc_comment (docs))) name: (identifier) ty: (ty (builtins))) cases: (variant_case attributes: (attribute (doc_comment (docs))) name: (identifier) ty: (ty (builtins))) cases: (variant_case attributes: (attribute (doc_comment (docs))) name: (identifier))))))))"
 ---
 Package {
-    decl: None,
+    docs: None,
+    id: None,
     worlds: {},
     interfaces: {
-        InterfaceIndex(0): Interface {
-            name: i,
+        InterfaceIndex {
+            file: FilePath(
+                Id {
+                    value: 1,
+                },
+            ),
+            index: RawIndex(
+                1,
+            ),
+        }: Interface {
+            name: Ident(
+                Id {
+                    value: 1,
+                },
+            ),
             docs: None,
             items: [
-                Variant(
-                    Variant {
-                        name: v,
-                        index: VariantIndex(0),
-                        docs: Some(
-                            A variant.,
-                        ),
-                        cases: [
-                            VariantCase {
-                                name: first,
-                                docs: Some(
-                                    An integer.,
+                Type(
+                    Variant(
+                        Variant {
+                            name: Ident(
+                                Id {
+                                    value: 5,
+                                },
+                            ),
+                            index: VariantIndex {
+                                file: FilePath(
+                                    Id {
+                                        value: 1,
+                                    },
                                 ),
-                                ty: Some(
-                                    Builtin(
-                                        U32,
+                                index: RawIndex(
+                                    1,
+                                ),
+                            },
+                            docs: Some(
+                                A variant.,
+                            ),
+                            cases: [
+                                VariantCase {
+                                    name: Ident(
+                                        Id {
+                                            value: 2,
+                                        },
                                     ),
-                                ),
-                            },
-                            VariantCase {
-                                name: second,
-                                docs: Some(
-                                    A string.,
-                                ),
-                                ty: Some(
-                                    Builtin(
-                                        String,
+                                    docs: Some(
+                                        An integer.,
                                     ),
-                                ),
-                            },
-                            VariantCase {
-                                name: third,
-                                docs: Some(
-                                    An empty variant.,
-                                ),
-                                ty: None,
-                            },
-                        ],
-                    },
+                                    ty: Some(
+                                        Builtin(
+                                            U32,
+                                        ),
+                                    ),
+                                },
+                                VariantCase {
+                                    name: Ident(
+                                        Id {
+                                            value: 3,
+                                        },
+                                    ),
+                                    docs: Some(
+                                        A string.,
+                                    ),
+                                    ty: Some(
+                                        Builtin(
+                                            String,
+                                        ),
+                                    ),
+                                },
+                                VariantCase {
+                                    name: Ident(
+                                        Id {
+                                            value: 4,
+                                        },
+                                    ),
+                                    docs: Some(
+                                        An empty variant.,
+                                    ),
+                                    ty: None,
+                                },
+                            ],
+                        },
+                    ),
                 ),
             ],
         },

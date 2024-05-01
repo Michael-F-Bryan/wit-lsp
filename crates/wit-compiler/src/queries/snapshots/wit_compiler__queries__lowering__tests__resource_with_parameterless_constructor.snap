@@ -5,27 +5,56 @@ info:
   ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (typedef_item (resource_item name: (identifier) methods: (resource_method (resource_constructor params: (param_list)))))))))"
 ---
 Package {
-    decl: None,
+    docs: None,
+    id: None,
     worlds: {},
     interfaces: {
-        InterfaceIndex(0): Interface {
-            name: i,
+        InterfaceIndex {
+            file: FilePath(
+                Id {
+                    value: 1,
+                },
+            ),
+            index: RawIndex(
+                1,
+            ),
+        }: Interface {
+            name: Ident(
+                Id {
+                    value: 1,
+                },
+            ),
             docs: None,
             items: [
-                Resource(
-                    Resource {
-                        name: r,
-                        index: ResourceIndex(0),
-                        docs: None,
-                        constructor: Some(
-                            Constructor {
-                                docs: None,
-                                params: [],
+                Type(
+                    Resource(
+                        Resource {
+                            name: Ident(
+                                Id {
+                                    value: 2,
+                                },
+                            ),
+                            index: ResourceIndex {
+                                file: FilePath(
+                                    Id {
+                                        value: 1,
+                                    },
+                                ),
+                                index: RawIndex(
+                                    1,
+                                ),
                             },
-                        ),
-                        methods: [],
-                        static_methods: [],
-                    },
+                            docs: None,
+                            constructor: Some(
+                                Constructor {
+                                    docs: None,
+                                    params: [],
+                                },
+                            ),
+                            methods: [],
+                            static_methods: [],
+                        },
+                    ),
                 ),
             ],
         },

@@ -5,22 +5,51 @@ info:
   ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (typedef_item (resource_item name: (identifier)))))))"
 ---
 Package {
-    decl: None,
+    docs: None,
+    id: None,
     worlds: {},
     interfaces: {
-        InterfaceIndex(0): Interface {
-            name: i,
+        InterfaceIndex {
+            file: FilePath(
+                Id {
+                    value: 1,
+                },
+            ),
+            index: RawIndex(
+                1,
+            ),
+        }: Interface {
+            name: Ident(
+                Id {
+                    value: 1,
+                },
+            ),
             docs: None,
             items: [
-                Resource(
-                    Resource {
-                        name: empty,
-                        index: ResourceIndex(0),
-                        docs: None,
-                        constructor: None,
-                        methods: [],
-                        static_methods: [],
-                    },
+                Type(
+                    Resource(
+                        Resource {
+                            name: Ident(
+                                Id {
+                                    value: 2,
+                                },
+                            ),
+                            index: ResourceIndex {
+                                file: FilePath(
+                                    Id {
+                                        value: 1,
+                                    },
+                                ),
+                                index: RawIndex(
+                                    1,
+                                ),
+                            },
+                            docs: None,
+                            constructor: None,
+                            methods: [],
+                            static_methods: [],
+                        },
+                    ),
                 ),
             ],
         },

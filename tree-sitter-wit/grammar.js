@@ -75,7 +75,7 @@ module.exports = grammar({
         ),
         export_item: $ => choice(
             prec(1, $.exported_item),
-            $.exported_path,
+            prec(0, $.exported_path),
         ),
         exported_item: $ => seq("export", field("name", $.identifier), ":", $.extern_type),
         exported_path: $ => seq("export", $.fully_qualified_use_path, ";"),
@@ -183,7 +183,7 @@ module.exports = grammar({
             field("name", $.identifier),
             ":",
             "static",
-            $.func_type,
+            field("ty", $.func_type),
             ";",
         ),
         resource_constructor: $ => seq(

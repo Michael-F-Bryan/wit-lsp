@@ -340,7 +340,11 @@ impl Location {
     }
 
     pub fn contains(&self, point: tree_sitter::Point) -> bool {
-        let Range {start_point, end_point, ..} = self.range;
+        let Range {
+            start_point,
+            end_point,
+            ..
+        } = self.range;
         start_point <= point && end_point < point
     }
 }

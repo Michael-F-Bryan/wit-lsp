@@ -5,20 +5,49 @@ info:
   ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (typedef_item (flags_item name: (identifier)))))))"
 ---
 Package {
-    decl: None,
+    docs: None,
+    id: None,
     worlds: {},
     interfaces: {
-        InterfaceIndex(0): Interface {
-            name: i,
+        InterfaceIndex {
+            file: FilePath(
+                Id {
+                    value: 1,
+                },
+            ),
+            index: RawIndex(
+                1,
+            ),
+        }: Interface {
+            name: Ident(
+                Id {
+                    value: 1,
+                },
+            ),
             docs: None,
             items: [
-                Flags(
-                    Flags {
-                        name: empty,
-                        index: FlagsIndex(0),
-                        docs: None,
-                        cases: [],
-                    },
+                Type(
+                    Flags(
+                        Flags {
+                            name: Ident(
+                                Id {
+                                    value: 2,
+                                },
+                            ),
+                            index: FlagsIndex {
+                                file: FilePath(
+                                    Id {
+                                        value: 1,
+                                    },
+                                ),
+                                index: RawIndex(
+                                    1,
+                                ),
+                            },
+                            docs: None,
+                            cases: [],
+                        },
+                    ),
                 ),
             ],
         },

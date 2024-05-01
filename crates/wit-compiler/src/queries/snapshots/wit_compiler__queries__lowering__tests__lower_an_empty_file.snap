@@ -5,7 +5,8 @@ info:
   ast: (source_file)
 ---
 Package {
-    decl: None,
+    docs: None,
+    id: None,
     worlds: {},
     interfaces: {},
 }

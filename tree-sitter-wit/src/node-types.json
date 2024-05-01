@@ -1051,17 +1051,17 @@
             "named": true
           }
         ]
+      },
+      "ty": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "func_type",
+            "named": true
+          }
+        ]
       }
-    },
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "func_type",
-          "named": true
-        }
-      ]
     }
   },
   {

@@ -5,25 +5,58 @@ info:
   ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (typedef_item (enum_item name: (identifier) cases: (enum_case name: (identifier))))))))"
 ---
 Package {
-    decl: None,
+    docs: None,
+    id: None,
     worlds: {},
     interfaces: {
-        InterfaceIndex(0): Interface {
-            name: i,
+        InterfaceIndex {
+            file: FilePath(
+                Id {
+                    value: 1,
+                },
+            ),
+            index: RawIndex(
+                1,
+            ),
+        }: Interface {
+            name: Ident(
+                Id {
+                    value: 1,
+                },
+            ),
             docs: None,
             items: [
-                Enum(
-                    Enum {
-                        name: foo,
-                        index: EnumIndex(0),
-                        docs: None,
-                        cases: [
-                            EnumCase {
-                                name: first,
-                                docs: None,
+                Type(
+                    Enum(
+                        Enum {
+                            name: Ident(
+                                Id {
+                                    value: 3,
+                                },
+                            ),
+                            index: EnumIndex {
+                                file: FilePath(
+                                    Id {
+                                        value: 1,
+                                    },
+                                ),
+                                index: RawIndex(
+                                    1,
+                                ),
                             },
-                        ],
-                    },
+                            docs: None,
+                            cases: [
+                                EnumCase {
+                                    name: Ident(
+                                        Id {
+                                            value: 2,
+                                        },
+                                    ),
+                                    docs: None,
+                                },
+                            ],
+                        },
+                    ),
                 ),
             ],
         },
