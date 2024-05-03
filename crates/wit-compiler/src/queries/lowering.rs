@@ -158,7 +158,7 @@ pub(crate) fn lower_func_definition(
 #[derive(Copy, Clone)]
 struct Context<'db> {
     db: &'db dyn Db,
-    ws: Workspace,
+    _ws: Workspace,
     file: SourceFile,
     src: &'db str,
     ast: Ast,
@@ -172,7 +172,7 @@ impl<'db> Context<'db> {
 
         Context {
             db,
-            ws,
+            _ws: ws,
             file,
             ast,
             src,

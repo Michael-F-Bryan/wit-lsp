@@ -379,9 +379,10 @@ impl Location {
     }
 }
 
-#[derive(Clone, Debug, serde::Serialize)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct DiagnosticInfo {
     pub type_name: &'static str,
+    pub message: &'static str,
     pub error_code: &'static str,
     pub description: &'static str,
 }
@@ -390,6 +391,7 @@ impl DiagnosticInfo {
     pub fn for_type<T: IntoDiagnostic + 'static>() -> Self {
         DiagnosticInfo {
             type_name: std::any::type_name::<T>(),
+            message: T::MESSAGE,
             error_code: T::ERROR_CODE,
             description: T::VERBOSE_DESCRIPTION,
         }
@@ -409,6 +411,7 @@ mod tests {
         for diag in all_diagnostics() {
             let DiagnosticInfo {
                 type_name,
+                message,
                 error_code,
                 description,
             } = diag;
@@ -420,11 +423,8 @@ mod tests {
             let _: u32 = error_code[1..].parse().unwrap();
 
             let opening_line = description.lines().next().unwrap();
-            let expected = format!("# {error_code}: ");
-            assert!(
-                opening_line.contains(&expected),
-                "Expected {expected:?} in {opening_line:?}"
-            );
+            let expected = format!("# {error_code}: {message}");
+            assert_eq!(opening_line, expected);
 
             match codes.entry(error_code) {
                 std::collections::hash_map::Entry::Occupied(entry) => {

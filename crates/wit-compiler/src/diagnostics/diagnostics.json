@@ -1,42 +1,50 @@
 [
   {
     "type_name": "wit_compiler::diagnostics::DuplicateName",
+    "message": "Name defined multiple times",
     "error_code": "E002",
-    "description": "# E002: Duplicate Name\n\nItems with the same name were defined in the same scope.\n\n"
+    "description": "# E002: Name defined multiple times\n\nItems with the same name were defined in the same scope.\n\n"
   },
   {
     "type_name": "wit_compiler::diagnostics::MultipleConstructors",
+    "message": "Resource has multiple constructors",
     "error_code": "E003",
-    "description": "# E003: Multiple Constructors\n\nA *Resource* contains multiple `constructor()` functions.\n"
+    "description": "# E003: Resource has multiple constructors\n\nA *Resource* contains multiple `constructor()` functions.\n"
   },
   {
     "type_name": "wit_compiler::diagnostics::SyntaxError",
+    "message": "Syntax error",
     "error_code": "E001",
-    "description": "# E001: Syntax Error\n\nThe file contained invalid syntax.\n"
+    "description": "# E001: Syntax error\n\nThe file contained invalid syntax.\n"
   },
   {
     "type_name": "wit_compiler::diagnostics::UnknownName",
+    "message": "Reference to unknown name",
     "error_code": "E004",
-    "description": "# E004: Unknown Name\n\nThe code referenced a name that doesn't exist in the current scope.\n"
+    "description": "# E004: Reference to unknown name\n\nThe code referenced a name that doesn't exist in the current scope.\n"
   },
   {
     "type_name": "wit_compiler::diagnostics::UnknownPackage",
+    "message": "Reference to unknown package",
     "error_code": "E007",
-    "description": "# E007: Unknown Package\n\nThe package you are referring to isn't known by the compiler.\n"
+    "description": "# E007: Reference to unknown package\n\nThe package you are referring to isn't known by the compiler.\n"
   },
   {
     "type_name": "wit_compiler::diagnostics::Bug",
+    "message": "You ran into a bug 🐛",
     "error_code": "E500",
-    "description": "# E500: Bug\n\nThis is a bug.\n"
+    "description": "# E500: You ran into a bug 🐛\n\nThis is a bug.\n"
   },
   {
     "type_name": "wit_compiler::diagnostics::MismatchedPackageDeclaration",
+    "message": "Mismatched package declarations",
     "error_code": "E005",
-    "description": "# E005: Mismatched Package Declaration\n\nA directory contains multiple `*.wit` files with a `package` declaration, but\nthe package declarations aren't identical.\n"
+    "description": "# E005: Mismatched package declarations\n\nA directory contains multiple `*.wit` files with a `package` declaration, but\nthe package declarations aren't identical.\n"
   },
   {
     "type_name": "wit_compiler::diagnostics::MultiplePackageDocs",
+    "message": "Package docs can only be defined in a single file",
     "error_code": "E006",
-    "description": "# E006: Multiple Package Docs\n\nOnly one file is allowed to document a package.\n"
+    "description": "# E006: Package docs can only be defined in a single file\n\nOnly one file is allowed to document a package.\n"
   }
 ]

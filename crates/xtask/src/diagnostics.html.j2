@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnostics Index</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f2f2f2;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .toc {
+            margin-bottom: 20px;
+            border-top: 1px solid #ccc;
+            border-bottom: 1px solid #ccc;
+            padding-top: 10px;
+        }
+        .toc-title {
+            margin-bottom: 10px;
+            font-size: 1.2em;
+            color: #333;
+        }
+        .toc-list {
+            list-style: none;
+            padding-left: 0;
+        }
+        .toc-item {
+            margin-bottom: 5px;
+        }
+        .toc-item a {
+            text-decoration: none;
+            color: #555;
+        }
+        .toc-item a:hover {
+            color: #007bff;
+        }
+        .diagnostic {
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .error-code {
+            font-weight: bold;
+            color: #d9534f;
+        }
+        .description {
+            margin-top: 5px;
+        }
+        .permalink {
+            visibility: hidden;
+            text-decoration: none;
+        }
+        .diagnostic:hover .permalink {
+            visibility: visible;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Diagnostics Index</h1>
+
+        <div class="toc">
+            <h2 class="toc-title">Table of Contents</h2>
+            <ul class="toc-list">
+                {% for diagnostic in diagnostics %}
+                <li class="toc-item">
+                    <a href="#{{ diagnostic.error_code }}">{{ diagnostic.error_code }}: {{ diagnostic.message }}</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        {% for diagnostic in diagnostics %}
+        <div class="diagnostic">
+            <h2 id="{{ diagnostic.error_code }}">
+                <span class="error-code">{{ diagnostic.error_code }}:</span>
+                <span class="message">{{ diagnostic.message }}</span>
+                <a class="permalink" href="#{{ diagnostic.error_code }}" title="Permalink">&#128279;</a>
+            </h2>
+            <div class="description">
+                {{ diagnostic.description }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
