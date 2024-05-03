@@ -1,0 +1,13 @@
+package local:demo;
+
+use wasi:http/types@1.0.0;
+use wasi:http/handler@1.0.0;
+
+interface my-interface {
+  use types.{request, response};
+}
+
+world my-world {
+  import handler;
+  export handler;
+}
