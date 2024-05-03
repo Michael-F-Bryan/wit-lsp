@@ -2,6 +2,7 @@ use std::ops::Range;
 
 use codespan_reporting::files::Error as CodespanError;
 use im::Vector;
+use tree_sitter::Point;
 
 use crate::{queries::SourceFile, Db, Text};
 
@@ -67,11 +68,38 @@ impl LineNumbers {
         }
     }
 
-    pub fn point(&self, byte_index: usize) -> Result<tree_sitter::Point, CodespanError> {
+    pub fn point(&self, byte_index: usize) -> Result<Point, CodespanError> {
         let row = self.line_index(byte_index)?;
         let range = self.line_range(row)?;
-        let column = byte_index - range.start;
+        let column = byte_index - range.start - 1;
 
-        Ok(tree_sitter::Point { row, column })
+        Ok(Point { row, column })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn line_indices() {
+        let src = "\n\n asd \n\n";
+        let line_numbers = LineNumbers::for_text(src.into());
+        let inputs = [(0, 0), (1, 1), (6, 2)];
+
+        for (offset, expected) in inputs {
+            let got = line_numbers.line_index(offset).unwrap();
+            assert_eq!(got, expected);
+        }
+    }
+
+    #[test]
+    fn point() {
+        let src = "\n\n asd \n\n";
+        let line_numbers = LineNumbers::for_text(src.into());
+
+        let got = line_numbers.point(5).unwrap();
+
+        assert_eq!(got, Point { row: 2, column: 2 });
     }
 }
