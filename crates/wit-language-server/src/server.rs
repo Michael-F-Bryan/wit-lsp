@@ -103,9 +103,7 @@ impl tower_lsp::LanguageServer for LanguageServer {
                 selection_range_provider: Some(true.into()),
                 diagnostic_provider: Some(DiagnosticServerCapabilities::Options(
                     DiagnosticOptions {
-                        // TODO: Enable this when we can generate diagnostics
-                        // for the entire workspace.
-                        inter_file_dependencies: false,
+                        inter_file_dependencies: true,
                         ..Default::default()
                     },
                 )),

@@ -64,25 +64,6 @@ impl Diagnostic {
     }
 }
 
-impl Bug {
-    #[track_caller]
-    pub fn new(message: impl Into<Text>, location: Location) -> Self {
-        let message = message.into();
-
-        if cfg!(debug_assertions) {
-            panic!("BUG: {message} at {location:?}");
-        }
-
-        let caller = std::panic::Location::caller();
-
-        Bug {
-            message,
-            location,
-            caller,
-        }
-    }
-}
-
 pub trait IntoDiagnostic: Into<Diagnostic> {
     /// A unique code which can be used when referring to this error.
     const ERROR_CODE: &'static str;
@@ -250,6 +231,25 @@ pub struct Bug {
     pub message: Text,
     pub location: Location,
     pub caller: &'static std::panic::Location<'static>,
+}
+
+impl Bug {
+    #[track_caller]
+    pub fn new(message: impl Into<Text>, location: Location) -> Self {
+        let message = message.into();
+
+        if cfg!(debug_assertions) {
+            panic!("BUG: {message} at {location:?}");
+        }
+
+        let caller = std::panic::Location::caller();
+
+        Bug {
+            message,
+            location,
+            caller,
+        }
+    }
 }
 
 impl IntoDiagnostic for Bug {

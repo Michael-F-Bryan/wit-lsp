@@ -87,7 +87,7 @@ where
             match ret.as_ref() {
                 Ok(r) => {
                     if let Some(err) = r.as_ref().and_then(|r| r.error()) {
-                        tracing::debug!(error = err as &dyn std::error::Error, "Returned an error",);
+                        tracing::debug!(error = err as &dyn std::error::Error, "Returned an error");
                     }
                 }
                 Err(err) => {
@@ -132,12 +132,15 @@ where
     fn call(&mut self, req: tower_lsp::jsonrpc::Request) -> Self::Future {
         let fut = AssertUnwindSafe(self.0.call(req)).catch_unwind();
 
-        Box::pin(async move {
-            match fut.await {
-                Ok(result) => result.map_err(CatchPanicError::Exited),
-                Err(payload) => Err(CatchPanicError::Panic(PanicMessage::new(payload))),
+        Box::pin(
+            async move {
+                match fut.await {
+                    Ok(result) => result.map_err(CatchPanicError::Exited),
+                    Err(payload) => Err(CatchPanicError::Panic(PanicMessage::new(payload))),
+                }
             }
-        })
+            .in_current_span(),
+        )
     }
 }
 
