@@ -14,7 +14,13 @@ pub fn file_diagnostics(
     ws: Workspace,
     file: SourceFile,
 ) -> DocumentDiagnosticReportResult {
-    let diags = wit_compiler::queries::lower::accumulated::<Diagnostics>(db, ws, file);
+    let path = file.path(db);
+    let pkg = wit_compiler::queries::workspace_packages(db, ws)
+        .into_iter()
+        .find(|pkg| pkg.contains(db, path))
+        .expect("unreachable");
+
+    let diags = wit_compiler::queries::lower_package::accumulated::<Diagnostics>(db, ws, pkg);
     let items = diags
         .into_iter()
         .filter_map(|diag| lsp_diagnostic(db, diag, file.path(db).raw_path(db)))

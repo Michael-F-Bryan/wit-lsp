@@ -129,18 +129,33 @@
       "required": true,
       "types": [
         {
-          "type": "exported_item",
-          "named": true
-        },
-        {
-          "type": "exported_path",
+          "type": "exposable",
           "named": true
         }
       ]
     }
   },
   {
-    "type": "exported_item",
+    "type": "exposable",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "exposable_item",
+          "named": true
+        },
+        {
+          "type": "exposable_path",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "exposable_item",
     "named": true,
     "fields": {
       "name": {
@@ -166,7 +181,7 @@
     }
   },
   {
-    "type": "exported_path",
+    "type": "exposable_path",
     "named": true,
     "fields": {},
     "children": {
@@ -269,22 +284,22 @@
     "type": "fully_qualified_package_name",
     "named": true,
     "fields": {
+      "namespace": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "package_namespace",
+            "named": true
+          }
+        ]
+      },
       "package": {
         "multiple": false,
         "required": true,
         "types": [
           {
             "type": "package_name",
-            "named": true
-          }
-        ]
-      },
-      "path": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "package_path",
             "named": true
           }
         ]
@@ -305,22 +320,32 @@
     "type": "fully_qualified_use_path",
     "named": true,
     "fields": {
+      "item_name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "namespace": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "package_namespace",
+            "named": true
+          }
+        ]
+      },
       "package": {
         "multiple": false,
         "required": true,
         "types": [
           {
             "type": "package_name",
-            "named": true
-          }
-        ]
-      },
-      "path": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "package_path",
             "named": true
           }
         ]
@@ -427,52 +452,7 @@
       "required": true,
       "types": [
         {
-          "type": "imported_item",
-          "named": true
-        },
-        {
-          "type": "imported_path",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "imported_item",
-    "named": true,
-    "fields": {
-      "name": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "extern_type",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "imported_path",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "use_path",
+          "type": "exposable",
           "named": true
         }
       ]
@@ -757,11 +737,11 @@
     }
   },
   {
-    "type": "package_path",
+    "type": "package_namespace",
     "named": true,
     "fields": {},
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
         {
@@ -1051,17 +1031,17 @@
             "named": true
           }
         ]
+      },
+      "ty": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "func_type",
+            "named": true
+          }
+        ]
       }
-    },
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "func_type",
-          "named": true
-        }
-      ]
     }
   },
   {

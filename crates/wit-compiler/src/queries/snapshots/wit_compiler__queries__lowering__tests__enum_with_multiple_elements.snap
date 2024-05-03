@@ -5,37 +5,74 @@ info:
   ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (typedef_item (enum_item attributes: (attribute (doc_comment (docs))) name: (identifier) cases: (enum_case attributes: (attribute (doc_comment (docs))) name: (identifier)) cases: (enum_case attributes: (attribute (doc_comment (docs))) attributes: (attribute (doc_comment (docs))) attributes: (attribute (doc_comment (docs))) name: (identifier))))))))"
 ---
 Package {
-    decl: None,
+    docs: None,
+    id: None,
     worlds: {},
     interfaces: {
-        InterfaceIndex(0): Interface {
-            name: i,
+        InterfaceIndex {
+            file: FilePath(
+                Id {
+                    value: 1,
+                },
+            ),
+            index: RawIndex(
+                1,
+            ),
+        }: Interface {
+            name: Ident(
+                Id {
+                    value: 1,
+                },
+            ),
             docs: None,
             items: [
-                Enum(
-                    Enum {
-                        name: foo,
-                        index: EnumIndex(0),
-                        docs: Some(
-                            This is an enum.,
-                        ),
-                        cases: [
-                            EnumCase {
-                                name: first,
-                                docs: Some(
-                                    first case.,
+                Type(
+                    Enum(
+                        Enum {
+                            name: Ident(
+                                Id {
+                                    value: 4,
+                                },
+                            ),
+                            index: EnumIndex {
+                                file: FilePath(
+                                    Id {
+                                        value: 1,
+                                    },
+                                ),
+                                index: RawIndex(
+                                    1,
                                 ),
                             },
-                            EnumCase {
-                                name: second,
-                                docs: Some(
-                                    Second case.
-                                    and another
-                                    doc-comment.,
-                                ),
-                            },
-                        ],
-                    },
+                            docs: Some(
+                                This is an enum.,
+                            ),
+                            cases: [
+                                EnumCase {
+                                    name: Ident(
+                                        Id {
+                                            value: 2,
+                                        },
+                                    ),
+                                    docs: Some(
+                                        first case.,
+                                    ),
+                                },
+                                EnumCase {
+                                    name: Ident(
+                                        Id {
+                                            value: 3,
+                                        },
+                                    ),
+                                    docs: Some(
+                                        Second case.
+                                        and another
+                                        doc-comment.,
+                                    ),
+                                },
+                            ],
+                        },
+                    ),
                 ),
             ],
         },

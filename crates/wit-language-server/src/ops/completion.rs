@@ -2,13 +2,13 @@ use tower_lsp::lsp_types::{CompletionItem, CompletionItemKind};
 use wit_compiler::{
     access::ScopeIndex,
     ast::{self, AstNode},
-    queries::{SourceFile, Workspace},
+    queries::{metadata::HasIdent, SourceFile, Workspace},
     Db,
 };
 
 pub fn complete(
     db: &dyn Db,
-    _ws: Workspace,
+    ws: Workspace,
     file: SourceFile,
     point: tree_sitter::Point,
 ) -> Vec<Completion> {
@@ -23,17 +23,33 @@ pub fn complete(
 
     // Now, we do the hard job of figuring out which identifiers are in scope.
     // FIXME: This doesn't take imported items into account
-    let items = wit_compiler::queries::file_items(db, file);
+    let path = file.path(db);
+    let pkg = wit_compiler::queries::workspace_packages(db, ws)
+        .into_iter()
+        .find(|pkg| pkg.contains(db, path))
+        .expect("unreachable");
+
+    let items = wit_compiler::queries::package_items(db, pkg);
+
     if let Some(index) = items.enclosing_item(db, point) {
         let types = match index {
-            ScopeIndex::World(index) => items.get_world(db, index).items(db),
-            ScopeIndex::Interface(index) => items.get_interface(db, index).items(db),
+            ScopeIndex::World(index) => items.get_world(db, index).definitions(db),
+            ScopeIndex::Interface(index) => items
+                .get_interface(db, index)
+                .items(db)
+                .into_iter()
+                .filter_map(|item| match item {
+                    wit_compiler::queries::metadata::InterfaceItemMetadata::Func(_) => None,
+                    wit_compiler::queries::metadata::InterfaceItemMetadata::Type(ty) => Some(ty),
+                })
+                .collect(),
         };
 
-        completions.extend(types.names().map(|name| Completion {
-            text: name.to_string(),
-            kind: CompletionKind::TypeName,
-        }));
+        let names = types
+            .iter()
+            .map(|t| t.ident(db).raw(db).to_string())
+            .map(Completion::type_name);
+        completions.extend(names);
     }
 
     let ast = wit_compiler::queries::parse(db, file);
@@ -49,6 +65,8 @@ pub fn complete(
         completions.retain(|c| c.text.starts_with(ident));
     }
 
+    // completions.sort_by(|left, right| left.text.cmp(&right.text));
+
     completions
 }
 
@@ -56,6 +74,19 @@ pub fn complete(
 pub struct Completion {
     pub text: String,
     pub kind: CompletionKind,
+}
+
+impl Completion {
+    pub fn new(text: impl Into<String>, kind: CompletionKind) -> Self {
+        Self {
+            text: text.into(),
+            kind,
+        }
+    }
+
+    fn type_name(text: impl Into<String>) -> Self {
+        Completion::new(text, CompletionKind::TypeName)
+    }
 }
 
 impl From<Completion> for CompletionItem {

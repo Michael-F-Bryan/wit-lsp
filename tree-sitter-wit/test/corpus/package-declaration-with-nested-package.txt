@@ -1,8 +1,9 @@
-=============================
-Package Declaration with path
-=============================
+=======================================
+Package Declaration with nested package
+:skip
+=======================================
 
-package local:path/to/demo;
+package wasi:io:some/nested/package;
 
 ---
 

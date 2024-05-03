@@ -1,12 +1,15 @@
 use clap::Parser;
 use clap_stdin::{FileOrStdin, Source};
-use codespan_reporting::term::termcolor::ColorChoice;
+use codespan_reporting::{
+    diagnostic::{Diagnostic as Diag, Label},
+    term::termcolor::ColorChoice,
+};
 use im::OrdMap;
 use wit_compiler::{
-    diagnostics::Diagnostics,
+    diagnostics::{Diagnostic, Diagnostics},
     queries::{FilePath, SourceFile, Workspace},
     traverse::Cursor,
-    Compiler, Text,
+    Compiler, Db, Text,
 };
 
 use crate::Format;
@@ -47,22 +50,36 @@ impl Parse {
 
         let ws = Workspace::new(&db, OrdMap::unit(file.path(&db), file));
         let mut stderr = codespan_reporting::term::termcolor::StandardStream::stderr(color);
-        crate::print_diagnostics(&mut stderr, &db, ws, &diags)?;
 
         let tree = ast.tree(&db);
 
         match format {
-            Format::Text => println!("{:#}", tree.root_node()),
-            Format::Json => print_json_ast(tree, &input)?,
+            Format::Text => {
+                crate::print_diagnostics(&mut stderr, &db, ws, &diags)?;
+                println!("{:#}", tree.root_node())
+            }
+            Format::Json => print_json(&db, tree, &diags, &input)?,
         }
 
         Ok(())
     }
 }
 
-fn print_json_ast(tree: &tree_sitter::Tree, src: &str) -> color_eyre::Result<()> {
-    let lowered = lower_tree(tree.root_node(), src);
-    let serialized = serde_json::to_string_pretty(&lowered)?;
+fn print_json(
+    db: &dyn Db,
+    tree: &tree_sitter::Tree,
+    diags: &[Diagnostic],
+    src: &str,
+) -> color_eyre::Result<()> {
+    let ast = lower_tree(tree.root_node(), src);
+    let diagnostics = diags
+        .iter()
+        .map(|d| d.as_diagnostic())
+        .map(|d| map_diagnostic(db, d))
+        .collect();
+
+    let doc = Document { ast, diagnostics };
+    let serialized = serde_json::to_string_pretty(&doc)?;
     println!("{serialized}");
     Ok(())
 }
@@ -81,7 +98,7 @@ fn build_node<'a>(cursor: &mut tree_sitter::TreeCursor<'a>, src: &'a str) -> Nod
     if node.child_count() == 0 {
         // It's a token node (leaf node)
         Node {
-            kind,
+            grammar_rule: kind,
             location: range,
             name,
             inner: NodeKind::Token {
@@ -103,7 +120,7 @@ fn build_node<'a>(cursor: &mut tree_sitter::TreeCursor<'a>, src: &'a str) -> Nod
         }
 
         Node {
-            kind,
+            grammar_rule: kind,
             location: range,
             name,
             inner: NodeKind::NonTerminal { children },
@@ -112,22 +129,67 @@ fn build_node<'a>(cursor: &mut tree_sitter::TreeCursor<'a>, src: &'a str) -> Nod
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
+struct Document<'a> {
+    diagnostics: Vec<codespan_reporting::diagnostic::Diagnostic<String>>,
+    ast: Node<'a>,
+}
+
+fn map_diagnostic(db: &dyn Db, diag: Diag<FilePath>) -> Diag<String> {
+    let Diag {
+        severity,
+        code,
+        message,
+        labels,
+        notes,
+    } = diag;
+
+    Diag {
+        severity,
+        code,
+        message,
+        labels: labels
+            .into_iter()
+            .map(|label| map_label(db, label))
+            .collect(),
+        notes,
+    }
+}
+
+fn map_label(db: &dyn Db, label: Label<FilePath>) -> Label<String> {
+    let Label {
+        style,
+        file_id,
+        range,
+        message,
+    } = label;
+
+    Label {
+        style,
+        file_id: file_id.raw_path(db).to_string(),
+        range,
+        message,
+    }
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "kebab-case")]
 struct Node<'a> {
     #[serde(flatten)]
     inner: NodeKind<'a>,
-    kind: &'a str,
+    grammar_rule: &'a str,
     location: Range,
     name: Option<&'a str>,
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
-#[serde(tag = "type")]
+#[serde(tag = "type", rename_all = "kebab-case")]
 enum NodeKind<'a> {
     Token { value: &'a str },
     NonTerminal { children: Vec<Node<'a>> },
 }
 
 #[derive(Clone, Copy, Debug, serde::Serialize)]
+#[serde(rename_all = "kebab-case")]
 struct Range {
     start_byte: usize,
     end_byte: usize,
@@ -153,6 +215,7 @@ impl From<tree_sitter::Range> for Range {
 }
 
 #[derive(Clone, Copy, Debug, serde::Serialize)]
+#[serde(rename_all = "kebab-case")]
 struct Point {
     row: usize,
     column: usize,

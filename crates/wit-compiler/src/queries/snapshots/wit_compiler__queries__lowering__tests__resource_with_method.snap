@@ -5,57 +5,105 @@ info:
   ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (typedef_item (resource_item name: (identifier) methods: (resource_method (func_item name: (identifier) ty: (func_type params: (param_list params: (named_type name: (identifier) ty: (ty (builtins))) params: (named_type name: (identifier) ty: (ty (builtins)))) result: (result_list (ty (builtins))))))))))))"
 ---
 Package {
-    decl: None,
+    docs: None,
+    id: None,
     worlds: {},
     interfaces: {
-        InterfaceIndex(0): Interface {
-            name: i,
+        InterfaceIndex {
+            file: FilePath(
+                Id {
+                    value: 1,
+                },
+            ),
+            index: RawIndex(
+                1,
+            ),
+        }: Interface {
+            name: Ident(
+                Id {
+                    value: 1,
+                },
+            ),
             docs: None,
             items: [
-                Resource(
-                    Resource {
-                        name: r,
-                        index: ResourceIndex(0),
-                        docs: None,
-                        constructor: None,
-                        methods: [
-                            ResourceMethod(
-                                FuncItem {
-                                    name: method,
-                                    index: Method(
-                                        Interface(
-                                            InterfaceIndex(0),
-                                        ),
-                                        ResourceIndex(0),
-                                        ResourceMethodIndex(0),
-                                    ),
-                                    docs: None,
-                                    params: [
-                                        Parameter {
-                                            name: arg1,
-                                            ty: Builtin(
-                                                String,
-                                            ),
-                                        },
-                                        Parameter {
-                                            name: arg2,
-                                            ty: Builtin(
-                                                Boolean,
-                                            ),
-                                        },
-                                    ],
-                                    return_value: Some(
-                                        Single(
-                                            Builtin(
-                                                U32,
-                                            ),
-                                        ),
-                                    ),
+                Type(
+                    Resource(
+                        Resource {
+                            name: Ident(
+                                Id {
+                                    value: 3,
                                 },
                             ),
-                        ],
-                        static_methods: [],
-                    },
+                            index: ResourceIndex {
+                                file: FilePath(
+                                    Id {
+                                        value: 1,
+                                    },
+                                ),
+                                index: RawIndex(
+                                    1,
+                                ),
+                            },
+                            docs: None,
+                            constructor: None,
+                            methods: [
+                                ResourceMethod(
+                                    FuncItem {
+                                        name: Ident(
+                                            Id {
+                                                value: 2,
+                                            },
+                                        ),
+                                        index: Method(
+                                            MethodIndex {
+                                                file: FilePath(
+                                                    Id {
+                                                        value: 1,
+                                                    },
+                                                ),
+                                                index: RawIndex(
+                                                    1,
+                                                ),
+                                            },
+                                        ),
+                                        docs: None,
+                                        params: [
+                                            Parameter {
+                                                name: Ident(
+                                                    Id {
+                                                        value: 4,
+                                                    },
+                                                ),
+                                                docs: None,
+                                                ty: Builtin(
+                                                    String,
+                                                ),
+                                            },
+                                            Parameter {
+                                                name: Ident(
+                                                    Id {
+                                                        value: 5,
+                                                    },
+                                                ),
+                                                docs: None,
+                                                ty: Builtin(
+                                                    Boolean,
+                                                ),
+                                            },
+                                        ],
+                                        return_value: Some(
+                                            Single(
+                                                Builtin(
+                                                    U32,
+                                                ),
+                                            ),
+                                        ),
+                                    },
+                                ),
+                            ],
+                            static_methods: [],
+                        },
+                    ),
                 ),
             ],
         },

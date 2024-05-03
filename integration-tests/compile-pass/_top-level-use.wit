@@ -1,8 +1,3 @@
-=============
-Top Level Use
-:skip
-=============
-
 package local:demo;
 
 use wasi:http/types@1.0.0;
@@ -16,7 +11,3 @@ world my-world {
   import handler;
   export handler;
 }
-
----
-
-

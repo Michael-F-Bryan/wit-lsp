@@ -1,0 +1,51 @@
+---
+source: crates/wit-compiler/src/queries/lowering.rs
+info:
+  src: "interface i { f: func(a: u32, a: u32); }"
+  ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (func_item name: (identifier) ty: (func_type params: (param_list params: (named_type name: (identifier) ty: (ty (builtins))) params: (named_type name: (identifier) ty: (ty (builtins))))))))))"
+---
+[
+    DuplicateName(
+        DuplicateName {
+            name: a,
+            location: Location {
+                filename: FilePath(
+                    Id {
+                        value: 1,
+                    },
+                ),
+                range: Range {
+                    start_byte: 30,
+                    end_byte: 36,
+                    start_point: Point {
+                        row: 0,
+                        column: 30,
+                    },
+                    end_point: Point {
+                        row: 0,
+                        column: 36,
+                    },
+                },
+            },
+            original_definition: Location {
+                filename: FilePath(
+                    Id {
+                        value: 1,
+                    },
+                ),
+                range: Range {
+                    start_byte: 22,
+                    end_byte: 28,
+                    start_point: Point {
+                        row: 0,
+                        column: 22,
+                    },
+                    end_point: Point {
+                        row: 0,
+                        column: 28,
+                    },
+                },
+            },
+        },
+    ),
+]

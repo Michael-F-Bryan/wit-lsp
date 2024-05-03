@@ -1,17 +1,227 @@
 //! Indirection used when navigating the [`crate::hir`] and
-//! [`crate::queries::Items`].
+//! [`crate::queries::metadata`].
 
-use std::num::NonZeroU16;
+use std::{fmt::Debug, marker::PhantomData, num::NonZeroU16};
+
+use salsa::DebugWithDb;
 
 use crate::{
     ast::AstNode,
-    hir,
-    queries::{
-        FilePath, InterfaceMetadata, ItemDefinitionMetadata, Items, ResourceMetadata, SourceFile,
-        Workspace, WorldMetadata,
-    },
-    Db, Tree,
+    diagnostics::Location,
+    queries::{metadata::HasDefinition, FilePath},
+    Tree,
 };
+
+pub trait NodeKind {
+    type Ast<'tree>: AstNode<'tree>;
+    type Metadata: HasDefinition;
+}
+
+macro_rules! node_kinds {
+    ($( $name:ident => ($ast_node:ident, $meta:path)),+ $(,)?) => {
+        paste::paste! {
+            $(
+                #[doc = "A type tag for a [`crate::ast::" $ast_node "`] node."]
+                #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+                pub enum $name {}
+
+                impl NodeKind for $name {
+                    type Ast<'tree> = crate::ast::$ast_node<'tree>;
+                    type Metadata = $meta;
+                }
+
+                #[doc = "A [`Pointer`] for a [`" $name "`]."]
+                pub type [< $name Ptr >] = Pointer<$name>;
+
+                #[doc = "An [`Index`] for a [`" $name "`]."]
+                pub type [< $name Index >] = Index<$name>;
+            )*
+
+            #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+            pub enum AnyIndex {
+                $(
+                    $name(Index<$name>),
+                )*
+            }
+
+            impl AnyIndex {
+                pub fn file(self) -> FilePath {
+                    match self {
+                        $(
+                            AnyIndex::$name(ix) => ix.file(),
+                        )*
+                    }
+                }
+
+                $(
+                    pub fn [< as_ $name:snake >](self) -> Option<Index<$name>> {
+                        match self {
+                            AnyIndex::$name(ix) => Some(ix),
+                            _ => None,
+                        }
+                    }
+                )*
+            }
+
+            $(
+                impl From<Index<$name>> for AnyIndex {
+                    fn from(value: Index<$name>) -> Self {
+                        AnyIndex::$name(value)
+                    }
+                }
+            )*
+        }
+    };
+}
+
+node_kinds! {
+    World => (WorldItem, crate::queries::metadata::WorldMetadata),
+    Interface => (InterfaceItem, crate::queries::metadata::InterfaceMetadata),
+    Record => (RecordItem, crate::queries::metadata::RecordMetadata),
+    TypeAlias => (TypeItem, crate::queries::metadata::TypeAliasMetadata),
+    Enum => (EnumItem, crate::queries::metadata::EnumMetadata),
+    Flags => (FlagsItem, crate::queries::metadata::FlagsMetadata),
+    Resource => (ResourceItem, crate::queries::metadata::ResourceMetadata),
+    Variant => (VariantItem, crate::queries::metadata::VariantMetadata),
+    Function => (FuncItem, crate::queries::metadata::FuncItemMetadata),
+    Constructor => (ResourceConstructor, crate::queries::metadata::ConstructorMetadata),
+    Method => (FuncItem, crate::queries::metadata::MethodMetadata),
+    StaticMethod => (StaticMethod, crate::queries::metadata::StaticMethodMetadata),
+    RecordField => (RecordField, crate::queries::metadata::FieldMetadata),
+    VariantCase => (VariantCase, crate::queries::metadata::VariantCaseMetadata),
+    EnumCase => (EnumCase, crate::queries::metadata::EnumCaseMetadata),
+    FlagsCase => (FlagsCase, crate::queries::metadata::FlagsCaseMetadata),
+    Export => (ExportItem, crate::queries::metadata::ExportMetadata),
+    Import => (ImportItem, crate::queries::metadata::ImportMetadata),
+}
+
+/// A unique identifier that can be used to refer to an element in a particular
+/// file.
+pub struct Index<K> {
+    file: FilePath,
+    index: RawIndex,
+    _ty: PhantomData<K>,
+}
+
+impl<K: NodeKind> Index<K> {
+    pub(crate) fn new(file: FilePath, index: RawIndex) -> Self {
+        Index {
+            file,
+            index,
+            _ty: PhantomData,
+        }
+    }
+
+    pub fn file(self) -> FilePath {
+        self.file
+    }
+}
+
+impl<K> Ord for Index<K> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        let Index { file, index, _ty } = self;
+        file.cmp(&other.file).then(index.cmp(&other.index))
+    }
+}
+
+impl<K> PartialOrd for Index<K> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl<K> Eq for Index<K> {}
+
+impl<K> PartialEq for Index<K> {
+    fn eq(&self, other: &Self) -> bool {
+        let Index { file, index, _ty } = *self;
+        file == other.file && index == other.index
+    }
+}
+
+impl<K> std::hash::Hash for Index<K> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        let Index { file, index, _ty } = self;
+        file.hash(state);
+        index.hash(state);
+    }
+}
+
+impl<K> Clone for Index<K> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<K> Copy for Index<K> {}
+
+impl<K> Debug for Index<K> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let name = std::any::type_name::<K>().split("::").last().unwrap();
+        let index_name = format!("{name}Index");
+
+        let Index { file, index, _ty } = self;
+
+        f.debug_struct(&index_name)
+            .field("file", file)
+            .field("index", index)
+            .finish()
+    }
+}
+
+impl<D: ?Sized, K> DebugWithDb<D> for Index<K> {
+    fn fmt(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+        _db: &D,
+        _include_all_fields: bool,
+    ) -> std::fmt::Result {
+        Debug::fmt(self, f)
+    }
+}
+
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub enum AnyFuncItemIndex {
+    Standalone(FunctionIndex),
+    Method(MethodIndex),
+    StaticMethod(StaticMethodIndex),
+}
+
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub enum ScopeIndex {
+    World(WorldIndex),
+    Interface(InterfaceIndex),
+}
+
+impl ScopeIndex {
+    pub fn file(self) -> FilePath {
+        match self {
+            ScopeIndex::World(w) => w.file(),
+            ScopeIndex::Interface(i) => i.file(),
+        }
+    }
+}
+
+impl From<InterfaceIndex> for ScopeIndex {
+    fn from(v: InterfaceIndex) -> Self {
+        Self::Interface(v)
+    }
+}
+
+impl From<WorldIndex> for ScopeIndex {
+    fn from(v: WorldIndex) -> Self {
+        Self::World(v)
+    }
+}
+
+impl From<ScopeIndex> for AnyIndex {
+    fn from(value: ScopeIndex) -> Self {
+        match value {
+            ScopeIndex::World(w) => w.into(),
+            ScopeIndex::Interface(i) => i.into(),
+        }
+    }
+}
 
 /// An index optimised for use in item IDs.
 ///
@@ -30,7 +240,7 @@ use crate::{
 /// optimisations.
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
-pub struct RawIndex(NonZeroU16);
+pub(crate) struct RawIndex(NonZeroU16);
 
 impl RawIndex {
     const MAX: u16 = u16::MAX - 1;
@@ -38,10 +248,20 @@ impl RawIndex {
 
     pub(crate) const fn new(raw: usize) -> Self {
         assert!(raw <= RawIndex::MAX as usize);
-        match NonZeroU16::new(raw as u16 + 1) {
+
+        let raw = match (raw as u16).checked_add(1) {
+            Some(raw) => raw,
+            None => panic!(),
+        };
+
+        match NonZeroU16::new(raw) {
             Some(raw) => RawIndex(raw),
             None => panic!(),
         }
+    }
+
+    pub(crate) fn next(self) -> Self {
+        RawIndex::new(self.as_usize().checked_add(1).unwrap())
     }
 
     pub const fn as_usize(self) -> usize {
@@ -49,306 +269,76 @@ impl RawIndex {
     }
 }
 
-/// An index that can be used alongside [`GetByIndex`] to access a
-/// [`crate::hir`] item.
-pub trait Index: Copy {
-    type Hir;
-
-    fn from_raw(raw: RawIndex) -> Self;
-    fn raw(self) -> RawIndex;
+pub struct Pointer<K> {
+    location: Location,
+    _ty: PhantomData<K>,
 }
 
-macro_rules! indices {
-    ($( $name:ident),* $(,)? ) => {
-        $(
-            paste::paste! {
-                #[doc = concat!("The index of a [`crate::hir::", stringify!($name), "`].")]
-                #[derive(Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-                pub struct [< $name "Index" >](RawIndex);
+impl<K: NodeKind> Pointer<K> {
+    pub fn for_node(file: FilePath, node: K::Ast<'_>) -> Self {
+        let range = node.range();
+        let location = Location::new(file, range);
 
-                impl Index for [< $name "Index" >] {
-                    type Hir = hir::$name;
-
-                    fn from_raw(raw: RawIndex) -> Self { Self(raw) }
-
-                    fn raw(self) -> RawIndex { self.0 }
-                }
-
-                impl std::fmt::Debug for [< $name "Index" >] {
-                    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                        write!(f, "{}({})", stringify!([< $name "Index" >]), self.raw().as_usize())
-                    }
-                }
-            }
-        )*
-    };
-}
-
-indices! {
-    Enum, Flags, Resource, Variant, FuncItem, TypeAlias, Record, World,
-    Interface, ResourceMethod, StaticResourceMethod,
-}
-
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub enum ScopeIndex {
-    World(WorldIndex),
-    Interface(InterfaceIndex),
-}
-
-impl From<InterfaceIndex> for ScopeIndex {
-    fn from(v: InterfaceIndex) -> Self {
-        Self::Interface(v)
+        Pointer {
+            location,
+            _ty: PhantomData,
+        }
     }
-}
-
-impl From<WorldIndex> for ScopeIndex {
-    fn from(v: WorldIndex) -> Self {
-        Self::World(v)
-    }
-}
-
-/// Get the [`crate::ast::AstNode`] that is referred to by this type.
-pub trait GetAstNode {
-    type Node<'tree>: crate::ast::AstNode<'tree>;
 
     /// Get the [`crate::ast`] node from the AST [`Tree`].
-    fn ast_node(self, tree: &Tree) -> Self::Node<'_>;
-}
-
-/// A reference to an AST node.
-pub trait Pointer: GetAstNode {
-    fn for_node(node: Self::Node<'_>) -> Self;
-    fn range(self) -> tree_sitter::Range;
-    fn into_any(self) -> AnyPointer;
-}
-
-macro_rules! item_pointers {
-    ($( $name:ident => $ast_node:ident),+ $(,)?) => {
-        paste::paste! {
-            /// A [`Pointer`] that could point to anything.
-            #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-            pub enum AnyPointer {
-                $(
-                    $name([< $name Ptr >]),
-                )*
-            }
-
-            impl AnyPointer {
-                $(
-                    pub fn [< as_ $name:snake >](self) -> Option<[< $name Ptr >]> {
-                        match self {
-                            AnyPointer::$name(ptr) => Some(ptr),
-                            _ => None,
-                        }
-                    }
-                )*
-            }
-
-            $(
-                #[doc = concat!("A strongly-typed reference to a [`crate::ast::", stringify!($ast_node), "`].")]
-                #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-                pub struct [< $name Ptr >](tree_sitter::Range);
-
-                impl GetAstNode for [< $name Ptr >] {
-                    type Node<'tree> = crate::ast::$ast_node<'tree>;
-
-                    fn ast_node(self, tree: &Tree) -> Self::Node<'_> {
-                        tree.find(self.0)
-                    }
-                }
-
-                impl Pointer for [< $name Ptr >] {
-                    fn for_node(node: crate::ast::$ast_node<'_>) -> Self {
-                        [< $name Ptr >](node.syntax().range())
-                    }
-
-                    fn range(self) -> tree_sitter::Range {
-                        self.0
-                    }
-
-                    fn into_any(self) -> AnyPointer {
-                        AnyPointer::$name(self)
-                    }
-                }
-            )*
-        }
-    };
-}
-
-item_pointers! {
-    World => WorldItem,
-    Interface => InterfaceItem,
-    Record => RecordItem,
-    TypeAlias => TypeItem,
-    Enum => EnumItem,
-    Flags => FlagsItem,
-    Resource => ResourceItem,
-    Variant => VariantItem,
-    Function => FuncItem,
-    Constructor => ResourceConstructor,
-    Method => FuncItem,
-    StaticMethod => StaticMethod,
-    RecordField => RecordField,
-    VariantCase => VariantCase,
-    EnumCase => EnumCase,
-    FlagsCase => FlagsCase,
-}
-
-/// Look up an item's metadata using its [`Index`].
-pub trait GetByIndex<Index> {
-    type Metadata;
-
-    fn get_by_index(&self, db: &dyn Db, index: Index) -> Self::Metadata;
-}
-
-macro_rules! get_metadata {
-    ($( $index:ty => $field:ident => $meta:ty  ),+ $(,)?) => {
-        $(
-            impl GetByIndex<$index> for ItemDefinitionMetadata {
-                type Metadata = $meta;
-
-                #[allow(unused_variables)]
-                fn get_by_index(&self, db: &dyn Db, index: $index) -> Self::Metadata {
-                    let index = index.raw().as_usize();
-                    self.$field[index].clone()
-                }
-            }
-        )*
-    };
-}
-
-get_metadata! {
-    EnumIndex => enums => EnumPtr,
-    FlagsIndex => flags => FlagsPtr,
-    FuncItemIndex => functions => FunctionPtr,
-    RecordIndex => records => RecordPtr,
-    ResourceIndex => resources => ResourceMetadata,
-    TypeAliasIndex => typedefs => TypeAliasPtr,
-    VariantIndex => variants => VariantPtr,
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum AnyFuncItemIndex {
-    TopLevel(InterfaceIndex, FuncItemIndex),
-    Method(ScopeIndex, ResourceIndex, ResourceMethodIndex),
-    StaticMethod(ScopeIndex, ResourceIndex, StaticResourceMethodIndex),
-}
-
-impl AnyFuncItemIndex {
-    /// Get the scope this [`crate::hir::FuncItem`] is defined in.
-    pub fn scope(self) -> ScopeIndex {
-        match self {
-            AnyFuncItemIndex::TopLevel(i, _) => ScopeIndex::Interface(i),
-            AnyFuncItemIndex::Method(scope, _, _) | AnyFuncItemIndex::StaticMethod(scope, _, _) => {
-                scope
-            }
-        }
+    pub fn ast_node(self, tree: &Tree) -> K::Ast<'_> {
+        tree.find(self.location.range)
     }
 }
 
-impl GetByIndex<WorldIndex> for Items {
-    type Metadata = WorldMetadata;
+impl<K> Pointer<K> {
+    pub fn file(self) -> FilePath {
+        self.location.filename
+    }
 
-    fn get_by_index(&self, db: &dyn Db, index: WorldIndex) -> Self::Metadata {
-        let index = index.raw().as_usize();
-        let worlds = self.worlds(db);
-        worlds[index]
+    pub fn range(self) -> tree_sitter::Range {
+        self.location.range
+    }
+
+    pub fn location(self) -> crate::diagnostics::Location {
+        self.location
     }
 }
 
-impl GetByIndex<InterfaceIndex> for Items {
-    type Metadata = InterfaceMetadata;
+impl<K> Eq for Pointer<K> {}
 
-    fn get_by_index(&self, db: &dyn Db, index: InterfaceIndex) -> Self::Metadata {
-        let index = index.raw().as_usize();
-        let interfaces = self.interfaces(db);
-        interfaces[index]
+impl<K> PartialEq for Pointer<K> {
+    fn eq(&self, other: &Self) -> bool {
+        let Pointer { location, _ty } = *self;
+        location == other.location
     }
 }
 
-impl<ScopeIndex> GetByIndex<(FilePath, ScopeIndex)> for Workspace
-where
-    SourceFile: GetByIndex<ScopeIndex>,
-{
-    type Metadata = Option<<SourceFile as GetByIndex<ScopeIndex>>::Metadata>;
-
-    fn get_by_index(&self, db: &dyn Db, (path, ix): (FilePath, ScopeIndex)) -> Self::Metadata {
-        let files = self.files(db);
-        let f = files.get(&path)?;
-        Some(f.get_by_index(db, ix))
+impl<K> std::hash::Hash for Pointer<K> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        let Pointer { location, _ty } = self;
+        location.hash(state);
     }
 }
 
-impl<ScopeIndex, ItemIndex> GetByIndex<(FilePath, ScopeIndex, ItemIndex)> for Workspace
-where
-    SourceFile: GetByIndex<(ScopeIndex, ItemIndex)>,
-{
-    type Metadata = Option<<SourceFile as GetByIndex<(ScopeIndex, ItemIndex)>>::Metadata>;
-
-    fn get_by_index(
-        &self,
-        db: &dyn Db,
-        (path, scope, index): (FilePath, ScopeIndex, ItemIndex),
-    ) -> Self::Metadata {
-        let files = self.files(db);
-        files.get(&path).map(|f| f.get_by_index(db, (scope, index)))
+impl<K> Clone for Pointer<K> {
+    fn clone(&self) -> Self {
+        *self
     }
 }
 
-impl<Ix> GetByIndex<Ix> for SourceFile
-where
-    Items: GetByIndex<Ix>,
-{
-    type Metadata = <Items as GetByIndex<Ix>>::Metadata;
+impl<K> Copy for Pointer<K> {}
 
-    fn get_by_index(&self, db: &dyn Db, index: Ix) -> Self::Metadata {
-        crate::queries::file_items(db, *self).get_by_index(db, index)
-    }
-}
+impl<K> Debug for Pointer<K> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let name = std::any::type_name::<K>().split("::").last().unwrap();
+        let pointer_name = format!("{name}Ptr");
 
-impl<Ix> GetByIndex<(WorldIndex, Ix)> for Items
-where
-    WorldMetadata: GetByIndex<Ix>,
-{
-    type Metadata = <WorldMetadata as GetByIndex<Ix>>::Metadata;
+        let Pointer { location, _ty } = self;
 
-    fn get_by_index(&self, db: &dyn Db, index: (WorldIndex, Ix)) -> Self::Metadata {
-        self.get_by_index(db, index.0).get_by_index(db, index.1)
-    }
-}
-
-impl<Ix> GetByIndex<(InterfaceIndex, Ix)> for Items
-where
-    InterfaceMetadata: GetByIndex<Ix>,
-{
-    type Metadata = <InterfaceMetadata as GetByIndex<Ix>>::Metadata;
-
-    fn get_by_index(&self, db: &dyn Db, index: (InterfaceIndex, Ix)) -> Self::Metadata {
-        self.get_by_index(db, index.0).get_by_index(db, index.1)
-    }
-}
-
-impl<Ix> GetByIndex<Ix> for WorldMetadata
-where
-    ItemDefinitionMetadata: GetByIndex<Ix>,
-{
-    type Metadata = <ItemDefinitionMetadata as GetByIndex<Ix>>::Metadata;
-
-    fn get_by_index(&self, db: &dyn Db, index: Ix) -> Self::Metadata {
-        let items = self.items(db);
-        items.get_by_index(db, index)
-    }
-}
-
-impl<Ix> GetByIndex<Ix> for InterfaceMetadata
-where
-    ItemDefinitionMetadata: GetByIndex<Ix>,
-{
-    type Metadata = <ItemDefinitionMetadata as GetByIndex<Ix>>::Metadata;
-
-    fn get_by_index(&self, db: &dyn Db, index: Ix) -> Self::Metadata {
-        let items = self.items(db);
-        items.get_by_index(db, index)
+        f.debug_struct(&pointer_name)
+            .field("location", location)
+            .finish()
     }
 }
 

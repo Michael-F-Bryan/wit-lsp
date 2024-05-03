@@ -1,3 +1,3 @@
-# E001: Syntax Error
+# E001: Syntax error
 
 The file contained invalid syntax.

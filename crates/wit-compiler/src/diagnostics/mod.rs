@@ -24,8 +24,10 @@ pub enum Diagnostic {
     MultipleConstructors(MultipleConstructors),
     SyntaxError(SyntaxError),
     UnknownName(UnknownName),
+    UnknownPackage(UnknownPackage),
     Bug(Bug),
     MismatchedPackageDeclaration(MismatchedPackageDeclaration),
+    MultiplePackageDocs(MultiplePackageDocs),
 }
 
 impl Diagnostic {
@@ -34,8 +36,13 @@ impl Diagnostic {
             Diagnostic::DuplicateName(DuplicateName { location, .. })
             | Diagnostic::SyntaxError(SyntaxError { location, .. })
             | Diagnostic::UnknownName(UnknownName { location, .. })
+            | Diagnostic::UnknownPackage(UnknownPackage { location, .. })
             | Diagnostic::MultipleConstructors(MultipleConstructors { location, .. })
             | Diagnostic::MismatchedPackageDeclaration(MismatchedPackageDeclaration {
+                second_location: location,
+                ..
+            })
+            | Diagnostic::MultiplePackageDocs(MultiplePackageDocs {
                 second_location: location,
                 ..
             })
@@ -49,8 +56,10 @@ impl Diagnostic {
             Diagnostic::MultipleConstructors(diag) => diag.as_diagnostic(),
             Diagnostic::SyntaxError(diag) => diag.as_diagnostic(),
             Diagnostic::UnknownName(diag) => diag.as_diagnostic(),
+            Diagnostic::UnknownPackage(diag) => diag.as_diagnostic(),
             Diagnostic::Bug(diag) => diag.as_diagnostic(),
             Diagnostic::MismatchedPackageDeclaration(diag) => diag.as_diagnostic(),
+            Diagnostic::MultiplePackageDocs(diag) => diag.as_diagnostic(),
         }
     }
 }
@@ -183,6 +192,33 @@ impl From<MultipleConstructors> for Diagnostic {
 
 /// The user referenced an unknown identifier.
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UnknownPackage {
+    /// The package being referenced.
+    pub package_id: Text,
+    pub location: Location,
+}
+
+impl IntoDiagnostic for UnknownPackage {
+    const ERROR_CODE: &'static str = "E007";
+    const MESSAGE: &'static str = "Reference to unknown package";
+    const VERBOSE_DESCRIPTION: &'static str = include_str!("E007-unknown-package.md");
+
+    fn as_diagnostic(&self) -> Diag {
+        Diag::error()
+            .with_message(Self::MESSAGE)
+            .with_code(Self::ERROR_CODE)
+            .with_labels(vec![self.location.label()])
+    }
+}
+
+impl From<UnknownPackage> for Diagnostic {
+    fn from(value: UnknownPackage) -> Self {
+        Diagnostic::UnknownPackage(value)
+    }
+}
+
+/// The user referenced an unknown identifier.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UnknownName {
     /// The name being referenced.
     pub name: Text,
@@ -269,10 +305,40 @@ impl From<MismatchedPackageDeclaration> for Diagnostic {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MultiplePackageDocs {
+    pub second_location: Location,
+    pub original_definition: Location,
+}
+
+impl IntoDiagnostic for MultiplePackageDocs {
+    const ERROR_CODE: &'static str = "E006";
+    const MESSAGE: &'static str = "Package docs can only be defined in a single file";
+    const VERBOSE_DESCRIPTION: &'static str = include_str!("E006-multiple-package-docs.md");
+
+    fn as_diagnostic(&self) -> Diag {
+        Diag::error()
+            .with_message(Self::MESSAGE)
+            .with_code(Self::ERROR_CODE)
+            .with_labels(vec![
+                self.second_location.label().with_message("Defined here"),
+                self.original_definition
+                    .secondary_label()
+                    .with_message("Originally defined here"),
+            ])
+    }
+}
+
+impl From<MultiplePackageDocs> for Diagnostic {
+    fn from(value: MultiplePackageDocs) -> Self {
+        Diagnostic::MultiplePackageDocs(value)
+    }
+}
+
 /// The location of an element within the workspace.
 ///
 /// Typically used for debugging purposes.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Location {
     /// The file this error came from.
     pub filename: FilePath,
@@ -302,11 +368,21 @@ impl Location {
         } = self.range;
         Label::secondary(self.filename, start_byte..end_byte)
     }
+
+    pub fn contains(&self, point: tree_sitter::Point) -> bool {
+        let Range {
+            start_point,
+            end_point,
+            ..
+        } = self.range;
+        start_point <= point && point < end_point
+    }
 }
 
-#[derive(Clone, Debug, serde::Serialize)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct DiagnosticInfo {
     pub type_name: &'static str,
+    pub message: &'static str,
     pub error_code: &'static str,
     pub description: &'static str,
 }
@@ -315,6 +391,7 @@ impl DiagnosticInfo {
     pub fn for_type<T: IntoDiagnostic + 'static>() -> Self {
         DiagnosticInfo {
             type_name: std::any::type_name::<T>(),
+            message: T::MESSAGE,
             error_code: T::ERROR_CODE,
             description: T::VERBOSE_DESCRIPTION,
         }
@@ -334,6 +411,7 @@ mod tests {
         for diag in all_diagnostics() {
             let DiagnosticInfo {
                 type_name,
+                message,
                 error_code,
                 description,
             } = diag;
@@ -345,11 +423,8 @@ mod tests {
             let _: u32 = error_code[1..].parse().unwrap();
 
             let opening_line = description.lines().next().unwrap();
-            let expected = format!("# {error_code}: ");
-            assert!(
-                opening_line.contains(&expected),
-                "Expected {expected:?} in {opening_line:?}"
-            );
+            let expected = format!("# {error_code}: {message}");
+            assert_eq!(opening_line, expected);
 
             match codes.entry(error_code) {
                 std::collections::hash_map::Entry::Occupied(entry) => {

@@ -9,7 +9,7 @@ package local:demo;
 (source_file
   (package_decl
     (fully_qualified_package_name
-      (package_name
+      (package_namespace
         (identifier))
-      (package_path
+      (package_name
         (identifier)))))

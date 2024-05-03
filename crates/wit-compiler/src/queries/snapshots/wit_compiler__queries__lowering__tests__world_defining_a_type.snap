@@ -1,0 +1,55 @@
+---
+source: crates/wit-compiler/src/queries/lowering.rs
+info:
+  src: "world w { type x = u32; }"
+  ast: "(source_file (top_level_item (world_item name: (identifier) items: (world_items (typedef_item (type_item name: (identifier) ty: (ty (builtins))))))))"
+---
+Package {
+    docs: None,
+    id: None,
+    worlds: {
+        WorldIndex {
+            file: FilePath(
+                Id {
+                    value: 1,
+                },
+            ),
+            index: RawIndex(
+                1,
+            ),
+        }: World {
+            name: Ident(
+                Id {
+                    value: 1,
+                },
+            ),
+            docs: None,
+            type_definitions: [
+                TypeAlias(
+                    TypeAlias {
+                        name: Ident(
+                            Id {
+                                value: 2,
+                            },
+                        ),
+                        index: TypeAliasIndex {
+                            file: FilePath(
+                                Id {
+                                    value: 1,
+                                },
+                            ),
+                            index: RawIndex(
+                                1,
+                            ),
+                        },
+                        docs: None,
+                        ty: Builtin(
+                            U32,
+                        ),
+                    },
+                ),
+            ],
+        },
+    },
+    interfaces: {},
+}

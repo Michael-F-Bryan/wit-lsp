@@ -18,9 +18,9 @@ world my-world {
 (source_file
   (package_decl
     (fully_qualified_package_name
-      (package_name
+      (package_namespace
         (identifier))
-      (package_path
+      (package_name
         (identifier))))
   (top_level_item
     (interface_item
@@ -29,11 +29,11 @@ world my-world {
         (use_item
           (use_path
             (fully_qualified_use_path
+              (package_namespace
+                (identifier))
               (package_name
                 (identifier))
-              (package_path
-                (identifier)
-                (identifier))
+              (identifier)
               (semver)))
           (use_names_item
             (identifier))
@@ -44,22 +44,23 @@ world my-world {
       (identifier)
       (world_items
         (import_item
-          (imported_path
-            (use_path
+          (exposable
+            (exposable_path
               (fully_qualified_use_path
+                (package_namespace
+                  (identifier))
                 (package_name
                   (identifier))
-                (package_path
-                  (identifier)
-                  (identifier))
+                (identifier)
                 (semver))))))
       (world_items
         (export_item
-          (exported_path
-            (fully_qualified_use_path
-              (package_name
-                (identifier))
-              (package_path
+          (exposable
+            (exposable_path
+              (fully_qualified_use_path
+                (package_namespace
+                  (identifier))
+                (package_name
+                  (identifier))
                 (identifier)
-                (identifier))
-              (semver))))))))
+                (semver)))))))))

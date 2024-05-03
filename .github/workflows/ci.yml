@@ -169,6 +169,7 @@ jobs:
       - rust
       - parser
       - vscode
+    if: always()
     steps:
       - name: Time Reporter
         uses: Michael-F-Bryan/workflow-timer@v0.2.3

@@ -13,7 +13,7 @@ rust-version = "1.77"
 
 [workspace.dependencies]
 clap = { version = "4.5.3", features = ["derive", "env"] }
-codespan-reporting = "0.11.1"
+codespan-reporting = { version = "0.11.1", features = ["serialization"] }
 color-eyre = { version = "0.6.3", features = ["issue-url"] }
 im = { version = "15.1.0", features = ["serde"] }
 insta = { version = "1.36.1", features = ["yaml"] }

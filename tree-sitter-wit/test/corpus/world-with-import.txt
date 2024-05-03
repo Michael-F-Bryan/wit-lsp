@@ -14,13 +14,11 @@ world command {
       (identifier)
       (world_items
         (import_item
-          (imported_path
-            (use_path
+          (exposable
+            (exposable_path
               (fully_qualified_use_path
+                (package_namespace
+                  (identifier))
                 (package_name
                   (identifier))
-                (package_path
-                  (identifier)
-                  (identifier))))))))))
-
-
+                (identifier)))))))))

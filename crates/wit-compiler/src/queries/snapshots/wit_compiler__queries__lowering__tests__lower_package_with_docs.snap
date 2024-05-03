@@ -5,19 +5,13 @@ info:
   ast: "(source_file package: (package_decl attributes: (attribute (doc_comment (docs))) (fully_qualified_package_name package: (package_name (identifier)) path: (package_path (identifier)) version: (semver))))"
 ---
 Package {
-    decl: Some(
-        PackageDeclaration {
-            docs: Some(
-                This is a package.,
-            ),
-            package: wasi,
-            path: [
-                filesystem,
-            ],
-            version: Some(
-                1.2.3,
-            ),
-        },
+    docs: None,
+    id: Some(
+        PackageId(
+            Id {
+                value: 1,
+            },
+        ),
     ),
     worlds: {},
     interfaces: {},

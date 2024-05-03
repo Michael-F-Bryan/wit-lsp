@@ -5,32 +5,61 @@ info:
   ast: "(source_file (top_level_item (interface_item name: (identifier) items: (interface_items (typedef_item (type_item name: (identifier) ty: (ty (tuple (ty (builtins)) (ty (builtins)) (ty (builtins))))))))))"
 ---
 Package {
-    decl: None,
+    docs: None,
+    id: None,
     worlds: {},
     interfaces: {
-        InterfaceIndex(0): Interface {
-            name: i,
+        InterfaceIndex {
+            file: FilePath(
+                Id {
+                    value: 1,
+                },
+            ),
+            index: RawIndex(
+                1,
+            ),
+        }: Interface {
+            name: Ident(
+                Id {
+                    value: 1,
+                },
+            ),
             docs: None,
             items: [
-                TypeAlias(
-                    TypeAlias {
-                        name: x,
-                        index: TypeAliasIndex(0),
-                        docs: None,
-                        ty: Tuple(
-                            [
-                                Builtin(
-                                    String,
+                Type(
+                    TypeAlias(
+                        TypeAlias {
+                            name: Ident(
+                                Id {
+                                    value: 2,
+                                },
+                            ),
+                            index: TypeAliasIndex {
+                                file: FilePath(
+                                    Id {
+                                        value: 1,
+                                    },
                                 ),
-                                Builtin(
-                                    Boolean,
+                                index: RawIndex(
+                                    1,
                                 ),
-                                Builtin(
-                                    U32,
-                                ),
-                            ],
-                        ),
-                    },
+                            },
+                            docs: None,
+                            ty: Tuple(
+                                [
+                                    Builtin(
+                                        String,
+                                    ),
+                                    Builtin(
+                                        Boolean,
+                                    ),
+                                    Builtin(
+                                        U32,
+                                    ),
+                                ],
+                            ),
+                        },
+                    ),
                 ),
             ],
         },

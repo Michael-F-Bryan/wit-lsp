@@ -27,10 +27,10 @@ expression: debug
         id: Some(
             PackageId {
                 [salsa id]: 0,
-                package: [
+                namespace: [
                     merge,
                 ],
-                path: [
+                package_name: [
                     some-package,
                 ],
                 version: None,
@@ -58,10 +58,10 @@ expression: debug
         id: Some(
             PackageId {
                 [salsa id]: 1,
-                package: [
-                    named,
+                namespace: [
+                    some-namespace,
                 ],
-                path: [
+                package_name: [
                     package,
                 ],
                 version: None,
@@ -84,12 +84,11 @@ expression: debug
         id: Some(
             PackageId {
                 [salsa id]: 2,
-                package: [
-                    named,
+                namespace: [
+                    another-namespace,
                 ],
-                path: [
-                    with,
-                    version,
+                package_name: [
+                    package,
                 ],
                 version: Some(
                     1.2.3,

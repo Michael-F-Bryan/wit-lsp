@@ -1,4 +1,5 @@
 use crate::{
+    access::{NodeKind, Pointer},
     ast::AstNode,
     diagnostics::{Diagnostics, Location, SyntaxError},
     queries::SourceFile,
@@ -54,5 +55,9 @@ impl Ast {
     pub fn source_file(self, db: &dyn Db) -> crate::ast::SourceFile<'_> {
         let root = self.root_node(db);
         crate::ast::SourceFile::cast(root).expect("The root node is always a source_file")
+    }
+
+    pub fn get<K: NodeKind>(self, db: &dyn Db, ptr: Pointer<K>) -> K::Ast<'_> {
+        ptr.ast_node(self.tree(db))
     }
 }

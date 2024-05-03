@@ -251,14 +251,9 @@ impl<'tree> super::AstNode<'tree> for EnumItem<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ExportItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> ExportItem<'tree> {
-    pub fn exported_item(self) -> Option<ExportedItem<'tree>> {
+    pub fn exposable(self) -> Option<Exposable<'tree>> {
         super::children(self.0)
-            .filter_map(<ExportedItem as super::AstNode<'_>>::cast)
-            .next()
-    }
-    pub fn exported_path(self) -> Option<ExportedPath<'tree>> {
-        super::children(self.0)
-            .filter_map(<ExportedPath as super::AstNode<'_>>::cast)
+            .filter_map(<Exposable as super::AstNode<'_>>::cast)
             .next()
     }
 }
@@ -274,10 +269,37 @@ impl<'tree> super::AstNode<'tree> for ExportItem<'tree> {
         self.0
     }
 }
-///The `exported_item` node.
+///The `exposable` node.
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub struct ExportedItem<'tree>(tree_sitter::Node<'tree>);
-impl<'tree> ExportedItem<'tree> {
+pub struct Exposable<'tree>(tree_sitter::Node<'tree>);
+impl<'tree> Exposable<'tree> {
+    pub fn exposable_item(self) -> Option<ExposableItem<'tree>> {
+        super::children(self.0)
+            .filter_map(<ExposableItem as super::AstNode<'_>>::cast)
+            .next()
+    }
+    pub fn exposable_path(self) -> Option<ExposablePath<'tree>> {
+        super::children(self.0)
+            .filter_map(<ExposablePath as super::AstNode<'_>>::cast)
+            .next()
+    }
+}
+impl<'tree> super::AstNode<'tree> for Exposable<'tree> {
+    const NAME: &'static str = "exposable";
+    fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        if node.kind() == Self::NAME { Some(Exposable(node)) } else { None }
+    }
+    fn syntax(&self) -> tree_sitter::Node<'tree> {
+        self.0
+    }
+}
+///The `exposable_item` node.
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct ExposableItem<'tree>(tree_sitter::Node<'tree>);
+impl<'tree> ExposableItem<'tree> {
     pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
@@ -287,42 +309,42 @@ impl<'tree> ExportedItem<'tree> {
             .next()
     }
 }
-impl super::HasIdent for ExportedItem<'_> {
+impl super::HasIdent for ExposableItem<'_> {
     fn identifier(self, src: &str) -> Option<&str> {
         let node = self.name()?;
         let raw = node.0.utf8_text(src.as_bytes()).unwrap();
         Some(crate::ast::ident(raw))
     }
 }
-impl<'tree> super::AstNode<'tree> for ExportedItem<'tree> {
-    const NAME: &'static str = "exported_item";
+impl<'tree> super::AstNode<'tree> for ExposableItem<'tree> {
+    const NAME: &'static str = "exposable_item";
     fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
     where
         Self: Sized,
     {
-        if node.kind() == Self::NAME { Some(ExportedItem(node)) } else { None }
+        if node.kind() == Self::NAME { Some(ExposableItem(node)) } else { None }
     }
     fn syntax(&self) -> tree_sitter::Node<'tree> {
         self.0
     }
 }
-///The `exported_path` node.
+///The `exposable_path` node.
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub struct ExportedPath<'tree>(tree_sitter::Node<'tree>);
-impl<'tree> ExportedPath<'tree> {
+pub struct ExposablePath<'tree>(tree_sitter::Node<'tree>);
+impl<'tree> ExposablePath<'tree> {
     pub fn fully_qualified_use_path(self) -> Option<FullyQualifiedUsePath<'tree>> {
         super::children(self.0)
             .filter_map(<FullyQualifiedUsePath as super::AstNode<'_>>::cast)
             .next()
     }
 }
-impl<'tree> super::AstNode<'tree> for ExportedPath<'tree> {
-    const NAME: &'static str = "exported_path";
+impl<'tree> super::AstNode<'tree> for ExposablePath<'tree> {
+    const NAME: &'static str = "exposable_path";
     fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
     where
         Self: Sized,
     {
-        if node.kind() == Self::NAME { Some(ExportedPath(node)) } else { None }
+        if node.kind() == Self::NAME { Some(ExposablePath(node)) } else { None }
     }
     fn syntax(&self) -> tree_sitter::Node<'tree> {
         self.0
@@ -446,15 +468,15 @@ impl<'tree> super::AstNode<'tree> for FlagsItem<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct FullyQualifiedPackageName<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> FullyQualifiedPackageName<'tree> {
+    pub fn namespace(&self) -> Option<PackageNamespace<'tree>> {
+        self.0
+            .child_by_field_name("namespace")
+            .and_then(<PackageNamespace as super::AstNode>::cast)
+    }
     pub fn package(&self) -> Option<PackageName<'tree>> {
         self.0
             .child_by_field_name("package")
             .and_then(<PackageName as super::AstNode>::cast)
-    }
-    pub fn path(&self) -> Option<PackagePath<'tree>> {
-        self.0
-            .child_by_field_name("path")
-            .and_then(<PackagePath as super::AstNode>::cast)
     }
     pub fn version_opt(&self) -> Option<Semver<'tree>> {
         self.0.child_by_field_name("version").and_then(<Semver as super::AstNode>::cast)
@@ -480,15 +502,20 @@ impl<'tree> super::AstNode<'tree> for FullyQualifiedPackageName<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct FullyQualifiedUsePath<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> FullyQualifiedUsePath<'tree> {
+    pub fn item_name(&self) -> Option<Identifier<'tree>> {
+        self.0
+            .child_by_field_name("item_name")
+            .and_then(<Identifier as super::AstNode>::cast)
+    }
+    pub fn namespace(&self) -> Option<PackageNamespace<'tree>> {
+        self.0
+            .child_by_field_name("namespace")
+            .and_then(<PackageNamespace as super::AstNode>::cast)
+    }
     pub fn package(&self) -> Option<PackageName<'tree>> {
         self.0
             .child_by_field_name("package")
             .and_then(<PackageName as super::AstNode>::cast)
-    }
-    pub fn path(&self) -> Option<PackagePath<'tree>> {
-        self.0
-            .child_by_field_name("path")
-            .and_then(<PackagePath as super::AstNode>::cast)
     }
     pub fn version_opt(&self) -> Option<Semver<'tree>> {
         self.0.child_by_field_name("version").and_then(<Semver as super::AstNode>::cast)
@@ -608,14 +635,9 @@ impl<'tree> super::AstNode<'tree> for Handle<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ImportItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> ImportItem<'tree> {
-    pub fn imported_item(self) -> Option<ImportedItem<'tree>> {
+    pub fn exposable(self) -> Option<Exposable<'tree>> {
         super::children(self.0)
-            .filter_map(<ImportedItem as super::AstNode<'_>>::cast)
-            .next()
-    }
-    pub fn imported_path(self) -> Option<ImportedPath<'tree>> {
-        super::children(self.0)
-            .filter_map(<ImportedPath as super::AstNode<'_>>::cast)
+            .filter_map(<Exposable as super::AstNode<'_>>::cast)
             .next()
     }
 }
@@ -626,58 +648,6 @@ impl<'tree> super::AstNode<'tree> for ImportItem<'tree> {
         Self: Sized,
     {
         if node.kind() == Self::NAME { Some(ImportItem(node)) } else { None }
-    }
-    fn syntax(&self) -> tree_sitter::Node<'tree> {
-        self.0
-    }
-}
-///The `imported_item` node.
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub struct ImportedItem<'tree>(tree_sitter::Node<'tree>);
-impl<'tree> ImportedItem<'tree> {
-    pub fn name(&self) -> Option<Identifier<'tree>> {
-        self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
-    }
-    pub fn extern_type(self) -> Option<ExternType<'tree>> {
-        super::children(self.0)
-            .filter_map(<ExternType as super::AstNode<'_>>::cast)
-            .next()
-    }
-}
-impl super::HasIdent for ImportedItem<'_> {
-    fn identifier(self, src: &str) -> Option<&str> {
-        let node = self.name()?;
-        let raw = node.0.utf8_text(src.as_bytes()).unwrap();
-        Some(crate::ast::ident(raw))
-    }
-}
-impl<'tree> super::AstNode<'tree> for ImportedItem<'tree> {
-    const NAME: &'static str = "imported_item";
-    fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
-    where
-        Self: Sized,
-    {
-        if node.kind() == Self::NAME { Some(ImportedItem(node)) } else { None }
-    }
-    fn syntax(&self) -> tree_sitter::Node<'tree> {
-        self.0
-    }
-}
-///The `imported_path` node.
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub struct ImportedPath<'tree>(tree_sitter::Node<'tree>);
-impl<'tree> ImportedPath<'tree> {
-    pub fn use_path(self) -> Option<UsePath<'tree>> {
-        super::children(self.0).filter_map(<UsePath as super::AstNode<'_>>::cast).next()
-    }
-}
-impl<'tree> super::AstNode<'tree> for ImportedPath<'tree> {
-    const NAME: &'static str = "imported_path";
-    fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
-    where
-        Self: Sized,
-    {
-        if node.kind() == Self::NAME { Some(ImportedPath(node)) } else { None }
     }
     fn syntax(&self) -> tree_sitter::Node<'tree> {
         self.0
@@ -1049,21 +1019,23 @@ impl<'tree> super::AstNode<'tree> for PackageName<'tree> {
         self.0
     }
 }
-///The `package_path` node.
+///The `package_namespace` node.
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub struct PackagePath<'tree>(tree_sitter::Node<'tree>);
-impl<'tree> PackagePath<'tree> {
-    pub fn iter_identifiers(self) -> impl Iterator<Item = Identifier<'tree>> {
-        super::children(self.0).filter_map(<Identifier as super::AstNode<'_>>::cast)
+pub struct PackageNamespace<'tree>(tree_sitter::Node<'tree>);
+impl<'tree> PackageNamespace<'tree> {
+    pub fn identifier(self) -> Option<Identifier<'tree>> {
+        super::children(self.0)
+            .filter_map(<Identifier as super::AstNode<'_>>::cast)
+            .next()
     }
 }
-impl<'tree> super::AstNode<'tree> for PackagePath<'tree> {
-    const NAME: &'static str = "package_path";
+impl<'tree> super::AstNode<'tree> for PackageNamespace<'tree> {
+    const NAME: &'static str = "package_namespace";
     fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
     where
         Self: Sized,
     {
-        if node.kind() == Self::NAME { Some(PackagePath(node)) } else { None }
+        if node.kind() == Self::NAME { Some(PackageNamespace(node)) } else { None }
     }
     fn syntax(&self) -> tree_sitter::Node<'tree> {
         self.0
@@ -1410,8 +1382,8 @@ impl<'tree> StaticMethod<'tree> {
     pub fn name(&self) -> Option<Identifier<'tree>> {
         self.0.child_by_field_name("name").and_then(<Identifier as super::AstNode>::cast)
     }
-    pub fn func_type(self) -> Option<FuncType<'tree>> {
-        super::children(self.0).filter_map(<FuncType as super::AstNode<'_>>::cast).next()
+    pub fn ty(&self) -> Option<FuncType<'tree>> {
+        self.0.child_by_field_name("ty").and_then(<FuncType as super::AstNode>::cast)
     }
 }
 impl super::HasIdent for StaticMethod<'_> {

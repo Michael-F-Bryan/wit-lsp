@@ -1,0 +1,109 @@
+---
+source: crates/wit-compiler/src/queries/namespace.rs
+expression: all_imports
+---
+{
+    "empty": {},
+    "local": {},
+    "local2": {},
+    "use-across-file": {
+        "x": ItemReference {
+            file: FilePath(
+                Id {
+                    value: 3,
+                },
+            ),
+            scope: Interface(
+                InterfaceIndex {
+                    file: FilePath(
+                        Id {
+                            value: 3,
+                        },
+                    ),
+                    index: RawIndex(
+                        1,
+                    ),
+                },
+            ),
+            kind: TypeAlias(
+                TypeAliasIndex {
+                    file: FilePath(
+                        Id {
+                            value: 3,
+                        },
+                    ),
+                    index: RawIndex(
+                        1,
+                    ),
+                },
+            ),
+        },
+    },
+    "use-empty": {},
+    "use-local": {
+        "x": ItemReference {
+            file: FilePath(
+                Id {
+                    value: 3,
+                },
+            ),
+            scope: Interface(
+                InterfaceIndex {
+                    file: FilePath(
+                        Id {
+                            value: 3,
+                        },
+                    ),
+                    index: RawIndex(
+                        1,
+                    ),
+                },
+            ),
+            kind: TypeAlias(
+                TypeAliasIndex {
+                    file: FilePath(
+                        Id {
+                            value: 3,
+                        },
+                    ),
+                    index: RawIndex(
+                        1,
+                    ),
+                },
+            ),
+        },
+    },
+    "world-using-local": {
+        "x": ItemReference {
+            file: FilePath(
+                Id {
+                    value: 4,
+                },
+            ),
+            scope: Interface(
+                InterfaceIndex {
+                    file: FilePath(
+                        Id {
+                            value: 4,
+                        },
+                    ),
+                    index: RawIndex(
+                        1,
+                    ),
+                },
+            ),
+            kind: TypeAlias(
+                TypeAliasIndex {
+                    file: FilePath(
+                        Id {
+                            value: 4,
+                        },
+                    ),
+                    index: RawIndex(
+                        1,
+                    ),
+                },
+            ),
+        },
+    },
+}

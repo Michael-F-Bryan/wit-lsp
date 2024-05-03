@@ -1,0 +1,23 @@
+---
+source: crates/wit-compiler/src/queries/metadata.rs
+info:
+  src: "world w { export wasi:filesystem/filesystem; }"
+  ast: "(source_file (top_level_item (world_item name: (identifier) items: (world_items (export_item (exported_path (fully_qualified_use_path package: (package_name (identifier)) path: (package_path (identifier) (identifier)))))))))"
+---
+[
+    Node {
+        name: "w",
+        type_name: "wit_compiler::queries::metadata::WorldMetadata",
+        file: "world_with_external_export.wit",
+        range: 0..46,
+        children: [
+            Node {
+                name: "",
+                type_name: "wit_compiler::queries::metadata::ExportMetadata",
+                file: "world_with_external_export.wit",
+                range: 10..44,
+                children: [],
+            },
+        ],
+    },
+]
