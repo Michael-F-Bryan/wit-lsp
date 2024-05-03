@@ -1,4 +1,4 @@
-use codespan_reporting::diagnostic::{Label, LabelStyle};
+use codespan_reporting::diagnostic::{Label, LabelStyle, Severity};
 use tower_lsp::lsp_types::{
     DiagnosticRelatedInformation, DiagnosticSeverity, DocumentDiagnosticReport,
     DocumentDiagnosticReportResult,
@@ -75,11 +75,23 @@ fn lsp_diagnostic(
 
     Some(tower_lsp::lsp_types::Diagnostic {
         range: utils::ts_to_range(location.range),
-        message: format!("{code}: {msg}"),
+        message: msg.to_string(),
         related_information: Some(related_information),
-        severity: Some(DiagnosticSeverity::ERROR),
+        code: Some(tower_lsp::lsp_types::NumberOrString::String(
+            code.to_string(),
+        )),
+        severity: Some(lsp_severity(diag.severity)),
         ..Default::default()
     })
+}
+
+fn lsp_severity(severity: Severity) -> DiagnosticSeverity {
+    match severity {
+        Severity::Bug | Severity::Error => DiagnosticSeverity::ERROR,
+        Severity::Warning => DiagnosticSeverity::WARNING,
+        Severity::Note => DiagnosticSeverity::INFORMATION,
+        Severity::Help => DiagnosticSeverity::HINT,
+    }
 }
 
 fn label_location(
