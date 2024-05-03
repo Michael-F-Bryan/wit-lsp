@@ -31,7 +31,7 @@ pub enum Diagnostic {
 }
 
 impl Diagnostic {
-    pub fn location(&self) -> &Location {
+    pub fn location(&self) -> Location {
         match self {
             Diagnostic::DuplicateName(DuplicateName { location, .. })
             | Diagnostic::SyntaxError(SyntaxError { location, .. })
@@ -46,7 +46,7 @@ impl Diagnostic {
                 second_location: location,
                 ..
             })
-            | Diagnostic::Bug(Bug { location, .. }) => location,
+            | Diagnostic::Bug(Bug { location, .. }) => *location,
         }
     }
 
@@ -60,25 +60,6 @@ impl Diagnostic {
             Diagnostic::Bug(diag) => diag.as_diagnostic(),
             Diagnostic::MismatchedPackageDeclaration(diag) => diag.as_diagnostic(),
             Diagnostic::MultiplePackageDocs(diag) => diag.as_diagnostic(),
-        }
-    }
-}
-
-impl Bug {
-    #[track_caller]
-    pub fn new(message: impl Into<Text>, location: Location) -> Self {
-        let message = message.into();
-
-        if cfg!(debug_assertions) {
-            panic!("BUG: {message} at {location:?}");
-        }
-
-        let caller = std::panic::Location::caller();
-
-        Bug {
-            message,
-            location,
-            caller,
         }
     }
 }
@@ -250,6 +231,25 @@ pub struct Bug {
     pub message: Text,
     pub location: Location,
     pub caller: &'static std::panic::Location<'static>,
+}
+
+impl Bug {
+    #[track_caller]
+    pub fn new(message: impl Into<Text>, location: Location) -> Self {
+        let message = message.into();
+
+        if cfg!(debug_assertions) {
+            panic!("BUG: {message} at {location:?}");
+        }
+
+        let caller = std::panic::Location::caller();
+
+        Bug {
+            message,
+            location,
+            caller,
+        }
+    }
 }
 
 impl IntoDiagnostic for Bug {

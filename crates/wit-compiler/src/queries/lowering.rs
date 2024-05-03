@@ -3,7 +3,7 @@ use im::{OrdMap, Vector};
 use crate::{
     access::{AnyFuncItemIndex, InterfaceIndex, NodeKind, Pointer, WorldIndex},
     ast::{self, AstNode, HasAttr, HasIdent as _},
-    diagnostics::{Diagnostics, DuplicateName, Location, MultiplePackageDocs},
+    diagnostics::{Diagnostics, DuplicateName, Location, MultiplePackageDocs, UnknownName},
     hir,
     queries::{
         metadata::{
@@ -665,8 +665,17 @@ fn resolve_tuple(ctx: Context<'_>, tuple: ast::Tuple<'_>) -> Option<hir::Type> {
 }
 
 fn resolve_user_defined_type(ctx: Context<'_>, ty: ast::UserDefinedType<'_>) -> Option<hir::Type> {
-    let _ident = ty.identifier(ctx.src)?;
-    todo!()
+    let ident = ty.identifier(ctx.src)?;
+    let location = Location::new(ctx.path(), ty.range());
+
+    // TODO: Implement this
+    let diag = UnknownName {
+        name: ident.into(),
+        location,
+    };
+    Diagnostics::push(ctx.db, diag.into());
+
+    None
 }
 
 fn resolve_option(ctx: Context<'_>, option: ast::Option_<'_>) -> Option<hir::Type> {

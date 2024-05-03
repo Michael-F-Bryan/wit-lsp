@@ -3,7 +3,7 @@
 [![Continuous Integration](https://github.com/Michael-F-Bryan/wit-lsp/actions/workflows/ci.yml/badge.svg)](https://github.com/Michael-F-Bryan/wit-lsp/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/Michael-F-Bryan/wit-lsp/graph/badge.svg?token=0HHP8EX5UY)](https://codecov.io/gh/Michael-F-Bryan/wit-lsp)
 
-([API Docs][api-docs] | [Code Coverage][coverage])
+([API Docs][api-docs] | [Code Coverage][coverage] | [Error Code Index][diagnostics])
 
 An alternative Language Server implementation for [WIT][wit].
 
@@ -62,6 +62,7 @@ do their best to avoid them, and welcome help in analysing and fixing them.
 
 [api-docs]: https://michael-f-bryan.github.io/wit-lsp/crate-docs
 [coverage]: https://michael-f-bryan.github.io/wit-lsp/coverage
+[diagnostics]: https://michael-f-bryan.github.io/wit-lsp/diagnostics.html
 [crev]: https://github.com/crev-dev/cargo-crev
 [wit]: https://github.com/WebAssembly/component-model/blob/main/design/mvp/WIT.md
 [vscode-wit]: https://github.com/bytecodealliance/vscode-wit

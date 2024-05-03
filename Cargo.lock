@@ -2133,6 +2133,7 @@ dependencies = [
 name = "wit-language-server"
 version = "0.2.0"
 dependencies = [
+ "codespan-reporting",
  "futures",
  "im",
  "insta",

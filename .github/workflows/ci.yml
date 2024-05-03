@@ -172,7 +172,7 @@ jobs:
     if: always()
     steps:
       - name: Time Reporter
-        uses: Michael-F-Bryan/workflow-timer@v0.2.3
+        uses: Michael-F-Bryan/workflow-timer@v0.2.4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           jobs: |
