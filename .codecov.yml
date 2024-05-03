@@ -1,6 +1,11 @@
 coverage:
   status:
+    # Make sure new PRs can't reduce project-wide code coverage by more than 5%
     project:
       default:
         target: auto
         threshold: 5
+    # Whenever you make a PR, at least 30% of the added code must be tested
+    patch:
+      default:
+        target: 30%
