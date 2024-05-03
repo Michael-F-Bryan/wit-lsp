@@ -31,7 +31,7 @@ pub enum Diagnostic {
 }
 
 impl Diagnostic {
-    pub fn location(&self) -> &Location {
+    pub fn location(&self) -> Location {
         match self {
             Diagnostic::DuplicateName(DuplicateName { location, .. })
             | Diagnostic::SyntaxError(SyntaxError { location, .. })
@@ -46,7 +46,7 @@ impl Diagnostic {
                 second_location: location,
                 ..
             })
-            | Diagnostic::Bug(Bug { location, .. }) => location,
+            | Diagnostic::Bug(Bug { location, .. }) => *location,
         }
     }
 

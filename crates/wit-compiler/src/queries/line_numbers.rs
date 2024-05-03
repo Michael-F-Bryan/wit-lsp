@@ -24,18 +24,18 @@ impl LineNumbers {
         LineNumbers { line_starts, src }
     }
 
-    /// The index of the line at the given byte index.
+    /// The index of the line at the given byte offset.
     ///
     /// If the byte index is past the end of the file, an error is returned.
-    pub fn line_index(&self, byte_index: usize) -> Result<usize, CodespanError> {
-        if byte_index > self.src.len() {
+    pub fn line_index(&self, byte_offset: usize) -> Result<usize, CodespanError> {
+        if byte_offset > self.src.len() {
             return Err(CodespanError::IndexTooLarge {
-                given: byte_index,
+                given: byte_offset,
                 max: self.src.len(),
             });
         }
 
-        match self.line_starts.binary_search(&byte_index) {
+        match self.line_starts.binary_search(&byte_offset) {
             Ok(line) => Ok(line),
             Err(next_line) => Ok(next_line - 1),
         }
@@ -50,7 +50,6 @@ impl LineNumbers {
     }
 
     /// Return the starting byte index of the line with the specified line index.
-    /// Convenience method that already generates errors if necessary.
     pub fn line_start(&self, line_index: usize) -> Result<usize, CodespanError> {
         use std::cmp::Ordering;
 
@@ -66,5 +65,13 @@ impl LineNumbers {
                 max: self.line_starts.len() - 1,
             }),
         }
+    }
+
+    pub fn point(&self, byte_index: usize) -> Result<tree_sitter::Point, CodespanError> {
+        let row = self.line_index(byte_index)?;
+        let range = self.line_range(row)?;
+        let column = byte_index - range.start;
+
+        Ok(tree_sitter::Point { row, column })
     }
 }
