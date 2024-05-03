@@ -58,6 +58,7 @@ pub struct Jar(
     crate::queries::metadata::VariantMetadata,
     crate::queries::metadata::WorldMetadata,
     crate::queries::Package,
+    crate::queries::imported_types,
     crate::queries::PackageId,
     crate::queries::parse,
     crate::queries::selection_ranges,

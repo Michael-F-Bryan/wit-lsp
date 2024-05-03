@@ -1,4 +1,4 @@
-use std::ops::Range;
+use std::{fmt::Display, ops::Range};
 
 use codespan_reporting::files::Error as CodespanError;
 use im::{OrdMap, Vector};
@@ -74,7 +74,11 @@ fn resolve_id(db: &dyn Db, files: &Vector<SourceFile>) -> Option<PackageId> {
         let ast = crate::queries::parse(db, f);
 
         if let Some(node) = ast.source_file(db).package_opt() {
-            if let Some(new_id) = package_id(db, node, f) {
+            let pkg_id = node
+                .fully_qualified_package_name()
+                .and_then(|node| package_id(db, node, f));
+
+            if let Some(new_id) = pkg_id {
                 let location = Location::new(f.path(db), node.range());
 
                 match &id {
@@ -133,22 +137,22 @@ pub fn workspace_packages(db: &dyn Db, ws: Workspace) -> Vector<Package> {
         .collect()
 }
 
-fn package_id(db: &dyn Db, node: ast::PackageDecl<'_>, file: SourceFile) -> Option<PackageId> {
-    let node = node.fully_qualified_package_name()?;
+pub(crate) fn package_id(
+    db: &dyn Db,
+    node: ast::FullyQualifiedPackageName<'_>,
+    file: SourceFile,
+) -> Option<PackageId> {
     let src = file.contents(db);
 
-    let pkg = node.package()?.utf8_text(src);
-    let pkg = Vector::unit(Text::from(pkg));
+    let ns = node.namespace()?.identifier()?.utf8_text(src);
+    let ns = Vector::unit(Text::from(ns));
 
-    let path = node
-        .path()?
-        .iter_identifiers()
-        .map(|ident| Text::from(ident.utf8_text(src)))
-        .collect();
+    let name = node.package()?.identifier()?;
+    let name = Vector::unit(Text::from(name.utf8_text(src)));
 
     let version = node.version_opt().map(|v| v.utf8_text(src)).map(Text::from);
 
-    Some(PackageId::new(db, pkg, path, version))
+    Some(PackageId::new(db, ns, name, version))
 }
 
 /// A group of files in a [`Workspace`].
@@ -167,9 +171,42 @@ impl Package {
 
 #[salsa::interned]
 pub struct PackageId {
-    pub package: Vector<Text>,
-    pub path: Vector<Text>,
+    pub namespace: Vector<Text>,
+    pub package_name: Vector<Text>,
     pub version: Option<Text>,
+}
+
+impl PackageId {
+    pub fn display(self, db: &dyn Db) -> impl Display + '_ {
+        struct Wrapper<'db> {
+            id: PackageId,
+            db: &'db dyn Db,
+        }
+        impl Display for Wrapper<'_> {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                for (i, ns) in self.id.namespace(self.db).iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ":")?;
+                    }
+                    write!(f, "{ns}")?;
+                }
+
+                for (i, nested_package) in self.id.package_name(self.db).iter().enumerate() {
+                    if i > 0 {
+                        write!(f, "/")?;
+                    }
+                    write!(f, "{nested_package}")?;
+                }
+
+                if let Some(version) = self.id.version(self.db) {
+                    write!(f, "@{version}")?;
+                }
+
+                Ok(())
+            }
+        }
+        Wrapper { id: self, db }
+    }
 }
 
 /// A file attached to a [`Workspace`].
@@ -252,8 +289,8 @@ mod tests {
         let ws = workspace!(db, {
             "root.wit" => "",
             "simple/unnamed.wit" => "",
-            "named/package.wit" => "package named:package;",
-            "named/with/version.wit" => "package named:with/version@1.2.3;",
+            "named/package.wit" => "package some-namespace:package;",
+            "named/with/version.wit" => "package another-namespace:package@1.2.3;",
             "merge/empty.wit" => "",
             "merge/package-decl.wit" => "package merge:some-package",
         });

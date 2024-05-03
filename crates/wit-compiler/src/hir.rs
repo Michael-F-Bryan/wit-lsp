@@ -178,11 +178,11 @@ pub enum Type {
 }
 
 /// A reference to an item defined elsewhere.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct ItemReference {
     pub file: FilePath,
     pub scope: ScopeIndex,
-    pub item: ItemReferenceKind,
+    pub kind: ItemReferenceKind,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

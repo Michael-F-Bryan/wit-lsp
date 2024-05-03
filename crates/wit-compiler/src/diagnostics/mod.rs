@@ -24,6 +24,7 @@ pub enum Diagnostic {
     MultipleConstructors(MultipleConstructors),
     SyntaxError(SyntaxError),
     UnknownName(UnknownName),
+    UnknownPackage(UnknownPackage),
     Bug(Bug),
     MismatchedPackageDeclaration(MismatchedPackageDeclaration),
     MultiplePackageDocs(MultiplePackageDocs),
@@ -35,6 +36,7 @@ impl Diagnostic {
             Diagnostic::DuplicateName(DuplicateName { location, .. })
             | Diagnostic::SyntaxError(SyntaxError { location, .. })
             | Diagnostic::UnknownName(UnknownName { location, .. })
+            | Diagnostic::UnknownPackage(UnknownPackage { location, .. })
             | Diagnostic::MultipleConstructors(MultipleConstructors { location, .. })
             | Diagnostic::MismatchedPackageDeclaration(MismatchedPackageDeclaration {
                 second_location: location,
@@ -54,6 +56,7 @@ impl Diagnostic {
             Diagnostic::MultipleConstructors(diag) => diag.as_diagnostic(),
             Diagnostic::SyntaxError(diag) => diag.as_diagnostic(),
             Diagnostic::UnknownName(diag) => diag.as_diagnostic(),
+            Diagnostic::UnknownPackage(diag) => diag.as_diagnostic(),
             Diagnostic::Bug(diag) => diag.as_diagnostic(),
             Diagnostic::MismatchedPackageDeclaration(diag) => diag.as_diagnostic(),
             Diagnostic::MultiplePackageDocs(diag) => diag.as_diagnostic(),
@@ -184,6 +187,33 @@ impl IntoDiagnostic for MultipleConstructors {
 impl From<MultipleConstructors> for Diagnostic {
     fn from(value: MultipleConstructors) -> Self {
         Diagnostic::MultipleConstructors(value)
+    }
+}
+
+/// The user referenced an unknown identifier.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UnknownPackage {
+    /// The package being referenced.
+    pub package_id: Text,
+    pub location: Location,
+}
+
+impl IntoDiagnostic for UnknownPackage {
+    const ERROR_CODE: &'static str = "E007";
+    const MESSAGE: &'static str = "Reference to unknown package";
+    const VERBOSE_DESCRIPTION: &'static str = include_str!("E007-unknown-package.md");
+
+    fn as_diagnostic(&self) -> Diag {
+        Diag::error()
+            .with_message(Self::MESSAGE)
+            .with_code(Self::ERROR_CODE)
+            .with_labels(vec![self.location.label()])
+    }
+}
+
+impl From<UnknownPackage> for Diagnostic {
+    fn from(value: UnknownPackage) -> Self {
+        Diagnostic::UnknownPackage(value)
     }
 }
 

@@ -254,42 +254,35 @@ fn push_with_optional_name<T>(
 }
 
 fn export_metadata(ctx: &mut Context, node: ast::ExportItem<'_>) -> Option<ExportMetadata> {
-    if let Some(_path) = node.exported_path() {
-        Some(ExportMetadata::new(
-            ctx.db,
-            None,
-            ctx.index(),
-            Pointer::for_node(ctx.path, node),
-        ))
-    } else if let Some(item) = node.exported_item() {
-        let ident = item.identifier(ctx.src)?;
-        Some(ExportMetadata::new(
-            ctx.db,
-            Some(Ident::new(ctx.db, ident.into())),
-            ctx.index(),
-            Pointer::for_node(ctx.path, node),
-        ))
-    } else {
-        None
-    }
+    let exposable = node.exposable()?;
+    let ident = exposable_metadata(ctx, exposable)?;
+
+    Some(ExportMetadata::new(
+        ctx.db,
+        ident,
+        ctx.index(),
+        Pointer::for_node(ctx.path, node),
+    ))
 }
 
 fn import_metadata(ctx: &mut Context, node: ast::ImportItem<'_>) -> Option<ImportMetadata> {
-    if let Some(_path) = node.imported_path() {
-        Some(ImportMetadata::new(
-            ctx.db,
-            None,
-            ctx.index(),
-            Pointer::for_node(ctx.path, node),
-        ))
-    } else if let Some(item) = node.imported_item() {
+    let exposable = node.exposable()?;
+    let ident = exposable_metadata(ctx, exposable)?;
+
+    Some(ImportMetadata::new(
+        ctx.db,
+        ident,
+        ctx.index(),
+        Pointer::for_node(ctx.path, node),
+    ))
+}
+
+fn exposable_metadata(ctx: &mut Context, node: ast::Exposable<'_>) -> Option<Option<Ident>> {
+    if let Some(_path) = node.exposable_path() {
+        Some(None)
+    } else if let Some(item) = node.exposable_item() {
         let ident = item.identifier(ctx.src)?;
-        Some(ImportMetadata::new(
-            ctx.db,
-            Some(Ident::new(ctx.db, ident.into())),
-            ctx.index(),
-            Pointer::for_node(ctx.path, node),
-        ))
+        Some(Some(Ident::new(ctx.db, ident.into())))
     } else {
         None
     }

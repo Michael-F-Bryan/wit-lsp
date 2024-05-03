@@ -45,6 +45,14 @@ macro_rules! node_kinds {
             }
 
             impl AnyIndex {
+                pub fn file(self) -> FilePath {
+                    match self {
+                        $(
+                            AnyIndex::$name(ix) => ix.file(),
+                        )*
+                    }
+                }
+
                 $(
                     pub fn [< as_ $name:snake >](self) -> Option<Index<$name>> {
                         match self {
@@ -87,6 +95,8 @@ node_kinds! {
     Import => (ImportItem, crate::queries::metadata::ImportMetadata),
 }
 
+/// A unique identifier that can be used to refer to an element in a particular
+/// file.
 pub struct Index<K> {
     file: FilePath,
     index: RawIndex,
@@ -183,6 +193,15 @@ pub enum ScopeIndex {
     Interface(InterfaceIndex),
 }
 
+impl ScopeIndex {
+    pub fn file(self) -> FilePath {
+        match self {
+            ScopeIndex::World(w) => w.file(),
+            ScopeIndex::Interface(i) => i.file(),
+        }
+    }
+}
+
 impl From<InterfaceIndex> for ScopeIndex {
     fn from(v: InterfaceIndex) -> Self {
         Self::Interface(v)
@@ -192,6 +211,15 @@ impl From<InterfaceIndex> for ScopeIndex {
 impl From<WorldIndex> for ScopeIndex {
     fn from(v: WorldIndex) -> Self {
         Self::World(v)
+    }
+}
+
+impl From<ScopeIndex> for AnyIndex {
+    fn from(value: ScopeIndex) -> Self {
+        match value {
+            ScopeIndex::World(w) => w.into(),
+            ScopeIndex::Interface(i) => i.into(),
+        }
     }
 }
 

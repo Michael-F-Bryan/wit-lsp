@@ -664,8 +664,8 @@ fn resolve_tuple(ctx: Context<'_>, tuple: ast::Tuple<'_>) -> Option<hir::Type> {
     Some(hir::Type::Tuple(elements))
 }
 
-fn resolve_user_defined_type(ctx: Context<'_>, _ty: ast::UserDefinedType<'_>) -> Option<hir::Type> {
-    let _ = ctx.ws;
+fn resolve_user_defined_type(ctx: Context<'_>, ty: ast::UserDefinedType<'_>) -> Option<hir::Type> {
+    let _ident = ty.identifier(ctx.src)?;
     todo!()
 }
 

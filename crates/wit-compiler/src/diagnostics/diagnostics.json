@@ -20,6 +20,11 @@
     "description": "# E004: Unknown Name\n\nThe code referenced a name that doesn't exist in the current scope.\n"
   },
   {
+    "type_name": "wit_compiler::diagnostics::UnknownPackage",
+    "error_code": "E007",
+    "description": "# E007: Unknown Package\n\nThe package you are referring to isn't known by the compiler.\n"
+  },
+  {
     "type_name": "wit_compiler::diagnostics::Bug",
     "error_code": "E500",
     "description": "# E500: Bug\n\nThis is a bug.\n"
