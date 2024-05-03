@@ -16,9 +16,8 @@ module.exports = grammar({
     word: $ => $.identifier,
     extras: $ => [/[\s\n\t]+/, $.slash_comment, $.block_comment],
     conficts: $ => [
-        [$.exported_item, $.exported_path],
-        [$.imported_item, $.imported_path],
         [$.doc_comment, $.slash_comment],
+        [$.package_namespace, $.exposable_item],
     ],
 
     rules: {
@@ -34,16 +33,13 @@ module.exports = grammar({
             ";",
         ),
         fully_qualified_package_name: $ => seq(
-            field("package", $.package_name),
+            field("namespace", $.package_namespace),
             token.immediate(":"),
-            field("path", $.package_path),
+            field("package", $.package_name),
             optional(seq(token.immediate("@"), field("version", $.semver))),
         ),
-        // FIXME: Allow package names with multiple segments separated by ":"
-        // without causing an ambiguity in "package really:nested:module;", where
-        // that last "module" is actually the $.package_path
+        package_namespace: $ => prec.left($.identifier),
         package_name: $ => $.identifier,
-        package_path: $ => prec.left(punctuated($.identifier, "/")),
 
         top_level_item: $ => choice($.top_level_use_item, $.world_item, $.interface_item),
 
@@ -56,9 +52,11 @@ module.exports = grammar({
         use_path: $ => choice($.local_use_path, $.fully_qualified_use_path),
         local_use_path: $ => $.identifier,
         fully_qualified_use_path: $ => seq(
+            field("namespace", $.package_namespace),
+            token(":"),
             field("package", $.package_name),
-            token.immediate(":"),
-            field("path", $.package_path),
+            token("/"),
+            field("item_name", $.identifier),
             optional(seq(token.immediate("@"), field("version", $.semver))),
         ),
 
@@ -73,15 +71,11 @@ module.exports = grammar({
         world_items: $ => choice(
             $.export_item, $.import_item, $.use_item, $.typedef_item, $.include_item,
         ),
-        export_item: $ => choice(
-            prec(1, $.exported_item),
-            prec(0, $.exported_path),
-        ),
-        exported_item: $ => seq("export", field("name", $.identifier), ":", $.extern_type),
-        exported_path: $ => seq("export", $.fully_qualified_use_path, ";"),
-        import_item: $ => choice($.imported_item, $.imported_path),
-        imported_item: $ => seq("import", field("name", $.identifier), ":", $.extern_type),
-        imported_path: $ => seq("import", $.use_path, ";"),
+        export_item: $ => seq("export", $.exposable),
+        import_item: $ => seq("import", $.exposable),
+        exposable: $ => choice($.exposable_item, $.exposable_path),
+        exposable_item: $ => seq(field("name", $.identifier), ":", $.extern_type),
+        exposable_path: $ => seq($.fully_qualified_use_path, ";"),
 
         extern_type: $ => choice(
             seq($.func_type, ";"),

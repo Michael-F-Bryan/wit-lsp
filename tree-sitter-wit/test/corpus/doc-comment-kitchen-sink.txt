@@ -53,9 +53,9 @@ interface i {
       (doc_comment
         (docs)))
     (fully_qualified_package_name
-      (package_name
+      (package_namespace
         (identifier))
-      (package_path
+      (package_name
         (identifier))))
   (top_level_item
     (interface_item

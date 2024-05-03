@@ -9,8 +9,8 @@ package local:demo@1.2.3;
 (source_file
   (package_decl
     (fully_qualified_package_name
-      (package_name
+      (package_namespace
         (identifier))
-      (package_path
+      (package_name
         (identifier))
       (semver))))
