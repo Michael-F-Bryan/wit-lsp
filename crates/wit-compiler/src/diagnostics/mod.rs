@@ -17,7 +17,7 @@ type Diag = codespan_reporting::diagnostic::Diagnostic<FilePath>;
 pub struct Diagnostics(Diagnostic);
 
 /// Diagnostic messages that are emitted using [`Diagnostics`].
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Diagnostic {
     DuplicateName(DuplicateName),
@@ -75,7 +75,7 @@ pub trait IntoDiagnostic: Into<Diagnostic> {
     fn as_diagnostic(&self) -> Diag;
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SyntaxError {
     pub rule: Option<String>,
     pub location: Location,
@@ -106,7 +106,7 @@ impl From<SyntaxError> for Diagnostic {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DuplicateName {
     pub name: Text,
     pub location: Location,
@@ -139,7 +139,7 @@ impl From<DuplicateName> for Diagnostic {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct MultipleConstructors {
     pub location: Location,
     pub original_definition: Location,
@@ -172,7 +172,7 @@ impl From<MultipleConstructors> for Diagnostic {
 }
 
 /// The user referenced an unknown identifier.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct UnknownPackage {
     /// The package being referenced.
     pub package_id: Text,
@@ -199,7 +199,7 @@ impl From<UnknownPackage> for Diagnostic {
 }
 
 /// The user referenced an unknown identifier.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct UnknownName {
     /// The name being referenced.
     pub name: Text,
@@ -225,7 +225,7 @@ impl From<UnknownName> for Diagnostic {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Bug {
     /// The message.
     pub message: Text,
@@ -272,7 +272,7 @@ impl From<Bug> for Diagnostic {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct MismatchedPackageDeclaration {
     pub second_id: crate::queries::PackageId,
     pub second_location: Location,
@@ -305,7 +305,7 @@ impl From<MismatchedPackageDeclaration> for Diagnostic {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct MultiplePackageDocs {
     pub second_location: Location,
     pub original_definition: Location,
@@ -379,7 +379,7 @@ impl Location {
     }
 }
 
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct DiagnosticInfo {
     pub type_name: &'static str,
     pub message: &'static str,
