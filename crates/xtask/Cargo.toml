@@ -20,6 +20,7 @@ prettyplease = "0.2.16"
 proc-macro2 = "1.0.79"
 pulldown-cmark = "0.10.3"
 quote = "1.0.35"
+regex = "1.10.4"
 serde = { workspace = true }
 serde_json = { workspace = true }
 syn = "2.0.55"
