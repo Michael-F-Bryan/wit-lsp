@@ -334,11 +334,7 @@ pub fn tree(
 
 /// Traverse an n-ary tree using `cursor`, returning the nodes of the tree
 /// through an iterator in an order according to `order`.
-///
-/// `cursor` must be at the root of the tree.
-/// (i.e. `cursor.goto_parent()` must return false)
-pub fn cursor<C: Cursor>(mut cursor: C, order: Order) -> impl FusedIterator<Item = C::Node> {
-    assert!(!cursor.goto_parent());
+pub fn cursor<C: Cursor>(cursor: C, order: Order) -> impl FusedIterator<Item = C::Node> {
     Traverse::new(cursor, order)
 }
 
