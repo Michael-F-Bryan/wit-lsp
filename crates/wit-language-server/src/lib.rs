@@ -1,5 +1,6 @@
 #![recursion_limit = "256"]
 
+pub mod code_actions;
 mod database;
 mod middleware;
 mod ops;

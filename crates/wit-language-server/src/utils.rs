@@ -1,3 +1,5 @@
+use wit_compiler::diagnostics::{Diagnostic, Location};
+
 pub fn ts_to_range(range: tree_sitter::Range) -> tower_lsp::lsp_types::Range {
     let tree_sitter::Range {
         start_point,
@@ -21,9 +23,9 @@ pub fn ts_to_position(point: tree_sitter::Point) -> tower_lsp::lsp_types::Positi
 
 pub fn location_to_lsp(
     db: &dyn wit_compiler::Db,
-    location: wit_compiler::diagnostics::Location,
+    location: Location,
 ) -> tower_lsp::lsp_types::Location {
-    let wit_compiler::diagnostics::Location { filename, range } = location;
+    let Location { filename, range } = location;
 
     tower_lsp::lsp_types::Location {
         uri: filename
@@ -39,4 +41,10 @@ pub fn position_to_ts(position: tower_lsp::lsp_types::Position) -> tree_sitter::
         row: position.line as usize,
         column: position.character as usize,
     }
+}
+
+/// Generate a hash code for a particular [`Diagnostic`] that is guaranteed to
+/// be stable across multiple runs within the same process.
+pub fn hash_diagnostic(diag: &Diagnostic) -> u64 {
+    ahash::RandomState::with_seed(0xdead_beef_cafe_babe).hash_one(diag)
 }

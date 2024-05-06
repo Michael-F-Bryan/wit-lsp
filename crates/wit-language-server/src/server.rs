@@ -4,13 +4,14 @@ use tokio::sync::{Mutex, MutexGuard};
 use tower_lsp::{
     jsonrpc::Error,
     lsp_types::{
-        CompletionOptions, CompletionParams, CompletionResponse, DiagnosticOptions,
-        DiagnosticServerCapabilities, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
-        DidOpenTextDocumentParams, DidSaveTextDocumentParams, DocumentDiagnosticParams,
-        DocumentDiagnosticReportResult, FoldingRange, FoldingRangeParams, GotoDefinitionParams,
-        GotoDefinitionResponse, InitializeParams, InitializeResult, OneOf, SelectionRange,
-        SelectionRangeParams, ServerCapabilities, ServerInfo, TextDocumentContentChangeEvent,
-        TextDocumentItem, TextDocumentSyncCapability, TextDocumentSyncKind, Url,
+        CodeActionParams, CodeActionResponse, CompletionOptions, CompletionParams,
+        CompletionResponse, DiagnosticOptions, DiagnosticServerCapabilities,
+        DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
+        DidSaveTextDocumentParams, DocumentDiagnosticParams, DocumentDiagnosticReportResult,
+        FoldingRange, FoldingRangeParams, GotoDefinitionParams, GotoDefinitionResponse,
+        InitializeParams, InitializeResult, OneOf, SelectionRange, SelectionRangeParams,
+        ServerCapabilities, ServerInfo, TextDocumentContentChangeEvent, TextDocumentItem,
+        TextDocumentSyncCapability, TextDocumentSyncKind, Url,
     },
     Client, ClientSocket, LspService,
 };
@@ -96,19 +97,20 @@ impl tower_lsp::LanguageServer for LanguageServer {
 
         Ok(InitializeResult {
             capabilities: ServerCapabilities {
+                folding_range_provider: Some(true.into()),
+                selection_range_provider: Some(true.into()),
+                code_action_provider: Some(true.into()),
+                definition_provider: Some(OneOf::Left(true)),
+                completion_provider: Some(CompletionOptions::default()),
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(
                     TextDocumentSyncKind::FULL,
                 )),
-                folding_range_provider: Some(true.into()),
-                selection_range_provider: Some(true.into()),
                 diagnostic_provider: Some(DiagnosticServerCapabilities::Options(
                     DiagnosticOptions {
                         inter_file_dependencies: true,
                         ..Default::default()
                     },
                 )),
-                definition_provider: Some(OneOf::Left(true)),
-                completion_provider: Some(CompletionOptions::default()),
                 ..Default::default()
             },
             server_info: Some(ServerInfo {
@@ -305,6 +307,18 @@ impl tower_lsp::LanguageServer for LanguageServer {
 
         // TODO: Finish wiring this up
         Err(Error::method_not_found())
+    }
+
+    #[tracing::instrument(level = "debug", skip_all)]
+    async fn code_action(
+        &self,
+        params: CodeActionParams,
+    ) -> Result<Option<CodeActionResponse>, Error> {
+        let snap = self.snapshot().await;
+
+        let actions = crate::code_actions::resolve(snap.db(), snap.ws, params);
+
+        Ok(actions)
     }
 }
 
