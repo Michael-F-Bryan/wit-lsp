@@ -45,7 +45,7 @@ Package {
                                 ),
                             },
                             docs: Some(
-                                This is a flags.,
+                                "This is a flags.",
                             ),
                             cases: [
                                 FlagsCase {
@@ -55,7 +55,7 @@ Package {
                                         },
                                     ),
                                     docs: Some(
-                                        first case.,
+                                        "first case.",
                                     ),
                                 },
                                 FlagsCase {
@@ -65,9 +65,7 @@ Package {
                                         },
                                     ),
                                     docs: Some(
-                                        Second case.
-                                        and another
-                                        doc-comment.,
+                                        "Second case.\nand another\ndoc-comment.",
                                     ),
                                 },
                             ],

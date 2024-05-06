@@ -45,7 +45,7 @@ Package {
                                 ),
                             },
                             docs: Some(
-                                A very important record.,
+                                "A very important record.",
                             ),
                             fields: [
                                 RecordField {
@@ -55,7 +55,7 @@ Package {
                                         },
                                     ),
                                     docs: Some(
-                                        The first field.,
+                                        "The first field.",
                                     ),
                                     ty: Builtin(
                                         String,
@@ -68,7 +68,7 @@ Package {
                                         },
                                     ),
                                     docs: Some(
-                                        The second field.,
+                                        "The second field.",
                                     ),
                                     ty: Builtin(
                                         U32,
@@ -81,7 +81,7 @@ Package {
                                         },
                                     ),
                                     docs: Some(
-                                        The third field.,
+                                        "The third field.",
                                     ),
                                     ty: List(
                                         Builtin(

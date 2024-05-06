@@ -45,7 +45,7 @@ Package {
                                 ),
                             },
                             docs: Some(
-                                This is an enum.,
+                                "This is an enum.",
                             ),
                             cases: [
                                 EnumCase {
@@ -55,7 +55,7 @@ Package {
                                         },
                                     ),
                                     docs: Some(
-                                        first case.,
+                                        "first case.",
                                     ),
                                 },
                                 EnumCase {
@@ -65,9 +65,7 @@ Package {
                                         },
                                     ),
                                     docs: Some(
-                                        Second case.
-                                        and another
-                                        doc-comment.,
+                                        "Second case.\nand another\ndoc-comment.",
                                     ),
                                 },
                             ],

@@ -45,7 +45,7 @@ Package {
                                 ),
                             },
                             docs: Some(
-                                A variant.,
+                                "A variant.",
                             ),
                             cases: [
                                 VariantCase {
@@ -55,7 +55,7 @@ Package {
                                         },
                                     ),
                                     docs: Some(
-                                        An integer.,
+                                        "An integer.",
                                     ),
                                     ty: Some(
                                         Builtin(
@@ -70,7 +70,7 @@ Package {
                                         },
                                     ),
                                     docs: Some(
-                                        A string.,
+                                        "A string.",
                                     ),
                                     ty: Some(
                                         Builtin(
@@ -85,7 +85,7 @@ Package {
                                         },
                                     ),
                                     docs: Some(
-                                        An empty variant.,
+                                        "An empty variant.",
                                     ),
                                     ty: None,
                                 },

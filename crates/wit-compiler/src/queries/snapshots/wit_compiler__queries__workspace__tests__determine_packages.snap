@@ -7,7 +7,7 @@ expression: debug
         [salsa id]: 0,
         dir: FilePath {
             [salsa id]: 6,
-            raw_path: .,
+            raw_path: ".",
         },
         id: None,
         files: [
@@ -22,16 +22,16 @@ expression: debug
         [salsa id]: 1,
         dir: FilePath {
             [salsa id]: 7,
-            raw_path: merge,
+            raw_path: "merge",
         },
         id: Some(
             PackageId {
                 [salsa id]: 0,
                 namespace: [
-                    merge,
+                    "merge",
                 ],
                 package_name: [
-                    some-package,
+                    "some-package",
                 ],
                 version: None,
             },
@@ -53,16 +53,16 @@ expression: debug
         [salsa id]: 2,
         dir: FilePath {
             [salsa id]: 8,
-            raw_path: named,
+            raw_path: "named",
         },
         id: Some(
             PackageId {
                 [salsa id]: 1,
                 namespace: [
-                    some-namespace,
+                    "some-namespace",
                 ],
                 package_name: [
-                    package,
+                    "package",
                 ],
                 version: None,
             },
@@ -79,19 +79,19 @@ expression: debug
         [salsa id]: 3,
         dir: FilePath {
             [salsa id]: 9,
-            raw_path: named/with,
+            raw_path: "named/with",
         },
         id: Some(
             PackageId {
                 [salsa id]: 2,
                 namespace: [
-                    another-namespace,
+                    "another-namespace",
                 ],
                 package_name: [
-                    package,
+                    "package",
                 ],
                 version: Some(
-                    1.2.3,
+                    "1.2.3",
                 ),
             },
         ),
@@ -107,7 +107,7 @@ expression: debug
         [salsa id]: 4,
         dir: FilePath {
             [salsa id]: 10,
-            raw_path: simple,
+            raw_path: "simple",
         },
         id: None,
         files: [
