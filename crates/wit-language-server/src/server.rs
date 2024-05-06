@@ -306,7 +306,7 @@ impl tower_lsp::LanguageServer for LanguageServer {
         };
 
         // TODO: Finish wiring this up
-        Err(Error::method_not_found())
+        Ok(None)
     }
 
     #[tracing::instrument(level = "debug", skip_all)]
