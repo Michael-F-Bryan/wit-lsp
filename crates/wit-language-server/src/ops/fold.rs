@@ -5,37 +5,6 @@ use wit_compiler::queries::Ast;
 
 use crate::Db;
 
-// FIXME: The folded ranges aren't 100% correct here.
-//
-// They'll often include the trailing "}" even though our query should match the
-// items between the "{" and "}". The param_list one is also a bit suspect
-// because the folded region won't include the name of the first parameter.
-const QUERY: &str = r"
-[
-    (block_comment)
-    (slash_comment)
-    (doc_comment)
-    (world_item items: (world_items))
-    (interface_item items: (interface_items))
-    (param_list params: (named_type))
-    (doc_comment)
-    (resource_item methods: (resource_method))
-    (variant_item cases: (variant_case))
-    (record_item fields: (record_field))
-    (flags_item cases: (flags_case))
-    (enum_item cases: (enum_case))
-] @normal
-
-[
-    (block_comment)
-    (slash_comment)
-] @comments
-
-[
-    (top_level_use_item)
-] @imports
-";
-
 /// Implement [range folding][spec].
 ///
 /// [spec]: https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_foldingRange
@@ -52,7 +21,8 @@ pub fn folding_range(db: &dyn Db, ast: Ast) -> Vector<FoldingRange> {
 fn folding_range_impl(root: Node<'_>, src: &str) -> Vector<FoldingRange> {
     let mut cursor = QueryCursor::new();
     let language = tree_sitter_wit::language();
-    let query = tree_sitter::Query::new(&language, QUERY).expect("The query was invalid");
+    let query = tree_sitter::Query::new(&language, tree_sitter_wit::FOLDING_QUERY)
+        .expect("The query was invalid");
 
     let capture_names = query.capture_names();
 
