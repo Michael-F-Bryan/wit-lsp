@@ -2143,6 +2143,7 @@ dependencies = [
  "tracing",
  "tree-sitter",
  "tree-sitter-wit",
+ "wit-syntax",
 ]
 
 [[package]]
@@ -2166,6 +2167,14 @@ dependencies = [
  "tree-sitter-wit",
  "uuid",
  "wit-compiler",
+]
+
+[[package]]
+name = "wit-syntax"
+version = "0.1.0"
+dependencies = [
+ "tree-sitter",
+ "tree-sitter-wit",
 ]
 
 [[package]]

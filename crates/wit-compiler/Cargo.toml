@@ -21,6 +21,7 @@ serde = { workspace = true, features = ["derive"] }
 tracing = { workspace = true, features = ["attributes"] }
 tree-sitter = { workspace = true }
 tree-sitter-wit = { version = "0.2.0", path = "../../tree-sitter-wit" }
+wit-syntax = { version = "0.1.0", path = "../wit-syntax" }
 
 [dev-dependencies]
 insta = { workspace = true }

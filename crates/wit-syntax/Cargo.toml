@@ -1,6 +1,8 @@
 [package]
 name = "wit-syntax"
 version = "0.1.0"
+description = "Strongly-typed wrappers around tree_sitter_wit's Concrete Syntax Tree"
+publish = false
 authors.workspace = true
 edition.workspace = true
 homepage.workspace = true

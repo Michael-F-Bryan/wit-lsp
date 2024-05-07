@@ -1,5 +1,6 @@
 //! Strongly-typed wrappers around [`tree_sitter_wit`]'s *Concrete Syntax Tree*.
 
+pub extern crate tree_sitter;
 pub extern crate tree_sitter_wit;
 
 #[rustfmt::skip]
