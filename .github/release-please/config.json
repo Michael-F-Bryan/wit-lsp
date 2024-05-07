@@ -10,6 +10,9 @@
         "crates/wit-language-server": {
             "component": "wit-language-server"
         },
+        "crates/wit-syntax": {
+            "component": "wit-syntax"
+        },
         "tree-sitter-wit": {
             "component": "tree-sitter-wit",
             "extra-files": [

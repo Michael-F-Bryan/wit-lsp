@@ -18,9 +18,8 @@ static NODE_TYPES_PATH: Lazy<PathBuf> = Lazy::new(|| {
 static AST_GENERATED_PATH: Lazy<PathBuf> = Lazy::new(|| {
     utils::project_root()
         .join("crates")
-        .join("wit-compiler")
+        .join("wit-syntax")
         .join("src")
-        .join("ast")
         .join("generated.rs")
 });
 
@@ -164,7 +163,7 @@ fn generate_helper_trait_impls(ident: &Ident, node: &NodeType) -> TokenStream {
                 fn identifier(self, src: &str) -> Option<&str> {
                     let node = self.name()?;
                     let raw = node.0.utf8_text(src.as_bytes()).unwrap();
-                    Some(crate::ast::ident(raw))
+                    Some(crate::ident(raw))
                 }
             }
         });
@@ -604,7 +603,6 @@ mod tests {
         let node_types = std::fs::read_to_string(&*NODE_TYPES_PATH).unwrap();
         let tokens = generate_ast(&node_types);
         let src = utils::format_rust(tokens);
-        let ast_rs = utils::project_root().join("crates/wit-compiler/src/ast/generated.rs");
-        utils::ensure_file_contents(ast_rs, src).unwrap();
+        utils::ensure_file_contents(&*AST_GENERATED_PATH, src).unwrap();
     }
 }

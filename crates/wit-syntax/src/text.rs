@@ -5,8 +5,6 @@ use std::{
     sync::Arc,
 };
 
-use salsa::DebugWithDb;
-
 /// A cheaply cloneable, immutable string.
 #[derive(Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct Text(Arc<str>);
@@ -137,16 +135,5 @@ impl Display for Text {
 impl Debug for Text {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Debug::fmt(&self.0, f)
-    }
-}
-
-impl<D: ?Sized> DebugWithDb<D> for Text {
-    fn fmt(
-        &self,
-        f: &mut std::fmt::Formatter<'_>,
-        _db: &D,
-        _include_all_fields: bool,
-    ) -> std::fmt::Result {
-        Debug::fmt(self, f)
     }
 }

@@ -1,14 +1,19 @@
-//! Strongly-typed AST nodes.
+//! Strongly-typed wrappers around [`tree_sitter_wit`]'s *Concrete Syntax Tree*.
+
+pub extern crate tree_sitter;
+pub extern crate tree_sitter_wit;
 
 #[rustfmt::skip]
 mod generated;
 mod hand_written;
+mod text;
 mod traits;
 
 use tree_sitter::Node;
 
 pub use self::{
     generated::*,
+    text::Text,
     traits::{AstNode, HasAttr, HasIdent, HasSource, NodeExt},
 };
 

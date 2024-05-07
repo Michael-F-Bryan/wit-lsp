@@ -1,16 +1,17 @@
 #![recursion_limit = "256"]
 
 pub mod access;
-pub mod ast;
 mod compiler;
 pub mod diagnostics;
 pub mod hir;
 pub mod queries;
-mod text;
 pub mod traverse;
 mod tree;
 
-pub use crate::{compiler::Compiler, text::Text, tree::Tree};
+pub use crate::{compiler::Compiler, tree::Tree};
+
+// Re-exported for convenience.
+pub use wit_syntax::{self as ast, Text};
 
 /// A [`salsa::jar::Jar`] containing all queries and tracked types used by this
 /// crate.

@@ -177,7 +177,7 @@ impl super::HasIdent for EnumCase<'_> {
     fn identifier(self, src: &str) -> Option<&str> {
         let node = self.name()?;
         let raw = node.0.utf8_text(src.as_bytes()).unwrap();
-        Some(crate::ast::ident(raw))
+        Some(crate::ident(raw))
     }
 }
 impl<'tree> super::HasAttr<'tree> for EnumCase<'tree> {
@@ -227,7 +227,7 @@ impl super::HasIdent for EnumItem<'_> {
     fn identifier(self, src: &str) -> Option<&str> {
         let node = self.name()?;
         let raw = node.0.utf8_text(src.as_bytes()).unwrap();
-        Some(crate::ast::ident(raw))
+        Some(crate::ident(raw))
     }
 }
 impl<'tree> super::HasAttr<'tree> for EnumItem<'tree> {
@@ -313,7 +313,7 @@ impl super::HasIdent for ExposableItem<'_> {
     fn identifier(self, src: &str) -> Option<&str> {
         let node = self.name()?;
         let raw = node.0.utf8_text(src.as_bytes()).unwrap();
-        Some(crate::ast::ident(raw))
+        Some(crate::ident(raw))
     }
 }
 impl<'tree> super::AstNode<'tree> for ExposableItem<'tree> {
@@ -394,7 +394,7 @@ impl super::HasIdent for FlagsCase<'_> {
     fn identifier(self, src: &str) -> Option<&str> {
         let node = self.name()?;
         let raw = node.0.utf8_text(src.as_bytes()).unwrap();
-        Some(crate::ast::ident(raw))
+        Some(crate::ident(raw))
     }
 }
 impl<'tree> super::HasAttr<'tree> for FlagsCase<'tree> {
@@ -444,7 +444,7 @@ impl super::HasIdent for FlagsItem<'_> {
     fn identifier(self, src: &str) -> Option<&str> {
         let node = self.name()?;
         let raw = node.0.utf8_text(src.as_bytes()).unwrap();
-        Some(crate::ast::ident(raw))
+        Some(crate::ident(raw))
     }
 }
 impl<'tree> super::HasAttr<'tree> for FlagsItem<'tree> {
@@ -557,7 +557,7 @@ impl super::HasIdent for FuncItem<'_> {
     fn identifier(self, src: &str) -> Option<&str> {
         let node = self.name()?;
         let raw = node.0.utf8_text(src.as_bytes()).unwrap();
-        Some(crate::ast::ident(raw))
+        Some(crate::ident(raw))
     }
 }
 impl<'tree> super::HasAttr<'tree> for FuncItem<'tree> {
@@ -695,7 +695,7 @@ impl super::HasIdent for IncludeNamesItem<'_> {
     fn identifier(self, src: &str) -> Option<&str> {
         let node = self.name()?;
         let raw = node.0.utf8_text(src.as_bytes()).unwrap();
-        Some(crate::ast::ident(raw))
+        Some(crate::ident(raw))
     }
 }
 impl<'tree> super::AstNode<'tree> for IncludeNamesItem<'tree> {
@@ -763,7 +763,7 @@ impl super::HasIdent for InterfaceItem<'_> {
     fn identifier(self, src: &str) -> Option<&str> {
         let node = self.name()?;
         let raw = node.0.utf8_text(src.as_bytes()).unwrap();
-        Some(crate::ast::ident(raw))
+        Some(crate::ident(raw))
     }
 }
 impl<'tree> super::HasAttr<'tree> for InterfaceItem<'tree> {
@@ -897,7 +897,7 @@ impl super::HasIdent for NamedType<'_> {
     fn identifier(self, src: &str) -> Option<&str> {
         let node = self.name()?;
         let raw = node.0.utf8_text(src.as_bytes()).unwrap();
-        Some(crate::ast::ident(raw))
+        Some(crate::ident(raw))
     }
 }
 impl<'tree> super::HasAttr<'tree> for NamedType<'tree> {
@@ -1091,7 +1091,7 @@ impl super::HasIdent for RecordField<'_> {
     fn identifier(self, src: &str) -> Option<&str> {
         let node = self.name()?;
         let raw = node.0.utf8_text(src.as_bytes()).unwrap();
-        Some(crate::ast::ident(raw))
+        Some(crate::ident(raw))
     }
 }
 impl<'tree> super::HasAttr<'tree> for RecordField<'tree> {
@@ -1141,7 +1141,7 @@ impl super::HasIdent for RecordItem<'_> {
     fn identifier(self, src: &str) -> Option<&str> {
         let node = self.name()?;
         let raw = node.0.utf8_text(src.as_bytes()).unwrap();
-        Some(crate::ast::ident(raw))
+        Some(crate::ident(raw))
     }
 }
 impl<'tree> super::HasAttr<'tree> for RecordItem<'tree> {
@@ -1227,7 +1227,7 @@ impl super::HasIdent for ResourceItem<'_> {
     fn identifier(self, src: &str) -> Option<&str> {
         let node = self.name()?;
         let raw = node.0.utf8_text(src.as_bytes()).unwrap();
-        Some(crate::ast::ident(raw))
+        Some(crate::ident(raw))
     }
 }
 impl<'tree> super::HasAttr<'tree> for ResourceItem<'tree> {
@@ -1390,7 +1390,7 @@ impl super::HasIdent for StaticMethod<'_> {
     fn identifier(self, src: &str) -> Option<&str> {
         let node = self.name()?;
         let raw = node.0.utf8_text(src.as_bytes()).unwrap();
-        Some(crate::ast::ident(raw))
+        Some(crate::ident(raw))
     }
 }
 impl<'tree> super::HasAttr<'tree> for StaticMethod<'tree> {
@@ -1551,7 +1551,7 @@ impl super::HasIdent for TypeItem<'_> {
     fn identifier(self, src: &str) -> Option<&str> {
         let node = self.name()?;
         let raw = node.0.utf8_text(src.as_bytes()).unwrap();
-        Some(crate::ast::ident(raw))
+        Some(crate::ident(raw))
     }
 }
 impl<'tree> super::HasAttr<'tree> for TypeItem<'tree> {
@@ -1654,7 +1654,7 @@ impl super::HasIdent for UseNamesItem<'_> {
     fn identifier(self, src: &str) -> Option<&str> {
         let node = self.name()?;
         let raw = node.0.utf8_text(src.as_bytes()).unwrap();
-        Some(crate::ast::ident(raw))
+        Some(crate::ident(raw))
     }
 }
 impl<'tree> super::AstNode<'tree> for UseNamesItem<'tree> {
@@ -1708,7 +1708,7 @@ impl super::HasIdent for UserDefinedType<'_> {
     fn identifier(self, src: &str) -> Option<&str> {
         let node = self.name()?;
         let raw = node.0.utf8_text(src.as_bytes()).unwrap();
-        Some(crate::ast::ident(raw))
+        Some(crate::ident(raw))
     }
 }
 impl<'tree> super::AstNode<'tree> for UserDefinedType<'tree> {
@@ -1747,7 +1747,7 @@ impl super::HasIdent for VariantCase<'_> {
     fn identifier(self, src: &str) -> Option<&str> {
         let node = self.name()?;
         let raw = node.0.utf8_text(src.as_bytes()).unwrap();
-        Some(crate::ast::ident(raw))
+        Some(crate::ident(raw))
     }
 }
 impl<'tree> super::HasAttr<'tree> for VariantCase<'tree> {
@@ -1797,7 +1797,7 @@ impl super::HasIdent for VariantItem<'_> {
     fn identifier(self, src: &str) -> Option<&str> {
         let node = self.name()?;
         let raw = node.0.utf8_text(src.as_bytes()).unwrap();
-        Some(crate::ast::ident(raw))
+        Some(crate::ident(raw))
     }
 }
 impl<'tree> super::HasAttr<'tree> for VariantItem<'tree> {
@@ -1847,7 +1847,7 @@ impl super::HasIdent for WorldItem<'_> {
     fn identifier(self, src: &str) -> Option<&str> {
         let node = self.name()?;
         let raw = node.0.utf8_text(src.as_bytes()).unwrap();
-        Some(crate::ast::ident(raw))
+        Some(crate::ident(raw))
     }
 }
 impl<'tree> super::HasAttr<'tree> for WorldItem<'tree> {

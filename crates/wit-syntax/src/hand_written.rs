@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use crate::ast::{BlockComment, Builtins, HasSource, Identifier, Semver, UserDefinedType};
+use crate::{BlockComment, Builtins, HasSource, Identifier, Semver, UserDefinedType};
 
 macro_rules! literal_types {
     ($($ty:ident),* $(,)?) => {
@@ -60,7 +60,7 @@ impl BlockComment<'_> {
 
 #[cfg(test)]
 mod tests {
-    use crate::ast::AstNode;
+    use crate::AstNode;
 
     use super::*;
 
