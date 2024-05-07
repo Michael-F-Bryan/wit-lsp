@@ -40,6 +40,13 @@ pub fn file_diagnostics(
 
 /// Convert a [`wit_compiler::diagnostics::Diagnostic`] to a
 /// [`tower_lsp::lsp_types::Diagnostic`].
+///
+/// # Implementation Detail
+///
+/// This stashes a hash of the [`wit_compiler::diagnostics::Diagnostic`] inside
+/// the resulting [`tower_lsp::lsp_types::Diagnostic`] so it can be retrieved
+/// at a later date (e.g. when running a *Code Action* that can fix the issue).
+/// The hash code is generated using [`utils::hash_diagnostic()`].
 fn lsp_diagnostic(
     db: &dyn wit_compiler::Db,
     ws: Workspace,
@@ -52,6 +59,7 @@ fn lsp_diagnostic(
         return None;
     }
 
+    let hash = utils::hash_diagnostic(&diag);
     let diag = diag.as_diagnostic();
     let code = diag.code.as_deref()?;
     let msg = &diag.message;
@@ -81,6 +89,7 @@ fn lsp_diagnostic(
             code.to_string(),
         )),
         severity: Some(lsp_severity(diag.severity)),
+        data: Some(hash.into()),
         ..Default::default()
     })
 }

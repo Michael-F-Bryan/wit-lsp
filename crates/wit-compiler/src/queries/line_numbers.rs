@@ -68,12 +68,29 @@ impl LineNumbers {
         }
     }
 
+    /// Find the [`Point`] that corresponds to a particular byte offset in
+    /// the text.
     pub fn point(&self, byte_index: usize) -> Result<Point, CodespanError> {
         let row = self.line_index(byte_index)?;
         let range = self.line_range(row)?;
         let column = byte_index - range.start - 1;
 
         Ok(Point { row, column })
+    }
+
+    /// Given a line and column, find the corresponding byte offset.
+    pub fn offset_for_point(&self, point: Point) -> Result<usize, CodespanError> {
+        let line = self.line_range(point.row)?;
+        let len = line.end - line.start;
+        if point.column > len {
+            return Err(CodespanError::ColumnTooLarge {
+                given: point.column,
+                max: len,
+            });
+        }
+
+        // Note: This doesn't take unicode into account.
+        Ok(line.start + point.column)
     }
 }
 

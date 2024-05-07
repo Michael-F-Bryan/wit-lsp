@@ -1,9 +1,10 @@
 mod ast;
+mod code_actions;
 mod diagnostics;
 
 use clap::Parser;
 
-use crate::codegen::{ast::Ast, diagnostics::Diagnostics};
+use crate::codegen::{ast::Ast, code_actions::CodeActions, diagnostics::Diagnostics};
 
 #[derive(Debug, Clone, Parser)]
 #[clap(subcommand_value_name = "TARGET", subcommand_help_heading = "Targets")]
@@ -29,6 +30,7 @@ impl Codegen {
 fn run_all_generators() -> color_eyre::Result<()> {
     Ast::default().generate()?;
     Diagnostics::default().generate()?;
+    CodeActions::default().generate()?;
 
     Ok(())
 }
@@ -38,6 +40,7 @@ enum Target {
     /// Generate strongly-typed AST nodes.
     Ast(Ast),
     Diagnostics(Diagnostics),
+    CodeActions(CodeActions),
 }
 
 impl Target {
@@ -45,6 +48,7 @@ impl Target {
         match self {
             Target::Ast(a) => a.generate(),
             Target::Diagnostics(d) => d.generate(),
+            Target::CodeActions(a) => a.generate(),
         }
     }
 }

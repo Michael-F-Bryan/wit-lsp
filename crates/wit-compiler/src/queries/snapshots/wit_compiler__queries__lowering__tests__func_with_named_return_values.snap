@@ -50,10 +50,10 @@ Package {
                         return_value: Some(
                             Named(
                                 {
-                                    a: Builtin(
+                                    "a": Builtin(
                                         U32,
                                     ),
-                                    b: Option(
+                                    "b": Option(
                                         Builtin(
                                             String,
                                         ),

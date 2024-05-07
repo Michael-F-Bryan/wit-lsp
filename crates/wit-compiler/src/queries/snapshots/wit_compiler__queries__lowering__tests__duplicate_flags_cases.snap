@@ -7,7 +7,7 @@ info:
 [
     DuplicateName(
         DuplicateName {
-            name: field,
+            name: "field",
             location: Location {
                 filename: FilePath(
                     Id {
