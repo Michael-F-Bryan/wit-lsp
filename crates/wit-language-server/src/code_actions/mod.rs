@@ -1,5 +1,9 @@
 //! Automated refactoring and code fixes.
 
+#[cfg(test)]
+#[macro_use]
+mod macros;
+
 mod action;
 mod all;
 mod context;

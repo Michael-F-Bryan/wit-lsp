@@ -2155,6 +2155,7 @@ dependencies = [
  "im",
  "insta",
  "itertools",
+ "pretty_assertions",
  "salsa-2022",
  "serde",
  "tokio",

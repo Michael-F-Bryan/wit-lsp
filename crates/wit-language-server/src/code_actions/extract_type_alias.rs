@@ -71,60 +71,45 @@ fn type_alias_name(ty: ast::Ty<'_>, src: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use im::OrdMap;
-    use tower_lsp::lsp_types::TextDocumentIdentifier;
-    use wit_compiler::{
-        ast::AstNode,
-        queries::{FilePath, SourceFile, Workspace},
-    };
-
-    use crate::Database;
-
     use super::*;
 
-    #[test]
-    fn extract_a_type_alias() {
-        let before = r#"
-            interface x {
-                y: func(a: list< /* HERE */ list<u32>>);
-            }
-        "#;
-        let mut db = Database::default();
-        let path = FilePath::new(&db, "file:///file.wit".into());
-        let mut files = OrdMap::new();
-        let file = SourceFile::new(&db, path, before.into());
-        files.insert(path, file);
-        let ws = Workspace::new(&db, files);
-        let ast = wit_compiler::queries::parse(&db, file);
-        let cursor = ast
-            .tree(&db)
-            .iter()
-            .find_map(wit_compiler::ast::BlockComment::cast)
-            .unwrap();
-        let ctx = CodeActionContext::from_lsp(
-            &db,
-            ws,
-            tower_lsp::lsp_types::CodeActionParams {
-                text_document: TextDocumentIdentifier {
-                    uri: "file:///file.wit".parse().unwrap(),
-                },
-                range: crate::utils::ts_to_range(cursor.range()),
-                context: Default::default(),
-                partial_result_params: Default::default(),
-                work_done_progress_params: Default::default(),
-            },
-        )
-        .unwrap();
+    code_action_test! {
+        name: function_arg_in_interface,
+        code_action: extract_type_alias_action,
+        before: {
+            "file.wit": r#"
+                interface x {
+                    y: func(a: list< /* HERE */ list<u32>>);
+                }
+            "#,
+        },
+        after: {
+            "file.wit": r#"
+                interface x {
+                    type list-list-u32 = list< /* HERE */ list<u32>>;
+                    y: func(a: list-list-u32);
+                }
+            "#,
+        },
+    }
 
-        let action = extract_type_alias_action(&ctx).unwrap();
-
-        let after = r#"
-            interface x {
-                type list-list-u32 = list< /* HERE */ list<u32>>;
-                y: func(a: list-list-u32);
-            }
-        "#;
-        action.apply(&mut db, ws);
-        assert_eq!(file.contents(&db), after);
+    code_action_test! {
+        name: type_alias_in_world,
+        code_action: extract_type_alias_action,
+        before: {
+            "file.wit": r#"
+                world w {
+                    type super-complicated = option<list< /* HERE */ list<u32>>>;
+                }
+            "#,
+        },
+        after: {
+            "file.wit": r#"
+                world w {
+                    type list-list-u32 = list< /* HERE */ list<u32>>;
+                    type super-complicated = option<list-list-u32>;
+                }
+            "#,
+        },
     }
 }

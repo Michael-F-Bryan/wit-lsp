@@ -1,5 +1,9 @@
 #![recursion_limit = "256"]
 
+#[cfg(test)]
+#[macro_use]
+extern crate pretty_assertions;
+
 pub mod code_actions;
 mod database;
 mod middleware;
