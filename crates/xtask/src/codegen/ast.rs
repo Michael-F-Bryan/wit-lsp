@@ -603,6 +603,6 @@ mod tests {
         let node_types = std::fs::read_to_string(&*NODE_TYPES_PATH).unwrap();
         let tokens = generate_ast(&node_types);
         let src = utils::format_rust(tokens);
-        utils::ensure_file_contents(&AST_GENERATED_PATH, src).unwrap();
+        utils::ensure_file_contents(&*AST_GENERATED_PATH, src).unwrap();
     }
 }
