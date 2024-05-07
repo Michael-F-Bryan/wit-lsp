@@ -24,6 +24,7 @@ An alternative Language Server implementation for [WIT][wit].
 - [ ] Find All References
 - [ ] Workspace Symbol
 - [ ] Assists
+  - [x] Extract type alias
   - [ ] Generate documentation template
   - [ ] Autoimport
   - [ ] Rename
