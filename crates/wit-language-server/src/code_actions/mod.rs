@@ -5,6 +5,7 @@
 mod macros;
 
 mod action;
+#[rustfmt::skip]
 mod all;
 mod context;
 mod extract_type_alias;
