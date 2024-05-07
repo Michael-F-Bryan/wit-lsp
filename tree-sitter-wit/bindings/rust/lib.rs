@@ -74,9 +74,17 @@ pub fn parse(src: &str) -> tree_sitter::Tree {
 pub const NODE_TYPES: &str = include_str!("../../src/node-types.json");
 
 pub const HIGHLIGHTS_QUERY: &str = include_str!("../../queries/highlights.scm");
-// pub const INJECTIONS_QUERY: &str = include_str!("../../queries/injections.scm");
-// pub const LOCALS_QUERY: &str = include_str!("../../queries/locals.scm");
-// pub const TAGS_QUERY: &str = include_str!("../../queries/tags.scm");
+
+/// A Tree Sitter query for finding all foldable nodes.
+///
+/// # Known Issues
+///
+/// The folded ranges aren't 100% correct here.
+//
+/// They'll often include the trailing "}" even though our query should match
+/// the items between the "{" and "}". The param_list one is also a bit suspect
+/// because the folded region won't include the name of the first parameter.
+pub const FOLDING_QUERY: &str = include_str!("../../queries/folding.scm");
 
 #[cfg(test)]
 mod tests {
@@ -85,6 +93,10 @@ mod tests {
         path::Path,
         process::{Command, Output},
     };
+
+    use tree_sitter::Query;
+
+    use super::*;
 
     #[test]
     fn test_can_load_grammar() {
@@ -127,6 +139,16 @@ mod tests {
             Err(e) => {
                 panic!("Unable to start `{cmd:?}`: {e}");
             }
+        }
+    }
+
+    #[test]
+    fn all_queries_are_valid() {
+        let queries = &[FOLDING_QUERY, HIGHLIGHTS_QUERY];
+        let lang = language();
+
+        for query in queries {
+            let _ = Query::new(&lang, query).unwrap();
         }
     }
 }
