@@ -132,3 +132,13 @@ fn parse_action(path: &Path) -> color_eyre::Result<Option<Action>> {
         function: Ident::new(&caps["name"], Span::call_site()),
     }))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn code_actions_are_up_to_date() {
+        CodeActions::default().generate().unwrap();
+    }
+}
