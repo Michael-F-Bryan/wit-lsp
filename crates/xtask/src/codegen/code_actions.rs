@@ -43,6 +43,8 @@ impl CodeActions {
             }
         }
 
+        actions.sort_by(|left, right| left.name.cmp(&right.name));
+
         let tokens = codegen(&actions);
         let generated = crate::utils::format_rust(tokens);
         crate::utils::ensure_file_contents(self.out, generated)?;
