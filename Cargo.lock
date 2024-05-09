@@ -1771,7 +1771,8 @@ dependencies = [
 
 [[package]]
 name = "tree-sitter-wit"
-version = "0.2.0"
+version = "0.0.1"
+source = "git+https://github.com/Michael-F-Bryan/tree-sitter-wit?branch=include-queries-in-rust#829b4fc208367248d53dd1a4e2d8c62cba5fa20c"
 dependencies = [
  "cc",
  "tree-sitter",
@@ -2212,6 +2213,7 @@ dependencies = [
  "tracing",
  "tracing-error",
  "tracing-subscriber",
+ "tree-sitter-wit",
  "walkdir",
  "xshell",
 ]

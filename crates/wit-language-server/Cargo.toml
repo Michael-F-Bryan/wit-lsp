@@ -26,7 +26,7 @@ tower-lsp = "0.20.0"
 tower-service = "0.3.2"
 tracing = { workspace = true }
 tree-sitter = { workspace = true }
-tree-sitter-wit = { version = "0.2.0", path = "../../tree-sitter-wit" }
+tree-sitter-wit = { workspace = true }
 uuid = { version = "1.8.0", features = ["v4"] }
 wit-compiler = { path = "../wit-compiler", version = "0.2.0" }
 
