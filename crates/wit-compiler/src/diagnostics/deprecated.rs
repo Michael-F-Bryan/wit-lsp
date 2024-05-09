@@ -10,7 +10,7 @@ pub(crate) const DEPRECATED: LintPass = LintPass {
 };
 
 const QUERY: &str = r#"
-    ["float32", "float64"] @deprecated
+    ["float32" "float64"] @deprecated
 "#;
 
 fn lint_deprecated(ctx: LintContext<'_>) {

@@ -33,6 +33,8 @@ pub fn check_workspace(db: &dyn Db, ws: Workspace) {
 
 #[salsa::tracked]
 pub(crate) fn check_package(db: &dyn Db, ws: Workspace, pkg: Package) {
+    let _ = crate::queries::lower_package(db, ws, pkg);
+
     for file in pkg.files(db) {
         lint_file(db, ws, pkg, file);
     }
@@ -116,9 +118,10 @@ pub trait IntoDiagnostic: Into<Diagnostic> {
     fn update_diag(&self, diag: Diag) -> Diag;
 
     fn as_diagnostic(&self) -> Diag {
-        Diag::new(Self::SEVERITY)
+        let diag = Diag::new(Self::SEVERITY)
             .with_message(Self::MESSAGE)
-            .with_code(Self::CODE)
+            .with_code(Self::CODE);
+        self.update_diag(diag)
     }
 }
 
