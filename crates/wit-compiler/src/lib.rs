@@ -8,6 +8,8 @@ pub mod queries;
 pub mod traverse;
 mod tree;
 
+use std::fmt::Debug;
+
 pub use crate::{compiler::Compiler, tree::Tree};
 
 // Re-exported for convenience.
@@ -18,6 +20,9 @@ pub use wit_syntax::{self as ast, Text};
 #[salsa::jar(db = Db)]
 pub struct Jar(
     crate::diagnostics::Diagnostics,
+    crate::diagnostics::lint_file,
+    crate::diagnostics::check_package,
+    crate::diagnostics::check_workspace,
     crate::queries::Ast,
     crate::queries::calculate_line_numbers,
     crate::queries::FilePath,
@@ -73,3 +78,9 @@ pub struct Jar(
 pub trait Db: salsa::DbWithJar<Jar> {}
 
 impl<DB> Db for DB where DB: ?Sized + salsa::DbWithJar<Jar> {}
+
+impl Debug for dyn Db + '_ {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("dyn Db").finish_non_exhaustive()
+    }
+}

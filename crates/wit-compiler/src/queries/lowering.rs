@@ -59,7 +59,7 @@ pub(crate) fn lower_package_docs(db: &dyn Db, pkg: Package) -> Option<Text> {
 
     for (loc, _) in all_docs {
         let diag = MultiplePackageDocs {
-            second_location: loc,
+            location: loc,
             original_definition,
         };
         Diagnostics::push(db, diag.into());
@@ -732,11 +732,12 @@ fn resolve_builtin(ctx: Context<'_>, builtin: ast::Builtin<'_>) -> Option<hir::B
         "s16" => Some(hir::Builtin::I16),
         "s32" => Some(hir::Builtin::I32),
         "s64" => Some(hir::Builtin::I64),
-        "float32" => Some(hir::Builtin::Float32),
-        "float64" => Some(hir::Builtin::Float64),
+        "f32" | "float32" => Some(hir::Builtin::Float32),
+        "f64" | "float64" => Some(hir::Builtin::Float64),
         "char" => Some(hir::Builtin::Char),
         "bool" => Some(hir::Builtin::Boolean),
         "string" => Some(hir::Builtin::String),
+
         other => {
             unreachable!(
                 "Unknown builtin type, \"{other}\" at {:#} ({:?})",

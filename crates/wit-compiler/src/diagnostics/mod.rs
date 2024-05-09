@@ -2,15 +2,54 @@
 //! analysis.
 
 mod all;
+mod deprecated;
+mod lints;
 
-pub use self::all::all_diagnostics;
+use crate::{
+    queries::{Package, SourceFile, Workspace},
+    Db,
+};
 
-use codespan_reporting::diagnostic::Label;
+pub use self::{all::all_diagnostics, deprecated::Deprecated, lints::*};
+
+use codespan_reporting::diagnostic::{Label, Severity};
 use tree_sitter::Range;
 
 use crate::{queries::FilePath, Text};
 
-type Diag = codespan_reporting::diagnostic::Diagnostic<FilePath>;
+/// Check an entire workspace.
+pub fn check_all(db: &dyn Db, ws: Workspace) -> Vec<Diagnostic> {
+    check_workspace::accumulated::<Diagnostics>(db, ws)
+}
+
+#[salsa::tracked]
+pub fn check_workspace(db: &dyn Db, ws: Workspace) {
+    let packages = crate::queries::workspace_packages(db, ws);
+
+    for pkg in packages {
+        check_package(db, ws, pkg);
+    }
+}
+
+#[salsa::tracked]
+pub(crate) fn check_package(db: &dyn Db, ws: Workspace, pkg: Package) {
+    for file in pkg.files(db) {
+        lint_file(db, ws, pkg, file);
+    }
+}
+
+#[salsa::tracked]
+pub(crate) fn lint_file(db: &dyn Db, ws: Workspace, pkg: Package, current_file: SourceFile) {
+    for pass in LINT_PASSES {
+        let ctx = LintContext::new(db, ws, pkg, current_file);
+        (pass.run)(ctx);
+    }
+}
+
+#[rustfmt::skip]
+pub const LINT_PASSES: &[LintPass] = &[
+    self::deprecated::DEPRECATED,
+];
 
 /// An accumulator for all [`Diagnostic`]s that have been emitted.
 #[salsa::accumulator]
@@ -28,6 +67,7 @@ pub enum Diagnostic {
     Bug(Bug),
     MismatchedPackageDeclaration(MismatchedPackageDeclaration),
     MultiplePackageDocs(MultiplePackageDocs),
+    Deprecated(Deprecated),
 }
 
 impl Diagnostic {
@@ -39,14 +79,12 @@ impl Diagnostic {
             | Diagnostic::UnknownPackage(UnknownPackage { location, .. })
             | Diagnostic::MultipleConstructors(MultipleConstructors { location, .. })
             | Diagnostic::MismatchedPackageDeclaration(MismatchedPackageDeclaration {
-                second_location: location,
+                location,
                 ..
             })
-            | Diagnostic::MultiplePackageDocs(MultiplePackageDocs {
-                second_location: location,
-                ..
-            })
-            | Diagnostic::Bug(Bug { location, .. }) => *location,
+            | Diagnostic::MultiplePackageDocs(MultiplePackageDocs { location, .. })
+            | Diagnostic::Bug(Bug { location, .. })
+            | Diagnostic::Deprecated(Deprecated { location, .. }) => *location,
         }
     }
 
@@ -60,19 +98,28 @@ impl Diagnostic {
             Diagnostic::Bug(diag) => diag.as_diagnostic(),
             Diagnostic::MismatchedPackageDeclaration(diag) => diag.as_diagnostic(),
             Diagnostic::MultiplePackageDocs(diag) => diag.as_diagnostic(),
+            Diagnostic::Deprecated(diag) => diag.as_diagnostic(),
         }
     }
 }
 
 pub trait IntoDiagnostic: Into<Diagnostic> {
     /// A unique code which can be used when referring to this error.
-    const ERROR_CODE: &'static str;
+    const CODE: &'static str;
     /// A simple message that is displayed with the error.
     const MESSAGE: &'static str;
     /// A verbose explanation of the error.
     const VERBOSE_DESCRIPTION: &'static str;
+    /// The default severity.
+    const SEVERITY: Severity;
 
-    fn as_diagnostic(&self) -> Diag;
+    fn update_diag(&self, diag: Diag) -> Diag;
+
+    fn as_diagnostic(&self) -> Diag {
+        Diag::new(Self::SEVERITY)
+            .with_message(Self::MESSAGE)
+            .with_code(Self::CODE)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -82,21 +129,19 @@ pub struct SyntaxError {
 }
 
 impl IntoDiagnostic for SyntaxError {
-    const ERROR_CODE: &'static str = "E001";
+    const CODE: &'static str = "E001";
     const MESSAGE: &'static str = "Syntax error";
     const VERBOSE_DESCRIPTION: &'static str = include_str!("E001-syntax-error.md");
+    const SEVERITY: Severity = Severity::Error;
 
-    fn as_diagnostic(&self) -> Diag {
+    fn update_diag(&self, diag: Diag) -> Diag {
         let mut label = self.location.label();
 
         if let Some(rule) = &self.rule {
             label = label.with_message(format!("Expected a \"{rule}\""))
         }
 
-        Diag::error()
-            .with_message(Self::MESSAGE)
-            .with_code(Self::ERROR_CODE)
-            .with_labels(vec![label])
+        diag.with_labels(vec![label])
     }
 }
 
@@ -114,22 +159,20 @@ pub struct DuplicateName {
 }
 
 impl IntoDiagnostic for DuplicateName {
-    const ERROR_CODE: &'static str = "E002";
+    const CODE: &'static str = "E002";
     const MESSAGE: &'static str = "Name defined multiple times";
     const VERBOSE_DESCRIPTION: &'static str = include_str!("E002-duplicate-name.md");
+    const SEVERITY: Severity = Severity::Error;
 
-    fn as_diagnostic(&self) -> Diag {
-        Diag::error()
-            .with_message(Self::MESSAGE)
-            .with_code(Self::ERROR_CODE)
-            .with_labels(vec![
-                self.location
-                    .label()
-                    .with_message("The duplicate was defined here"),
-                self.original_definition
-                    .secondary_label()
-                    .with_message("Original definition is here"),
-            ])
+    fn update_diag(&self, diag: Diag) -> Diag {
+        diag.with_labels(vec![
+            self.location
+                .label()
+                .with_message("The duplicate was defined here"),
+            self.original_definition
+                .secondary_label()
+                .with_message("Original definition is here"),
+        ])
     }
 }
 
@@ -146,22 +189,20 @@ pub struct MultipleConstructors {
 }
 
 impl IntoDiagnostic for MultipleConstructors {
-    const ERROR_CODE: &'static str = "E003";
+    const CODE: &'static str = "E003";
     const MESSAGE: &'static str = "Resource has multiple constructors";
     const VERBOSE_DESCRIPTION: &'static str = include_str!("E003-multiple-constructors.md");
+    const SEVERITY: Severity = Severity::Error;
 
-    fn as_diagnostic(&self) -> Diag {
-        Diag::error()
-            .with_message(Self::MESSAGE)
-            .with_code(Self::ERROR_CODE)
-            .with_labels(vec![
-                self.location
-                    .label()
-                    .with_message("The duplicate was defined here"),
-                self.original_definition
-                    .secondary_label()
-                    .with_message("Original constructor was defined is here"),
-            ])
+    fn update_diag(&self, diag: Diag) -> Diag {
+        diag.with_labels(vec![
+            self.location
+                .label()
+                .with_message("The duplicate was defined here"),
+            self.original_definition
+                .secondary_label()
+                .with_message("Original constructor was defined is here"),
+        ])
     }
 }
 
@@ -180,15 +221,13 @@ pub struct UnknownPackage {
 }
 
 impl IntoDiagnostic for UnknownPackage {
-    const ERROR_CODE: &'static str = "E007";
+    const CODE: &'static str = "E007";
     const MESSAGE: &'static str = "Reference to unknown package";
     const VERBOSE_DESCRIPTION: &'static str = include_str!("E007-unknown-package.md");
+    const SEVERITY: Severity = Severity::Error;
 
-    fn as_diagnostic(&self) -> Diag {
-        Diag::error()
-            .with_message(Self::MESSAGE)
-            .with_code(Self::ERROR_CODE)
-            .with_labels(vec![self.location.label()])
+    fn update_diag(&self, diag: Diag) -> Diag {
+        diag.with_labels(vec![self.location.label()])
     }
 }
 
@@ -207,15 +246,13 @@ pub struct UnknownName {
 }
 
 impl IntoDiagnostic for UnknownName {
-    const ERROR_CODE: &'static str = "E004";
+    const CODE: &'static str = "E004";
     const MESSAGE: &'static str = "Reference to unknown name";
     const VERBOSE_DESCRIPTION: &'static str = include_str!("E004-unknown-name.md");
+    const SEVERITY: Severity = Severity::Error;
 
-    fn as_diagnostic(&self) -> Diag {
-        Diag::error()
-            .with_message(Self::MESSAGE)
-            .with_code(Self::ERROR_CODE)
-            .with_labels(vec![self.location.label()])
+    fn update_diag(&self, diag: Diag) -> Diag {
+        diag.with_labels(vec![self.location.label()])
     }
 }
 
@@ -253,15 +290,13 @@ impl Bug {
 }
 
 impl IntoDiagnostic for Bug {
-    const ERROR_CODE: &'static str = "E500";
+    const CODE: &'static str = "B500";
     const MESSAGE: &'static str = "You ran into a bug 🐛";
-    const VERBOSE_DESCRIPTION: &'static str = include_str!("E500-bug.md");
+    const VERBOSE_DESCRIPTION: &'static str = include_str!("B500-bug.md");
+    const SEVERITY: Severity = Severity::Bug;
 
-    fn as_diagnostic(&self) -> Diag {
-        Diag::error()
-            .with_message(Self::MESSAGE)
-            .with_code(Self::ERROR_CODE)
-            .with_labels(vec![self.location.label()])
+    fn update_diag(&self, diag: Diag) -> Diag {
+        diag.with_labels(vec![self.location.label()])
             .with_notes(vec![format!("Triggered from {}", self.caller)])
     }
 }
@@ -274,28 +309,26 @@ impl From<Bug> for Diagnostic {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct MismatchedPackageDeclaration {
-    pub second_id: crate::queries::PackageId,
-    pub second_location: Location,
+    pub id: crate::queries::PackageId,
+    pub location: Location,
     pub original_id: crate::queries::PackageId,
     pub original_definition: Location,
 }
 
 impl IntoDiagnostic for MismatchedPackageDeclaration {
-    const ERROR_CODE: &'static str = "E005";
+    const CODE: &'static str = "E005";
     const MESSAGE: &'static str = "Mismatched package declarations";
     const VERBOSE_DESCRIPTION: &'static str =
         include_str!("E005-mismatched-package-declaration.md");
+    const SEVERITY: Severity = Severity::Error;
 
-    fn as_diagnostic(&self) -> Diag {
-        Diag::error()
-            .with_message(Self::MESSAGE)
-            .with_code(Self::ERROR_CODE)
-            .with_labels(vec![
-                self.second_location.label().with_message("Defined here"),
-                self.original_definition
-                    .secondary_label()
-                    .with_message("Originally defined here"),
-            ])
+    fn update_diag(&self, diag: Diag) -> Diag {
+        diag.with_labels(vec![
+            self.location.label().with_message("Defined here"),
+            self.original_definition
+                .secondary_label()
+                .with_message("Originally defined here"),
+        ])
     }
 }
 
@@ -307,25 +340,23 @@ impl From<MismatchedPackageDeclaration> for Diagnostic {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct MultiplePackageDocs {
-    pub second_location: Location,
+    pub location: Location,
     pub original_definition: Location,
 }
 
 impl IntoDiagnostic for MultiplePackageDocs {
-    const ERROR_CODE: &'static str = "E006";
+    const CODE: &'static str = "E006";
     const MESSAGE: &'static str = "Package docs can only be defined in a single file";
     const VERBOSE_DESCRIPTION: &'static str = include_str!("E006-multiple-package-docs.md");
+    const SEVERITY: Severity = Severity::Error;
 
-    fn as_diagnostic(&self) -> Diag {
-        Diag::error()
-            .with_message(Self::MESSAGE)
-            .with_code(Self::ERROR_CODE)
-            .with_labels(vec![
-                self.second_location.label().with_message("Defined here"),
-                self.original_definition
-                    .secondary_label()
-                    .with_message("Originally defined here"),
-            ])
+    fn update_diag(&self, diag: Diag) -> Diag {
+        diag.with_labels(vec![
+            self.location.label().with_message("Defined here"),
+            self.original_definition
+                .secondary_label()
+                .with_message("Originally defined here"),
+        ])
     }
 }
 
@@ -351,7 +382,7 @@ impl Location {
         Location { filename, range }
     }
 
-    fn label(&self) -> Label<FilePath> {
+    pub(crate) fn label(&self) -> Label<FilePath> {
         let Range {
             start_byte,
             end_byte,
@@ -383,6 +414,7 @@ impl Location {
 pub struct DiagnosticInfo {
     pub type_name: &'static str,
     pub message: &'static str,
+    pub default_severity: Severity,
     pub error_code: &'static str,
     pub description: &'static str,
 }
@@ -392,11 +424,14 @@ impl DiagnosticInfo {
         DiagnosticInfo {
             type_name: std::any::type_name::<T>(),
             message: T::MESSAGE,
-            error_code: T::ERROR_CODE,
+            default_severity: T::SEVERITY,
+            error_code: T::CODE,
             description: T::VERBOSE_DESCRIPTION,
         }
     }
 }
+
+pub(crate) type Diag = codespan_reporting::diagnostic::Diagnostic<crate::queries::FilePath>;
 
 #[cfg(test)]
 mod tests {
@@ -412,13 +447,21 @@ mod tests {
             let DiagnosticInfo {
                 type_name,
                 message,
+                default_severity,
                 error_code,
                 description,
             } = diag;
 
+            let initial_letter = match default_severity {
+                codespan_reporting::diagnostic::Severity::Bug => 'B',
+                codespan_reporting::diagnostic::Severity::Error => 'E',
+                codespan_reporting::diagnostic::Severity::Warning => 'W',
+                codespan_reporting::diagnostic::Severity::Note => 'N',
+                codespan_reporting::diagnostic::Severity::Help => 'H',
+            };
             assert!(
-                error_code.starts_with('E'),
-                "{error_code} must start with an 'E'"
+                error_code.starts_with(initial_letter),
+                "{error_code} must start with '{initial_letter}'"
             );
             let _: u32 = error_code[1..].parse().unwrap();
 

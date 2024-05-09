@@ -5,12 +5,12 @@ expression: diags
 [
     MismatchedPackageDeclaration(
         MismatchedPackageDeclaration {
-            second_id: PackageId(
+            id: PackageId(
                 Id {
                     value: 2,
                 },
             ),
-            second_location: Location {
+            location: Location {
                 filename: FilePath(
                     Id {
                         value: 2,
