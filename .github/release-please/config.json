@@ -13,22 +13,6 @@
         "crates/wit-syntax": {
             "component": "wit-syntax"
         },
-        "tree-sitter-wit": {
-            "component": "tree-sitter-wit",
-            "extra-files": [
-                {
-                    "type": "json",
-                    "path": "tree-sitter-wit/package.json",
-                    "jsonpath": "$.version"
-                },
-                {
-                    "type": "toml",
-                    "path": "tree-sitter-wit/pyproject.toml",
-                    "jsonpath": "$.project.version"
-                },
-                "tree-sitter-wit/Makefile"
-            ]
-        },
         "plugins/vscode": {
             "component": "vscode-plugin",
             "release-type": "node"

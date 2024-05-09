@@ -3,6 +3,5 @@
     "crates/wit-compiler": "0.2.0",
     "crates/wit-language-server": "0.2.0",
     "crates/wit-syntax": "0.0.0",
-    "tree-sitter-wit": "0.2.0",
     "plugins/vscode": "1.1.0"
 }
