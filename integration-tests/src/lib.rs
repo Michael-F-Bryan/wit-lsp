@@ -7,7 +7,7 @@ use codespan_reporting::term::{
 use im::OrdMap;
 use libtest_mimic::{Failed, Trial};
 use wit_compiler::{
-    diagnostics::{Diagnostic, Diagnostics},
+    diagnostics::Diagnostic,
     queries::{FilePath, SourceFile, Workspace},
     Compiler, Db, Text,
 };
@@ -69,12 +69,7 @@ fn do_compile_test(paths: Vec<PathBuf>) -> color_eyre::Result<()> {
 
     let ws = read_all(&db, &paths)?;
 
-    let diags: Vec<_> = wit_compiler::queries::workspace_packages(&db, ws)
-        .into_iter()
-        .flat_map(|pkg| {
-            wit_compiler::queries::lower_package::accumulated::<Diagnostics>(&db, ws, pkg)
-        })
-        .collect();
+    let diags = wit_compiler::diagnostics::check_all(&db, ws);
 
     if diags.is_empty() {
         return Ok(());
