@@ -28,7 +28,7 @@ macro_rules! code_action_test {
                     let comment = ast
                         .tree(&db)
                         .iter()
-                        .find_map(wit_compiler::ast::BlockComment::cast)?;
+                        .find_map(wit_compiler::ast::Comment::cast)?;
                     let path = f.path(&db).raw_path(&db).clone();
                     Some((path, comment.range()))
                 })

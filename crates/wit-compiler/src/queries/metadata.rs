@@ -1,5 +1,6 @@
 use std::{any::TypeId, collections::HashMap};
 
+use ast::HasSource;
 use im::{OrdMap, Vector};
 use salsa::DebugWithDb;
 use tree_sitter::Point;
@@ -63,13 +64,30 @@ pub fn file_items(db: &dyn Db, file: SourceFile) -> Vector<TopLevelItemMetadata>
     };
     let mut items = HashMap::new();
 
-    for node in ast.source_file(db).iter_top_level_items() {
-        if let Some(item) = top_level_item_metadata(&mut ctx, node) {
+    let source_file = ast.source_file(db);
+
+    for node in source_file.iter_top_level_items() {
+        if let Some(item) = lower_top_level_item(&mut ctx, node) {
             push_item(ctx.db, &mut items, item);
         }
     }
 
     items.into_values().collect()
+}
+
+fn lower_top_level_item(
+    ctx: &mut Context<'_>,
+    node: ast::TopLevelItem<'_>,
+) -> Option<TopLevelItemMetadata> {
+    if let Some(node) = node.interface_item() {
+        let item = interface_metadata(ctx, node)?;
+        Some(TopLevelItemMetadata::Interface(item))
+    } else if let Some(node) = node.world_item() {
+        let item = world_metadata(ctx, node)?;
+        Some(TopLevelItemMetadata::World(item))
+    } else {
+        None
+    }
 }
 
 #[salsa::tracked]
@@ -143,19 +161,6 @@ impl<'db> Context<'db> {
     }
 }
 
-fn top_level_item_metadata(
-    ctx: &mut Context<'_>,
-    node: ast::TopLevelItem<'_>,
-) -> Option<TopLevelItemMetadata> {
-    if let Some(interface) = node.interface_item() {
-        interface_metadata(ctx, interface).map(TopLevelItemMetadata::Interface)
-    } else if let Some(world) = node.world_item() {
-        world_metadata(ctx, world).map(TopLevelItemMetadata::World)
-    } else {
-        None
-    }
-}
-
 fn interface_metadata(
     ctx: &mut Context<'_>,
     node: ast::InterfaceItem<'_>,
@@ -164,7 +169,7 @@ fn interface_metadata(
     let name = Ident::new(ctx.db, name.into());
     let mut items = HashMap::new();
 
-    for child in node.iter_items() {
+    for child in node.body()?.iter_interface_items() {
         if let Some(item) = interface_item_metadata(ctx, child) {
             push_item(ctx.db, &mut items, item);
         }
@@ -190,10 +195,16 @@ fn world_metadata(ctx: &mut Context<'_>, node: ast::WorldItem<'_>) -> Option<Wor
     let mut exports = Vector::new();
     let mut named_exports: HashMap<Ident, ExportMetadata> = HashMap::new();
 
-    for child in node.iter_items() {
-        if let Some(item) = child.typedef_item().and_then(|n| typedef_metadata(ctx, n)) {
+    for child in node.body()?.iter_world_items() {
+        if let Some(item) = child
+            .typedef_item_opt()
+            .and_then(|n| typedef_metadata(ctx, n))
+        {
             push_item(ctx.db, &mut definitions, item);
-        } else if let Some(item) = child.export_item().and_then(|n| export_metadata(ctx, n)) {
+        } else if let Some(item) = child
+            .export_item_opt()
+            .and_then(|n| export_metadata(ctx, n))
+        {
             push_with_optional_name(
                 ctx.db,
                 &mut exports,
@@ -201,7 +212,10 @@ fn world_metadata(ctx: &mut Context<'_>, node: ast::WorldItem<'_>) -> Option<Wor
                 item,
                 item.name(ctx.db),
             );
-        } else if let Some(item) = child.import_item().and_then(|n| import_metadata(ctx, n)) {
+        } else if let Some(item) = child
+            .import_item_opt()
+            .and_then(|n| import_metadata(ctx, n))
+        {
             push_with_optional_name(
                 ctx.db,
                 &mut imports,
@@ -254,8 +268,9 @@ fn push_with_optional_name<T>(
 }
 
 fn export_metadata(ctx: &mut Context, node: ast::ExportItem<'_>) -> Option<ExportMetadata> {
-    let exposable = node.exposable()?;
-    let ident = exposable_metadata(ctx, exposable)?;
+    let ident = node
+        .name_opt()
+        .map(|n| Ident::new(ctx.db, n.utf8_text(ctx.src).into()));
 
     Some(ExportMetadata::new(
         ctx.db,
@@ -266,8 +281,9 @@ fn export_metadata(ctx: &mut Context, node: ast::ExportItem<'_>) -> Option<Expor
 }
 
 fn import_metadata(ctx: &mut Context, node: ast::ImportItem<'_>) -> Option<ImportMetadata> {
-    let exposable = node.exposable()?;
-    let ident = exposable_metadata(ctx, exposable)?;
+    let ident = node
+        .name_opt()
+        .map(|n| Ident::new(ctx.db, n.utf8_text(ctx.src).into()));
 
     Some(ImportMetadata::new(
         ctx.db,
@@ -277,24 +293,13 @@ fn import_metadata(ctx: &mut Context, node: ast::ImportItem<'_>) -> Option<Impor
     ))
 }
 
-fn exposable_metadata(ctx: &mut Context, node: ast::Exposable<'_>) -> Option<Option<Ident>> {
-    if let Some(_path) = node.exposable_path() {
-        Some(None)
-    } else if let Some(item) = node.exposable_item() {
-        let ident = item.identifier(ctx.src)?;
-        Some(Some(Ident::new(ctx.db, ident.into())))
-    } else {
-        None
-    }
-}
-
 fn interface_item_metadata(
     ctx: &mut Context<'_>,
     node: ast::InterfaceItems<'_>,
 ) -> Option<InterfaceItemMetadata> {
-    if let Some(func) = node.func_item() {
+    if let Some(func) = node.func_opt() {
         simple_item_metadata(ctx, func, FuncItemMetadata::new).map(InterfaceItemMetadata::Func)
-    } else if let Some(typedef) = node.typedef_item() {
+    } else if let Some(typedef) = node.typedef_opt() {
         typedef_metadata(ctx, typedef).map(InterfaceItemMetadata::Type)
     } else {
         None
@@ -305,9 +310,9 @@ fn typedef_metadata(
     ctx: &mut Context<'_>,
     node: ast::TypedefItem<'_>,
 ) -> Option<TypeDefinitionMetadata> {
-    if let Some(node) = node.enum_item() {
+    if let Some(node) = node.enum_items() {
         enum_metadata(ctx, node).map(TypeDefinitionMetadata::Enum)
-    } else if let Some(node) = node.flags_item() {
+    } else if let Some(node) = node.flags_items() {
         flags_metadata(ctx, node).map(TypeDefinitionMetadata::Flags)
     } else if let Some(node) = node.record_item() {
         record_metadata(ctx, node).map(TypeDefinitionMetadata::Record)
@@ -315,17 +320,18 @@ fn typedef_metadata(
         resource_metadata(ctx, node).map(TypeDefinitionMetadata::Resource)
     } else if let Some(node) = node.type_item() {
         type_alias_metadata(ctx, node).map(TypeDefinitionMetadata::Alias)
-    } else if let Some(node) = node.variant_item() {
+    } else if let Some(node) = node.variant_items() {
         variant_metadata(ctx, node).map(TypeDefinitionMetadata::Variant)
     } else {
         None
     }
 }
 
-fn enum_metadata(ctx: &mut Context<'_>, node: ast::EnumItem<'_>) -> Option<EnumMetadata> {
+fn enum_metadata(ctx: &mut Context<'_>, node: ast::EnumItems<'_>) -> Option<EnumMetadata> {
     let name = node.identifier(ctx.src)?;
     let cases = node
-        .iter_cases()
+        .enum_body()?
+        .iter_enum_cases()
         .filter_map(|case| simple_item_metadata(ctx, case, EnumCaseMetadata::new))
         .collect();
 
@@ -338,10 +344,11 @@ fn enum_metadata(ctx: &mut Context<'_>, node: ast::EnumItem<'_>) -> Option<EnumM
     ))
 }
 
-fn flags_metadata(ctx: &mut Context<'_>, node: ast::FlagsItem<'_>) -> Option<FlagsMetadata> {
+fn flags_metadata(ctx: &mut Context<'_>, node: ast::FlagsItems<'_>) -> Option<FlagsMetadata> {
     let name = node.identifier(ctx.src)?;
     let cases = node
-        .iter_cases()
+        .body()?
+        .iter_flags_fields()
         .filter_map(|case| simple_item_metadata(ctx, case, FlagsCaseMetadata::new))
         .collect();
 
@@ -357,7 +364,8 @@ fn flags_metadata(ctx: &mut Context<'_>, node: ast::FlagsItem<'_>) -> Option<Fla
 fn record_metadata(ctx: &mut Context<'_>, node: ast::RecordItem<'_>) -> Option<RecordMetadata> {
     let name = node.identifier(ctx.src)?;
     let cases = node
-        .iter_fields()
+        .body()?
+        .iter_record_fields()
         .filter_map(|case| simple_item_metadata(ctx, case, FieldMetadata::new))
         .collect();
 
@@ -370,10 +378,11 @@ fn record_metadata(ctx: &mut Context<'_>, node: ast::RecordItem<'_>) -> Option<R
     ))
 }
 
-fn variant_metadata(ctx: &mut Context<'_>, node: ast::VariantItem<'_>) -> Option<VariantMetadata> {
+fn variant_metadata(ctx: &mut Context<'_>, node: ast::VariantItems<'_>) -> Option<VariantMetadata> {
     let name = node.identifier(ctx.src)?;
     let cases = node
-        .iter_cases()
+        .body()?
+        .iter_variant_cases()
         .filter_map(|case| simple_item_metadata(ctx, case, VariantCaseMetadata::new))
         .collect();
 
@@ -418,7 +427,11 @@ fn resource_metadata(
     let mut constructor: Option<ConstructorMetadata> = None;
     let mut all_methods: HashMap<Ident, AnyMethod> = HashMap::new();
 
-    for method in node.iter_methods() {
+    for method in node
+        .resource_body_opt()
+        .into_iter()
+        .flat_map(|body| body.iter_resource_methods())
+    {
         if let Some(c) = method.resource_constructor() {
             let c =
                 ConstructorMetadata::new(ctx.db, ctx.file, ConstructorPtr::for_node(ctx.path, c));
@@ -436,7 +449,7 @@ fn resource_metadata(
             if let Some(item) = simple_item_metadata(ctx, method, MethodMetadata::new) {
                 push_item(ctx.db, &mut all_methods, AnyMethod::Method(item));
             }
-        } else if let Some(method) = method.static_method() {
+        } else if let Some(method) = method.static_resource_method() {
             if let Some(item) = simple_item_metadata(ctx, method, StaticMethodMetadata::new) {
                 push_item(ctx.db, &mut all_methods, AnyMethod::Static(item));
             }
@@ -468,7 +481,14 @@ fn type_alias_metadata(
     ctx: &mut Context<'_>,
     node: ast::TypeItem<'_>,
 ) -> Option<TypeAliasMetadata> {
-    simple_item_metadata(ctx, node, TypeAliasMetadata::new)
+    let name = node.alias()?.utf8_text(ctx.src);
+
+    Some(TypeAliasMetadata::new(
+        ctx.db,
+        Ident::new(ctx.db, name.into()),
+        ctx.index(),
+        Pointer::for_node(ctx.path, node),
+    ))
 }
 
 fn simple_item_metadata<'tree, 'db: 'tree, K>(

@@ -1,3 +1,4 @@
+use ast::HasSource;
 use im::{OrdMap, Vector};
 
 use crate::{
@@ -48,7 +49,7 @@ pub(crate) fn lower_package_docs(db: &dyn Db, pkg: Package) -> Option<Text> {
     let mut all_docs = pkg.files(db).into_iter().filter_map(|f| {
         let tree = crate::queries::parse(db, f);
         let src = f.contents(db);
-        let decl = tree.source_file(db).package_opt()?;
+        let decl = tree.source_file(db).decl_opt()?;
         let docs = decl.docs(src)?;
         let location = Location::new(f.path(db), decl.range());
         Some((location, docs))
@@ -143,7 +144,7 @@ pub(crate) fn lower_func_definition(
     let ctx = Context::new(db, ws, ptr);
     let node = ctx.get(ptr);
 
-    let ty = node.ty()?;
+    let ty = node.func_type()?;
     let (params, return_value) = lower_func_ty(ctx, ty)?;
 
     Some(hir::FuncItem {
@@ -192,16 +193,18 @@ fn lower_func_ty(
     ctx: Context<'_>,
     ty: ast::FuncType<'_>,
 ) -> Option<(Vector<hir::Parameter>, Option<hir::ReturnValue>)> {
-    let params = ty.params()?;
+    let params = ty.param_list()?;
     let params = lower_params(ctx, params)?;
 
-    let return_value = ty.result_opt().and_then(|ret| lower_return_value(ctx, ret));
+    let return_value = ty
+        .result_list_opt()
+        .and_then(|ret| lower_return_value(ctx, ret));
 
     Some((params, return_value))
 }
 
 fn lower_return_value(ctx: Context<'_>, node: ast::ResultList<'_>) -> Option<hir::ReturnValue> {
-    let ty = if let Some(result_list) = node.named_result_list_opt() {
+    let ty = if let Some(result_list) = node.named_type_list_opt() {
         lower_named_result_list(ctx, result_list)
             .unwrap_or(hir::ReturnValue::Single(hir::Type::Error))
     } else if let Some(ty) = node.ty_opt() {
@@ -220,7 +223,11 @@ fn lower_return_value(ctx: Context<'_>, node: ast::ResultList<'_>) -> Option<hir
 fn lower_params(ctx: Context<'_>, node: ast::ParamList<'_>) -> Option<Vector<hir::Parameter>> {
     let mut params: Vector<(Location, hir::Parameter)> = Vector::new();
 
-    for param in node.iter_params() {
+    for param in node
+        .named_type_list_opt()
+        .into_iter()
+        .flat_map(|n| n.iter_named_types())
+    {
         let location = Location::new(ctx.path(), param.range());
 
         let Some(param) = lower_param(ctx, param) else {
@@ -244,7 +251,7 @@ fn lower_params(ctx: Context<'_>, node: ast::ParamList<'_>) -> Option<Vector<hir
 
 fn lower_named_result_list(
     ctx: Context<'_>,
-    result_list: ast::NamedResultList<'_>,
+    result_list: ast::NamedTypeList<'_>,
 ) -> Option<hir::ReturnValue> {
     let mut names: OrdMap<Ident, (Location, hir::Type)> = OrdMap::new();
 
@@ -254,7 +261,7 @@ fn lower_named_result_list(
         };
         let name = Ident::new(ctx.db, name.into());
         let ty = ret
-            .ty()
+            .type_()
             .and_then(|ty| lower_type(ctx, ty))
             .unwrap_or(hir::Type::Error);
 
@@ -288,7 +295,7 @@ fn lower_param(ctx: Context<'_>, param: ast::NamedType<'_>) -> Option<hir::Param
     let name = Ident::new(ctx.db, name.into());
 
     let ty = param
-        .ty()
+        .type_()
         .and_then(|ty| lower_type(ctx, ty))
         .unwrap_or(hir::Type::Error);
 
@@ -353,7 +360,7 @@ pub(crate) fn lower_record(
             name: f.name(db),
             docs: node.docs(ctx.src),
             ty: node
-                .ty()
+                .type_()
                 .and_then(|ty| lower_type(ctx, ty))
                 .unwrap_or(hir::Type::Error),
         }
@@ -414,7 +421,7 @@ pub(crate) fn lower_constructor(
     let ctx = Context::new(db, ws, ptr);
     let node = ctx.get(ptr);
 
-    let params = node.params()?;
+    let params = node.param_list()?;
     let params = lower_params(ctx, params)?;
 
     Some(hir::Constructor {
@@ -434,13 +441,13 @@ pub(crate) fn lower_method(
     let ctx = Context::new(db, ws, ptr);
     let node = ctx.get(ptr);
 
-    let func_ty = node.ty()?;
+    let func_ty = node.func_type()?;
 
-    let params = func_ty.params()?;
+    let params = func_ty.param_list()?;
     let params = lower_params(ctx, params)?;
 
     let return_value = func_ty
-        .result_opt()
+        .result_list_opt()
         .and_then(|return_value| lower_return_value(ctx, return_value));
 
     let item = hir::FuncItem {
@@ -465,13 +472,13 @@ pub(crate) fn lower_static_method(
     let ctx = Context::new(db, ws, ptr);
     let node = ctx.get(ptr);
 
-    let func_ty = node.ty()?;
+    let func_ty = node.func_type()?;
 
-    let params = func_ty.params()?;
+    let params = func_ty.param_list()?;
     let params = lower_params(ctx, params)?;
 
     let return_value = func_ty
-        .result_opt()
+        .result_list_opt()
         .and_then(|return_value| lower_return_value(ctx, return_value));
 
     let item = hir::FuncItem {
@@ -509,7 +516,7 @@ pub(crate) fn lower_variant(
 fn lower_variant_case(ctx: Context<'_>, meta: VariantCaseMetadata) -> hir::VariantCase {
     let node = ctx.get(meta.ptr(ctx.db));
     let ty = node
-        .ty_opt()
+        .type_opt()
         .map(|ty| lower_type(ctx, ty).unwrap_or(hir::Type::Error));
 
     hir::VariantCase {
@@ -583,7 +590,7 @@ pub(crate) fn lower_type_alias(
     let ctx = Context::new(db, ws, ptr);
     let node = ctx.get(ptr);
 
-    let ty = node.ty()?;
+    let ty = node.type_()?;
     let ty = lower_type(ctx, ty).unwrap_or(hir::Type::Error);
 
     Some(hir::TypeAlias {
@@ -604,7 +611,7 @@ pub(crate) enum TopLevelItem {
 /// Resolve a [`ast::Ty`] into a [`hir::Type`]. If resolution fails for whatever
 /// reason, [`None`] is returned.
 fn lower_type(ctx: Context<'_>, node: ast::Ty<'_>) -> Option<hir::Type> {
-    if let Some(node) = node.builtins() {
+    if let Some(node) = node.builtin() {
         let builtin = resolve_builtin(ctx, node)?;
         return Some(hir::Type::Builtin(builtin));
     }
@@ -629,7 +636,7 @@ fn lower_type(ctx: Context<'_>, node: ast::Ty<'_>) -> Option<hir::Type> {
         return resolve_tuple(ctx, tuple);
     }
 
-    if let Some(ty) = node.user_defined_type() {
+    if let Some(ty) = node.id() {
         return resolve_user_defined_type(ctx, ty);
     }
 
@@ -638,9 +645,9 @@ fn lower_type(ctx: Context<'_>, node: ast::Ty<'_>) -> Option<hir::Type> {
 
 fn resolve_handle(ctx: Context<'_>, handle: ast::Handle<'_>) -> Option<hir::Type> {
     let (ty, borrowed) = if let Some(node) = handle.borrowed_handle() {
-        (node.user_defined_type()?, true)
+        (node.id()?, true)
     } else if let Some(node) = handle.owned_handle() {
-        (node.user_defined_type()?, false)
+        (node.id()?, false)
     } else {
         return None;
     };
@@ -656,7 +663,11 @@ fn resolve_handle(ctx: Context<'_>, handle: ast::Handle<'_>) -> Option<hir::Type
 fn resolve_tuple(ctx: Context<'_>, tuple: ast::Tuple<'_>) -> Option<hir::Type> {
     let mut elements = Vector::new();
 
-    for ty in tuple.iter_tys() {
+    for ty in tuple
+        .tuple_list_opt()
+        .into_iter()
+        .flat_map(|t| t.iter_tys())
+    {
         let ty = lower_type(ctx, ty)?;
         elements.push_back(ty);
     }
@@ -664,8 +675,8 @@ fn resolve_tuple(ctx: Context<'_>, tuple: ast::Tuple<'_>) -> Option<hir::Type> {
     Some(hir::Type::Tuple(elements))
 }
 
-fn resolve_user_defined_type(ctx: Context<'_>, ty: ast::UserDefinedType<'_>) -> Option<hir::Type> {
-    let ident = ty.identifier(ctx.src)?;
+fn resolve_user_defined_type(ctx: Context<'_>, ty: ast::Id<'_>) -> Option<hir::Type> {
+    let ident = ty.utf8_text(ctx.src);
     let location = Location::new(ctx.path(), ty.range());
 
     // TODO: Implement this
@@ -709,8 +720,8 @@ fn resolve_list(ctx: Context<'_>, list: ast::List<'_>) -> Option<hir::Type> {
     Some(hir::Type::List(Box::new(element)))
 }
 
-fn resolve_builtin(ctx: Context<'_>, builtin: ast::Builtins<'_>) -> Option<hir::Builtin> {
-    let name = builtin.value(ctx.src);
+fn resolve_builtin(ctx: Context<'_>, builtin: ast::Builtin<'_>) -> Option<hir::Builtin> {
+    let name = builtin.utf8_text(ctx.src);
 
     match name {
         "u8" => Some(hir::Builtin::U8),
@@ -884,7 +895,6 @@ mod tests {
         tuple_with_single_element: "interface i { type x = tuple<string>; }",
         tuple_with_multiple_elements: "interface i { type x = tuple<string, bool, u32>; }",
         result_with_ok_and_error: "interface i { type x = result<bool, string>; }",
-        result_with_empty_ok: "interface i { type x = result<_>; }",
         bare_result: "interface i { type x = result; }",
         result_with_just_error: "interface i { type x = result<_, string>; }",
         list: "interface i { type x = list<u32>; }",

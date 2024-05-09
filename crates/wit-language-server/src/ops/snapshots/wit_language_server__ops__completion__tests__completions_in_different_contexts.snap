@@ -33,6 +33,14 @@ expression: result
             kind: Keyword,
         },
         Completion {
+            text: "f32",
+            kind: Keyword,
+        },
+        Completion {
+            text: "f64",
+            kind: Keyword,
+        },
+        Completion {
             text: "flags",
             kind: Keyword,
         },
@@ -187,6 +195,14 @@ expression: result
             kind: Keyword,
         },
         Completion {
+            text: "f32",
+            kind: Keyword,
+        },
+        Completion {
+            text: "f64",
+            kind: Keyword,
+        },
+        Completion {
             text: "flags",
             kind: Keyword,
         },
@@ -338,6 +354,14 @@ expression: result
         },
         Completion {
             text: "export",
+            kind: Keyword,
+        },
+        Completion {
+            text: "f32",
+            kind: Keyword,
+        },
+        Completion {
+            text: "f64",
             kind: Keyword,
         },
         Completion {

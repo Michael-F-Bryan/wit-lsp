@@ -5,16 +5,10 @@ use color_eyre::{eyre::Context, Report};
 use heck::ToPascalCase;
 use once_cell::sync::Lazy;
 use proc_macro2::{Ident, TokenStream};
-use quote::{format_ident, quote};
+use quote::quote;
 
 use crate::utils;
 
-static NODE_TYPES_PATH: Lazy<PathBuf> = Lazy::new(|| {
-    utils::project_root()
-        .join("tree-sitter-wit")
-        .join("src")
-        .join("node-types.json")
-});
 static AST_GENERATED_PATH: Lazy<PathBuf> = Lazy::new(|| {
     utils::project_root()
         .join("crates")
@@ -23,10 +17,24 @@ static AST_GENERATED_PATH: Lazy<PathBuf> = Lazy::new(|| {
         .join("generated.rs")
 });
 
+const IDENT_BLACKLIST: &[&str] = &["type"];
+
+macro_rules! format_ident {
+    ($($token:tt)*) => {{
+        let ident = quote::format_ident!($($token)*);
+
+        if IDENT_BLACKLIST.iter().any(|s| ident == s) {
+            quote::format_ident!("{ident}_")
+        } else {
+            ident
+        }
+    }};
+}
+
 #[derive(Debug, Clone, Parser)]
 pub struct Ast {
-    #[clap(short, long, default_value = NODE_TYPES_PATH.as_os_str())]
-    node_types: PathBuf,
+    #[clap(short, long)]
+    node_types: Option<PathBuf>,
     #[clap(short, long, default_value = AST_GENERATED_PATH.as_os_str())]
     out: PathBuf,
 }
@@ -36,9 +44,14 @@ impl Ast {
     pub fn generate(self) -> Result<(), Report> {
         let Ast { node_types, out } = self;
 
-        tracing::debug!(path=%node_types.display(), "Reading node-types.json");
-        let node_types = std::fs::read_to_string(&node_types)
-            .with_context(|| format!("Unable to read \"{}\"", node_types.display()))?;
+        let node_types = match node_types {
+            Some(path) => {
+                tracing::debug!(path=%path.display(), "Reading node-types.json");
+                std::fs::read_to_string(&path)
+                    .with_context(|| format!("Unable to read \"{}\"", path.display()))?
+            }
+            None => tree_sitter_wit::NODE_TYPES.to_string(),
+        };
 
         tracing::trace!(%node_types);
 
@@ -56,7 +69,7 @@ impl Ast {
 impl Default for Ast {
     fn default() -> Self {
         Ast {
-            node_types: NODE_TYPES_PATH.clone(),
+            node_types: None,
             out: AST_GENERATED_PATH.clone(),
         }
     }
@@ -157,7 +170,7 @@ fn generate_ast_node(node: &NodeType) -> TokenStream {
 fn generate_helper_trait_impls(ident: &Ident, node: &NodeType) -> TokenStream {
     let mut tokens = TokenStream::new();
 
-    if node.fields.contains_key("name") {
+    if let Some(Field { required: true, .. }) = node.fields.get("name") {
         tokens.extend(quote! {
             impl super::HasIdent for #ident<'_> {
                 fn identifier(self, src: &str) -> Option<&str> {
@@ -600,8 +613,7 @@ mod tests {
 
     #[test]
     fn ast_is_up_to_date() {
-        let node_types = std::fs::read_to_string(&*NODE_TYPES_PATH).unwrap();
-        let tokens = generate_ast(&node_types);
+        let tokens = generate_ast(tree_sitter_wit::NODE_TYPES);
         let src = utils::format_rust(tokens);
         utils::ensure_file_contents(&*AST_GENERATED_PATH, src).unwrap();
     }
