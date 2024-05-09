@@ -40,15 +40,19 @@ pub fn imported_types(
         ScopeIndex::World(w) => {
             let ptr = meta.get_by_index(db, w).ptr(db);
             let node = ast.get(db, ptr);
-            node.iter_items()
-                .filter_map(|item| item.use_item())
+            node.body()
+                .into_iter()
+                .flat_map(|body| body.iter_world_items())
+                .filter_map(|item| item.use_item_opt())
                 .collect()
         }
         ScopeIndex::Interface(i) => {
             let ptr = meta.get_by_index(db, i).ptr(db);
             let node = ast.get(db, ptr);
-            node.iter_items()
-                .filter_map(|item| item.use_item())
+            node.body()
+                .into_iter()
+                .flat_map(|body| body.iter_interface_items())
+                .filter_map(|item| item.use_opt())
                 .collect()
         }
     };
@@ -102,7 +106,7 @@ impl Context<'_> {
         let path = node.path()?;
         let interface = self.resolve_path(path)?;
 
-        for use_name in node.iter_use_names_items() {
+        for use_name in node.names()?.iter_use_names_items() {
             if let Some((name, item, node)) = self.process_use_name(interface, use_name) {
                 self.insert(name, item, node);
             }
@@ -112,37 +116,36 @@ impl Context<'_> {
     }
 
     fn resolve_path(&self, path: ast::UsePath<'_>) -> Option<InterfaceIndex> {
-        let (meta, item_name_node) =
-            if let Some(bare_ident) = path.local_use_path().and_then(|u| u.identifier()) {
-                // TODO: Also check for top-level `use` statements that refer to
-                // this package.
-                let raw = bare_ident.utf8_text(self.src);
-                let ident = Ident::new(self.db, raw.into());
-                let item = self.meta.items_by_name(self.db).get(&ident).copied();
+        let (meta, item_name_node) = if let Some(bare_ident) = path.id() {
+            // TODO: Also check for top-level `use` statements that refer to
+            // this package.
+            let raw = bare_ident.utf8_text(self.src);
+            let ident = Ident::new(self.db, raw.into());
+            let item = self.meta.items_by_name(self.db).get(&ident).copied();
 
-                (item, bare_ident)
-            } else if let Some(fully_qualified) = path.fully_qualified_use_path() {
-                let pkg_id = self.resolve_package_id(fully_qualified)?;
-                let pkg = self.find_pkg(pkg_id, fully_qualified)?;
+            (item, bare_ident)
+        } else if let Some(fully_qualified) = path.fully_qualified_use_path() {
+            let pkg_id = self.resolve_package_id(fully_qualified)?;
+            let pkg = self.find_pkg(pkg_id, fully_qualified)?;
 
-                let item_name = fully_qualified.item_name()?;
-                let raw = item_name.utf8_text(self.src);
-                let ident = Ident::new(self.db, raw.into());
+            let item_name = fully_qualified.iter_ids().last()?;
+            let raw = item_name.utf8_text(self.src);
+            let ident = Ident::new(self.db, raw.into());
 
-                let meta = crate::queries::package_items(self.db, pkg);
-                let meta = meta.items_by_name(self.db).get(&ident).copied();
+            let meta = crate::queries::package_items(self.db, pkg);
+            let meta = meta.items_by_name(self.db).get(&ident).copied();
 
-                (meta, item_name)
-            } else {
-                return None;
-            };
+            (meta, item_name)
+        } else {
+            return None;
+        };
 
         match meta {
             Some(TopLevelItemMetadata::Interface(i)) => Some(i.index(self.db)),
             Some(TopLevelItemMetadata::World(_)) => todo!(),
             None => {
                 self.emit(crate::diagnostics::UnknownName {
-                    name: item_name_node.value(self.src).into(),
+                    name: item_name_node.utf8_text(self.src).into(),
                     location: Location::new(self.path, item_name_node.range()),
                 });
                 None
@@ -152,30 +155,21 @@ impl Context<'_> {
 
     fn resolve_package_id(
         &self,
-        fully_qualified: ast::FullyQualifiedUsePath<'_>,
+        package_name: ast::FullyQualifiedUsePath<'_>,
     ) -> Option<PackageId> {
-        let namespace = fully_qualified
-            .namespace()?
-            .identifier()?
-            .utf8_text(self.src);
+        let raw = package_name.utf8_text(self.src);
 
-        let name = fully_qualified.package()?.identifier()?.utf8_text(self.src);
-
-        let version = fully_qualified.version_opt();
-
-        Some(PackageId::new(
-            self.db,
-            Vector::unit(namespace.into()),
-            Vector::unit(name.into()),
-            version.map(|s| s.utf8_text(self.src).into()),
-        ))
+        self.packages.iter().find_map(|pkg| {
+            let pkg_id = pkg.id(self.db)?;
+            if pkg_id.raw(self.db) == raw {
+                Some(pkg_id)
+            } else {
+                None
+            }
+        })
     }
 
-    fn find_pkg(
-        &self,
-        pkg_id: PackageId,
-        fully_qualified: ast::FullyQualifiedUsePath<'_>,
-    ) -> Option<Package> {
+    fn find_pkg(&self, pkg_id: PackageId, node: ast::FullyQualifiedUsePath<'_>) -> Option<Package> {
         let pkg = self
             .packages
             .iter()
@@ -184,8 +178,8 @@ impl Context<'_> {
 
         if pkg.is_none() {
             self.emit(UnknownPackage {
-                package_id: pkg_id.display(self.db).to_string().into(),
-                location: Location::new(self.path, fully_qualified.range()),
+                package_id: pkg_id.raw(self.db).clone(),
+                location: Location::new(self.path, node.range()),
             });
         };
 

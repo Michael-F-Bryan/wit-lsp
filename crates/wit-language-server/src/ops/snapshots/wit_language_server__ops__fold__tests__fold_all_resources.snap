@@ -3,15 +3,23 @@ source: crates/wit-language-server/src/ops/fold.rs
 expression: "&got"
 ---
 - startLine: 2
-  startCharacter: 0
+  startCharacter: 14
   endLine: 26
   endCharacter: 1
+- startLine: 3
+  startCharacter: 13
+  endLine: 3
+  endCharacter: 16
 - startLine: 5
-  startCharacter: 2
+  startCharacter: 13
   endLine: 7
   endCharacter: 3
+- startLine: 6
+  startCharacter: 15
+  endLine: 6
+  endCharacter: 17
 - startLine: 9
-  startCharacter: 2
+  startCharacter: 13
   endLine: 11
   endCharacter: 3
 - startLine: 10
@@ -19,15 +27,23 @@ expression: "&got"
   endLine: 10
   endCharacter: 23
 - startLine: 13
-  startCharacter: 2
+  startCharacter: 13
   endLine: 19
   endCharacter: 3
 - startLine: 14
   startCharacter: 15
   endLine: 14
   endCharacter: 23
+- startLine: 16
+  startCharacter: 11
+  endLine: 16
+  endCharacter: 13
+- startLine: 18
+  startCharacter: 18
+  endLine: 18
+  endCharacter: 20
 - startLine: 21
-  startCharacter: 2
+  startCharacter: 13
   endLine: 25
   endCharacter: 3
 - startLine: 22
@@ -39,14 +55,22 @@ expression: "&got"
   endLine: 24
   endCharacter: 50
 - startLine: 28
-  startCharacter: 0
+  startCharacter: 8
   endLine: 37
   endCharacter: 1
+- startLine: 31
+  startCharacter: 13
+  endLine: 32
+  endCharacter: 3
 - startLine: 34
-  startCharacter: 2
+  startCharacter: 13
   endLine: 36
   endCharacter: 3
+- startLine: 35
+  startCharacter: 15
+  endLine: 35
+  endCharacter: 17
 - startLine: 39
-  startCharacter: 0
+  startCharacter: 12
   endLine: 45
   endCharacter: 1

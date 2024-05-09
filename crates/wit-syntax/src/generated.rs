@@ -83,6 +83,42 @@ impl<'tree> super::AstNode<'tree> for Attribute<'tree> {
         self.0
     }
 }
+///The `borrowed_handle` node.
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct BorrowedHandle<'tree>(tree_sitter::Node<'tree>);
+impl<'tree> BorrowedHandle<'tree> {
+    pub fn id(self) -> Option<Id<'tree>> {
+        super::children(self.0).filter_map(<Id as super::AstNode<'_>>::cast).next()
+    }
+}
+impl<'tree> super::AstNode<'tree> for BorrowedHandle<'tree> {
+    const NAME: &'static str = "borrowed_handle";
+    fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        if node.kind() == Self::NAME { Some(BorrowedHandle(node)) } else { None }
+    }
+    fn syntax(&self) -> tree_sitter::Node<'tree> {
+        self.0
+    }
+}
+///The `builtin` node.
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct Builtin<'tree>(tree_sitter::Node<'tree>);
+impl<'tree> Builtin<'tree> {}
+impl<'tree> super::AstNode<'tree> for Builtin<'tree> {
+    const NAME: &'static str = "builtin";
+    fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        if node.kind() == Self::NAME { Some(Builtin(node)) } else { None }
+    }
+    fn syntax(&self) -> tree_sitter::Node<'tree> {
+        self.0
+    }
+}
 ///The `doc_comment` node.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct DocComment<'tree>(tree_sitter::Node<'tree>);
@@ -142,8 +178,15 @@ impl<'tree> EnumCase<'tree> {
             .collect();
         children.into_iter()
     }
-    pub fn id(self) -> Option<Id<'tree>> {
-        super::children(self.0).filter_map(<Id as super::AstNode<'_>>::cast).next()
+    pub fn name(&self) -> Option<Id<'tree>> {
+        self.0.child_by_field_name("name").and_then(<Id as super::AstNode>::cast)
+    }
+}
+impl super::HasIdent for EnumCase<'_> {
+    fn identifier(self, src: &str) -> Option<&str> {
+        let node = self.name()?;
+        let raw = node.0.utf8_text(src.as_bytes()).unwrap();
+        Some(crate::ident(raw))
     }
 }
 impl<'tree> super::HasAttr<'tree> for EnumCase<'tree> {
@@ -299,8 +342,15 @@ impl<'tree> FlagsCase<'tree> {
             .collect();
         children.into_iter()
     }
-    pub fn id(self) -> Option<Id<'tree>> {
-        super::children(self.0).filter_map(<Id as super::AstNode<'_>>::cast).next()
+    pub fn name(&self) -> Option<Id<'tree>> {
+        self.0.child_by_field_name("name").and_then(<Id as super::AstNode>::cast)
+    }
+}
+impl super::HasIdent for FlagsCase<'_> {
+    fn identifier(self, src: &str) -> Option<&str> {
+        let node = self.name()?;
+        let raw = node.0.utf8_text(src.as_bytes()).unwrap();
+        Some(crate::ident(raw))
     }
 }
 impl<'tree> super::HasAttr<'tree> for FlagsCase<'tree> {
@@ -359,6 +409,29 @@ impl<'tree> super::AstNode<'tree> for FlagsItems<'tree> {
         Self: Sized,
     {
         if node.kind() == Self::NAME { Some(FlagsItems(node)) } else { None }
+    }
+    fn syntax(&self) -> tree_sitter::Node<'tree> {
+        self.0
+    }
+}
+///The `fully_qualified_use_path` node.
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct FullyQualifiedUsePath<'tree>(tree_sitter::Node<'tree>);
+impl<'tree> FullyQualifiedUsePath<'tree> {
+    pub fn iter_ids(self) -> impl Iterator<Item = Id<'tree>> {
+        super::children(self.0).filter_map(<Id as super::AstNode<'_>>::cast)
+    }
+    pub fn iter_valid_semvers(self) -> impl Iterator<Item = ValidSemver<'tree>> {
+        super::children(self.0).filter_map(<ValidSemver as super::AstNode<'_>>::cast)
+    }
+}
+impl<'tree> super::AstNode<'tree> for FullyQualifiedUsePath<'tree> {
+    const NAME: &'static str = "fully_qualified_use_path";
+    fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        if node.kind() == Self::NAME { Some(FullyQualifiedUsePath(node)) } else { None }
     }
     fn syntax(&self) -> tree_sitter::Node<'tree> {
         self.0
@@ -439,8 +512,15 @@ impl<'tree> super::AstNode<'tree> for FuncType<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Handle<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> Handle<'tree> {
-    pub fn id(self) -> Option<Id<'tree>> {
-        super::children(self.0).filter_map(<Id as super::AstNode<'_>>::cast).next()
+    pub fn borrowed_handle(self) -> Option<BorrowedHandle<'tree>> {
+        super::children(self.0)
+            .filter_map(<BorrowedHandle as super::AstNode<'_>>::cast)
+            .next()
+    }
+    pub fn owned_handle(self) -> Option<OwnedHandle<'tree>> {
+        super::children(self.0)
+            .filter_map(<OwnedHandle as super::AstNode<'_>>::cast)
+            .next()
     }
 }
 impl<'tree> super::AstNode<'tree> for Handle<'tree> {
@@ -536,8 +616,18 @@ impl<'tree> super::AstNode<'tree> for IncludeNamesBody<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct IncludeNamesItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> IncludeNamesItem<'tree> {
-    pub fn iter_ids(self) -> impl Iterator<Item = Id<'tree>> {
-        super::children(self.0).filter_map(<Id as super::AstNode<'_>>::cast)
+    pub fn alias(&self) -> Option<Id<'tree>> {
+        self.0.child_by_field_name("alias").and_then(<Id as super::AstNode>::cast)
+    }
+    pub fn name(&self) -> Option<Id<'tree>> {
+        self.0.child_by_field_name("name").and_then(<Id as super::AstNode>::cast)
+    }
+}
+impl super::HasIdent for IncludeNamesItem<'_> {
+    fn identifier(self, src: &str) -> Option<&str> {
+        let node = self.name()?;
+        let raw = node.0.utf8_text(src.as_bytes()).unwrap();
+        Some(crate::ident(raw))
     }
 }
 impl<'tree> super::AstNode<'tree> for IncludeNamesItem<'tree> {
@@ -784,6 +874,26 @@ impl<'tree> super::AstNode<'tree> for Option_<'tree> {
         self.0
     }
 }
+///The `owned_handle` node.
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct OwnedHandle<'tree>(tree_sitter::Node<'tree>);
+impl<'tree> OwnedHandle<'tree> {
+    pub fn id(self) -> Option<Id<'tree>> {
+        super::children(self.0).filter_map(<Id as super::AstNode<'_>>::cast).next()
+    }
+}
+impl<'tree> super::AstNode<'tree> for OwnedHandle<'tree> {
+    const NAME: &'static str = "owned_handle";
+    fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        if node.kind() == Self::NAME { Some(OwnedHandle(node)) } else { None }
+    }
+    fn syntax(&self) -> tree_sitter::Node<'tree> {
+        self.0
+    }
+}
 ///The `package_decl` node.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct PackageDecl<'tree>(tree_sitter::Node<'tree>);
@@ -797,11 +907,10 @@ impl<'tree> PackageDecl<'tree> {
             .collect();
         children.into_iter()
     }
-    pub fn iter_ids(self) -> impl Iterator<Item = Id<'tree>> {
-        super::children(self.0).filter_map(<Id as super::AstNode<'_>>::cast)
-    }
-    pub fn iter_valid_semvers(self) -> impl Iterator<Item = ValidSemver<'tree>> {
-        super::children(self.0).filter_map(<ValidSemver as super::AstNode<'_>>::cast)
+    pub fn package_name(self) -> Option<PackageName<'tree>> {
+        super::children(self.0)
+            .filter_map(<PackageName as super::AstNode<'_>>::cast)
+            .next()
     }
 }
 impl<'tree> super::HasAttr<'tree> for PackageDecl<'tree> {
@@ -816,6 +925,29 @@ impl<'tree> super::AstNode<'tree> for PackageDecl<'tree> {
         Self: Sized,
     {
         if node.kind() == Self::NAME { Some(PackageDecl(node)) } else { None }
+    }
+    fn syntax(&self) -> tree_sitter::Node<'tree> {
+        self.0
+    }
+}
+///The `package_name` node.
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct PackageName<'tree>(tree_sitter::Node<'tree>);
+impl<'tree> PackageName<'tree> {
+    pub fn iter_ids(self) -> impl Iterator<Item = Id<'tree>> {
+        super::children(self.0).filter_map(<Id as super::AstNode<'_>>::cast)
+    }
+    pub fn iter_valid_semvers(self) -> impl Iterator<Item = ValidSemver<'tree>> {
+        super::children(self.0).filter_map(<ValidSemver as super::AstNode<'_>>::cast)
+    }
+}
+impl<'tree> super::AstNode<'tree> for PackageName<'tree> {
+    const NAME: &'static str = "package_name";
+    fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        if node.kind() == Self::NAME { Some(PackageName(node)) } else { None }
     }
     fn syntax(&self) -> tree_sitter::Node<'tree> {
         self.0
@@ -1141,19 +1273,13 @@ impl<'tree> super::AstNode<'tree> for ResultList<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct SourceFile<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> SourceFile<'tree> {
-    pub fn iter_interface_items(self) -> impl Iterator<Item = InterfaceItem<'tree>> {
-        super::children(self.0).filter_map(<InterfaceItem as super::AstNode<'_>>::cast)
+    pub fn decl_opt(&self) -> Option<PackageDecl<'tree>> {
+        self.0
+            .child_by_field_name("decl")
+            .and_then(<PackageDecl as super::AstNode>::cast)
     }
-    pub fn iter_package_decls(self) -> impl Iterator<Item = PackageDecl<'tree>> {
-        super::children(self.0).filter_map(<PackageDecl as super::AstNode<'_>>::cast)
-    }
-    pub fn iter_toplevel_use_items(
-        self,
-    ) -> impl Iterator<Item = ToplevelUseItem<'tree>> {
-        super::children(self.0).filter_map(<ToplevelUseItem as super::AstNode<'_>>::cast)
-    }
-    pub fn iter_world_items(self) -> impl Iterator<Item = WorldItem<'tree>> {
-        super::children(self.0).filter_map(<WorldItem as super::AstNode<'_>>::cast)
+    pub fn iter_top_level_items(self) -> impl Iterator<Item = TopLevelItem<'tree>> {
+        super::children(self.0).filter_map(<TopLevelItem as super::AstNode<'_>>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for SourceFile<'tree> {
@@ -1181,11 +1307,18 @@ impl<'tree> StaticResourceMethod<'tree> {
             .collect();
         children.into_iter()
     }
-    pub fn iter_func_types(self) -> impl Iterator<Item = FuncType<'tree>> {
-        super::children(self.0).filter_map(<FuncType as super::AstNode<'_>>::cast)
+    pub fn name(&self) -> Option<Id<'tree>> {
+        self.0.child_by_field_name("name").and_then(<Id as super::AstNode>::cast)
     }
-    pub fn iter_ids(self) -> impl Iterator<Item = Id<'tree>> {
-        super::children(self.0).filter_map(<Id as super::AstNode<'_>>::cast)
+    pub fn func_type(self) -> Option<FuncType<'tree>> {
+        super::children(self.0).filter_map(<FuncType as super::AstNode<'_>>::cast).next()
+    }
+}
+impl super::HasIdent for StaticResourceMethod<'_> {
+    fn identifier(self, src: &str) -> Option<&str> {
+        let node = self.name()?;
+        let raw = node.0.utf8_text(src.as_bytes()).unwrap();
+        Some(crate::ident(raw))
     }
 }
 impl<'tree> super::HasAttr<'tree> for StaticResourceMethod<'tree> {
@@ -1200,6 +1333,38 @@ impl<'tree> super::AstNode<'tree> for StaticResourceMethod<'tree> {
         Self: Sized,
     {
         if node.kind() == Self::NAME { Some(StaticResourceMethod(node)) } else { None }
+    }
+    fn syntax(&self) -> tree_sitter::Node<'tree> {
+        self.0
+    }
+}
+///The `top_level_item` node.
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct TopLevelItem<'tree>(tree_sitter::Node<'tree>);
+impl<'tree> TopLevelItem<'tree> {
+    pub fn interface_item(self) -> Option<InterfaceItem<'tree>> {
+        super::children(self.0)
+            .filter_map(<InterfaceItem as super::AstNode<'_>>::cast)
+            .next()
+    }
+    pub fn toplevel_use_item(self) -> Option<ToplevelUseItem<'tree>> {
+        super::children(self.0)
+            .filter_map(<ToplevelUseItem as super::AstNode<'_>>::cast)
+            .next()
+    }
+    pub fn world_item(self) -> Option<WorldItem<'tree>> {
+        super::children(self.0)
+            .filter_map(<WorldItem as super::AstNode<'_>>::cast)
+            .next()
+    }
+}
+impl<'tree> super::AstNode<'tree> for TopLevelItem<'tree> {
+    const NAME: &'static str = "top_level_item";
+    fn cast(node: tree_sitter::Node<'tree>) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        if node.kind() == Self::NAME { Some(TopLevelItem(node)) } else { None }
     }
     fn syntax(&self) -> tree_sitter::Node<'tree> {
         self.0
@@ -1280,22 +1445,25 @@ impl<'tree> super::AstNode<'tree> for TupleList<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Ty<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> Ty<'tree> {
-    pub fn handle_opt(self) -> Option<Handle<'tree>> {
+    pub fn builtin(self) -> Option<Builtin<'tree>> {
+        super::children(self.0).filter_map(<Builtin as super::AstNode<'_>>::cast).next()
+    }
+    pub fn handle(self) -> Option<Handle<'tree>> {
         super::children(self.0).filter_map(<Handle as super::AstNode<'_>>::cast).next()
     }
-    pub fn id_opt(self) -> Option<Id<'tree>> {
+    pub fn id(self) -> Option<Id<'tree>> {
         super::children(self.0).filter_map(<Id as super::AstNode<'_>>::cast).next()
     }
-    pub fn list_opt(self) -> Option<List<'tree>> {
+    pub fn list(self) -> Option<List<'tree>> {
         super::children(self.0).filter_map(<List as super::AstNode<'_>>::cast).next()
     }
-    pub fn option_opt(self) -> Option<Option_<'tree>> {
+    pub fn option(self) -> Option<Option_<'tree>> {
         super::children(self.0).filter_map(<Option_ as super::AstNode<'_>>::cast).next()
     }
-    pub fn result_opt(self) -> Option<Result_<'tree>> {
+    pub fn result(self) -> Option<Result_<'tree>> {
         super::children(self.0).filter_map(<Result_ as super::AstNode<'_>>::cast).next()
     }
-    pub fn tuple_opt(self) -> Option<Tuple<'tree>> {
+    pub fn tuple(self) -> Option<Tuple<'tree>> {
         super::children(self.0).filter_map(<Tuple as super::AstNode<'_>>::cast).next()
     }
 }
@@ -1397,11 +1565,13 @@ impl<'tree> super::AstNode<'tree> for TypedefItem<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct UseItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> UseItem<'tree> {
-    pub fn iter_use_names_lists(self) -> impl Iterator<Item = UseNamesList<'tree>> {
-        super::children(self.0).filter_map(<UseNamesList as super::AstNode<'_>>::cast)
+    pub fn names(&self) -> Option<UseNamesList<'tree>> {
+        self.0
+            .child_by_field_name("names")
+            .and_then(<UseNamesList as super::AstNode>::cast)
     }
-    pub fn iter_use_paths(self) -> impl Iterator<Item = UsePath<'tree>> {
-        super::children(self.0).filter_map(<UsePath as super::AstNode<'_>>::cast)
+    pub fn path(&self) -> Option<UsePath<'tree>> {
+        self.0.child_by_field_name("path").and_then(<UsePath as super::AstNode>::cast)
     }
 }
 impl<'tree> super::AstNode<'tree> for UseItem<'tree> {
@@ -1420,8 +1590,18 @@ impl<'tree> super::AstNode<'tree> for UseItem<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct UseNamesItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> UseNamesItem<'tree> {
-    pub fn iter_ids(self) -> impl Iterator<Item = Id<'tree>> {
-        super::children(self.0).filter_map(<Id as super::AstNode<'_>>::cast)
+    pub fn alias_opt(&self) -> Option<Id<'tree>> {
+        self.0.child_by_field_name("alias").and_then(<Id as super::AstNode>::cast)
+    }
+    pub fn name(&self) -> Option<Id<'tree>> {
+        self.0.child_by_field_name("name").and_then(<Id as super::AstNode>::cast)
+    }
+}
+impl super::HasIdent for UseNamesItem<'_> {
+    fn identifier(self, src: &str) -> Option<&str> {
+        let node = self.name()?;
+        let raw = node.0.utf8_text(src.as_bytes()).unwrap();
+        Some(crate::ident(raw))
     }
 }
 impl<'tree> super::AstNode<'tree> for UseNamesItem<'tree> {
@@ -1466,11 +1646,13 @@ impl<'tree> super::AstNode<'tree> for UseNamesList<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct UsePath<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> UsePath<'tree> {
-    pub fn iter_ids(self) -> impl Iterator<Item = Id<'tree>> {
-        super::children(self.0).filter_map(<Id as super::AstNode<'_>>::cast)
+    pub fn fully_qualified_use_path(self) -> Option<FullyQualifiedUsePath<'tree>> {
+        super::children(self.0)
+            .filter_map(<FullyQualifiedUsePath as super::AstNode<'_>>::cast)
+            .next()
     }
-    pub fn iter_valid_semvers(self) -> impl Iterator<Item = ValidSemver<'tree>> {
-        super::children(self.0).filter_map(<ValidSemver as super::AstNode<'_>>::cast)
+    pub fn id(self) -> Option<Id<'tree>> {
+        super::children(self.0).filter_map(<Id as super::AstNode<'_>>::cast).next()
     }
 }
 impl<'tree> super::AstNode<'tree> for UsePath<'tree> {

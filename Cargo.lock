@@ -1772,7 +1772,7 @@ dependencies = [
 [[package]]
 name = "tree-sitter-wit"
 version = "0.0.1"
-source = "git+https://github.com/Michael-F-Bryan/tree-sitter-wit?branch=include-queries-in-rust#829b4fc208367248d53dd1a4e2d8c62cba5fa20c"
+source = "git+https://github.com/Michael-F-Bryan/tree-sitter-wit?branch=include-queries-in-rust#3d0f10ffc57875564b7e537b8797d3b4c996235e"
 dependencies = [
  "cc",
  "tree-sitter",

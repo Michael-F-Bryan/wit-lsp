@@ -27,13 +27,7 @@ expression: debug
         id: Some(
             PackageId {
                 [salsa id]: 0,
-                namespace: [
-                    "merge",
-                ],
-                package_name: [
-                    "some-package",
-                ],
-                version: None,
+                raw: "merge:some-package",
             },
         ),
         files: [
@@ -58,13 +52,7 @@ expression: debug
         id: Some(
             PackageId {
                 [salsa id]: 1,
-                namespace: [
-                    "some-namespace",
-                ],
-                package_name: [
-                    "package",
-                ],
-                version: None,
+                raw: "some-namespace:package",
             },
         ),
         files: [
@@ -84,15 +72,7 @@ expression: debug
         id: Some(
             PackageId {
                 [salsa id]: 2,
-                namespace: [
-                    "another-namespace",
-                ],
-                package_name: [
-                    "package",
-                ],
-                version: Some(
-                    "1.2.3",
-                ),
+                raw: "another-namespace:package@1.2.3",
             },
         ),
         files: [

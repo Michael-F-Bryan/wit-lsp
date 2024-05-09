@@ -1,7 +1,7 @@
 use tower_lsp::lsp_types::{CompletionItem, CompletionItemKind};
 use wit_compiler::{
     access::ScopeIndex,
-    ast::{self, AstNode},
+    ast::{self, AstNode, HasSource},
     queries::{metadata::HasIdent, SourceFile, Workspace},
     Db,
 };
@@ -53,13 +53,9 @@ pub fn complete(
     }
 
     let ast = wit_compiler::queries::parse(db, file);
-    if let Some(ident) = ast
-        .tree(db)
-        .ancestors(point)
-        .find_map(ast::Identifier::cast)
-    {
+    if let Some(ident) = ast.tree(db).ancestors(point).find_map(ast::Id::cast) {
         let src = file.contents(db);
-        let ident = ident.value(src);
+        let ident = ident.utf8_text(src);
         // The user has started writing an identifier, so limit the completions
         // to whatever might match what they've written.
         completions.retain(|c| c.text.starts_with(ident));
@@ -132,7 +128,7 @@ mod tests {
         src: &'a str,
     ) -> OrdMap<Cow<'a, str>, tree_sitter::Point> {
         tree.iter()
-            .filter_map(wit_compiler::ast::BlockComment::cast)
+            .filter_map(wit_compiler::ast::Comment::cast)
             .map(|comment| (comment.text(src), comment.range().start_point))
             .collect()
     }

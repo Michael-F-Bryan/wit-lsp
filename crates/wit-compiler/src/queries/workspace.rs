@@ -1,10 +1,10 @@
-use std::{fmt::Display, ops::Range};
+use std::ops::Range;
 
 use codespan_reporting::files::Error as CodespanError;
 use im::{OrdMap, Vector};
 
 use crate::{
-    ast::{self, AstNode, HasSource},
+    ast::{AstNode, HasSource},
     diagnostics::{Diagnostics, Location, MismatchedPackageDeclaration},
     Db, Text,
 };
@@ -73,10 +73,11 @@ fn resolve_id(db: &dyn Db, files: &Vector<SourceFile>) -> Option<PackageId> {
     for f in files.iter().copied() {
         let ast = crate::queries::parse(db, f);
 
-        if let Some(node) = ast.source_file(db).package_opt() {
-            let pkg_id = node
-                .fully_qualified_package_name()
-                .and_then(|node| package_id(db, node, f));
+        if let Some(node) = ast.source_file(db).decl_opt() {
+            let pkg_id = node.package_name().map(|node| {
+                let raw = node.utf8_text(f.contents(db));
+                PackageId::new(db, raw.into())
+            });
 
             if let Some(new_id) = pkg_id {
                 let location = Location::new(f.path(db), node.range());
@@ -137,24 +138,6 @@ pub fn workspace_packages(db: &dyn Db, ws: Workspace) -> Vector<Package> {
         .collect()
 }
 
-pub(crate) fn package_id(
-    db: &dyn Db,
-    node: ast::FullyQualifiedPackageName<'_>,
-    file: SourceFile,
-) -> Option<PackageId> {
-    let src = file.contents(db);
-
-    let ns = node.namespace()?.identifier()?.utf8_text(src);
-    let ns = Vector::unit(Text::from(ns));
-
-    let name = node.package()?.identifier()?;
-    let name = Vector::unit(Text::from(name.utf8_text(src)));
-
-    let version = node.version_opt().map(|v| v.utf8_text(src)).map(Text::from);
-
-    Some(PackageId::new(db, ns, name, version))
-}
-
 /// A group of files in a [`Workspace`].
 #[salsa::tracked]
 pub struct Package {
@@ -171,42 +154,7 @@ impl Package {
 
 #[salsa::interned]
 pub struct PackageId {
-    pub namespace: Vector<Text>,
-    pub package_name: Vector<Text>,
-    pub version: Option<Text>,
-}
-
-impl PackageId {
-    pub fn display(self, db: &dyn Db) -> impl Display + '_ {
-        struct Wrapper<'db> {
-            id: PackageId,
-            db: &'db dyn Db,
-        }
-        impl Display for Wrapper<'_> {
-            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                for (i, ns) in self.id.namespace(self.db).iter().enumerate() {
-                    if i > 0 {
-                        write!(f, ":")?;
-                    }
-                    write!(f, "{ns}")?;
-                }
-
-                for (i, nested_package) in self.id.package_name(self.db).iter().enumerate() {
-                    if i > 0 {
-                        write!(f, "/")?;
-                    }
-                    write!(f, "{nested_package}")?;
-                }
-
-                if let Some(version) = self.id.version(self.db) {
-                    write!(f, "@{version}")?;
-                }
-
-                Ok(())
-            }
-        }
-        Wrapper { id: self, db }
-    }
+    pub raw: Text,
 }
 
 /// A file attached to a [`Workspace`].

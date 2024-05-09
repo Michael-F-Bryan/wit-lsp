@@ -613,8 +613,7 @@ mod tests {
 
     #[test]
     fn ast_is_up_to_date() {
-        let node_types = std::fs::read_to_string(&*NODE_TYPES_PATH).unwrap();
-        let tokens = generate_ast(&node_types);
+        let tokens = generate_ast(tree_sitter_wit::NODE_TYPES);
         let src = utils::format_rust(tokens);
         utils::ensure_file_contents(&*AST_GENERATED_PATH, src).unwrap();
     }
