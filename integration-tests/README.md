@@ -5,11 +5,15 @@ This directory contains the integration test suite for this repository.
 Basically, it's a bunch of valid `*.wit` files collected from all over the place
 that we throw at the compiler.
 
+## Test Discovery
+
 The `integration-tests` crate has a custom test harness which will scan this
 directory for test cases and automatically test them. That means running the
 tests is as simple as `cargo test` (or `cargo nextest run` for the cool kids).
 
-## Compile-Pass Tests
+You can skip a test case by adding a `_` to the start of the filename.
+
+### Compile-Pass Tests
 
 Any tests placed in to the `compile-pass/` directory should follow either of the
 following formats:
