@@ -57,7 +57,16 @@
         }
         .error-code {
             font-weight: bold;
+            color: darkslategray;
+        }
+        .severity-bug .error-code {
+            color: #732c7b;
+        }
+        .severity-error .error-code {
             color: #d9534f;
+        }
+        .severity-warning .error-code {
+            color: #f5b31e;
         }
         .description {
             margin-top: 5px;
@@ -86,15 +95,15 @@
             </ul>
         </div>
 
-        {% for diagnostic in diagnostics %}
-        <div class="diagnostic">
-            <h2 id="{{ diagnostic.error_code }}">
-                <span class="error-code">{{ diagnostic.error_code }}:</span>
-                <span class="message">{{ diagnostic.message }}</span>
-                <a class="permalink" href="#{{ diagnostic.error_code }}" title="Permalink">&#128279;</a>
+        {% for diag in diagnostics %}
+        <div class="diagnostic severity-{{ diag.severity | lower }}">
+            <h2 id="{{ diag.error_code }}">
+                <span class="error-code">{{ diag.error_code }}:</span>
+                <span class="message">{{ diag.message }}</span>
+                <a class="permalink" href="#{{ diag.error_code }}" title="Permalink">&#128279;</a>
             </h2>
             <div class="description">
-                {{ diagnostic.description }}
+                {{ diag.description }}
             </div>
         </div>
         {% endfor %}

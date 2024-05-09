@@ -90,8 +90,8 @@ fn resolve_id(db: &dyn Db, files: &Vector<SourceFile>) -> Option<PackageId> {
                         let diag = MismatchedPackageDeclaration {
                             original_definition: *original_definition,
                             original_id: *original_id,
-                            second_id: new_id,
-                            second_location: location,
+                            id: new_id,
+                            location,
                         };
                         Diagnostics::push(db, diag.into());
                     }
