@@ -14,7 +14,7 @@ pub struct Doc {
     /// Where to save the generated docs to.
     #[clap(short, long, default_value = DEFAULT_OUTPUT_DIR.as_os_str())]
     out: PathBuf,
-    /// The item to generate docs for
+    /// The item to generate docs for.
     targets: Vec<Target>,
 }
 
@@ -92,6 +92,7 @@ fn diagnostics_index() -> color_eyre::Result<String> {
 struct DiagnosticInfo {
     type_name: String,
     message: String,
+    severity: String,
     error_code: String,
     description: String,
 }

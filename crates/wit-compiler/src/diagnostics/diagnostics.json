@@ -2,63 +2,63 @@
   {
     "type_name": "wit_compiler::diagnostics::DuplicateName",
     "message": "Name defined multiple times",
-    "default_severity": "Error",
+    "severity": "Error",
     "error_code": "E002",
     "description": "# E002: Name defined multiple times\n\nItems with the same name were defined in the same scope.\n\n"
   },
   {
     "type_name": "wit_compiler::diagnostics::MultipleConstructors",
     "message": "Resource has multiple constructors",
-    "default_severity": "Error",
+    "severity": "Error",
     "error_code": "E003",
     "description": "# E003: Resource has multiple constructors\n\nA *Resource* contains multiple `constructor()` functions.\n"
   },
   {
     "type_name": "wit_compiler::diagnostics::SyntaxError",
     "message": "Syntax error",
-    "default_severity": "Error",
+    "severity": "Error",
     "error_code": "E001",
     "description": "# E001: Syntax error\n\nThe file contained invalid syntax.\n"
   },
   {
     "type_name": "wit_compiler::diagnostics::UnknownName",
     "message": "Reference to unknown name",
-    "default_severity": "Error",
+    "severity": "Error",
     "error_code": "E004",
     "description": "# E004: Reference to unknown name\n\nThe code referenced a name that doesn't exist in the current scope.\n"
   },
   {
     "type_name": "wit_compiler::diagnostics::UnknownPackage",
     "message": "Reference to unknown package",
-    "default_severity": "Error",
+    "severity": "Error",
     "error_code": "E007",
     "description": "# E007: Reference to unknown package\n\nThe package you are referring to isn't known by the compiler.\n"
   },
   {
     "type_name": "wit_compiler::diagnostics::Bug",
     "message": "You ran into a bug 🐛",
-    "default_severity": "Bug",
+    "severity": "Bug",
     "error_code": "B500",
     "description": "# B500: You ran into a bug 🐛\n\nThis is a bug.\n"
   },
   {
     "type_name": "wit_compiler::diagnostics::MismatchedPackageDeclaration",
     "message": "Mismatched package declarations",
-    "default_severity": "Error",
+    "severity": "Error",
     "error_code": "E005",
     "description": "# E005: Mismatched package declarations\n\nA directory contains multiple `*.wit` files with a `package` declaration, but\nthe package declarations aren't identical.\n"
   },
   {
     "type_name": "wit_compiler::diagnostics::MultiplePackageDocs",
     "message": "Package docs can only be defined in a single file",
-    "default_severity": "Error",
+    "severity": "Error",
     "error_code": "E006",
     "description": "# E006: Package docs can only be defined in a single file\n\nOnly one file is allowed to document a package.\n"
   },
   {
     "type_name": "wit_compiler::diagnostics::deprecated::Deprecated",
     "message": "This type is deprecated",
-    "default_severity": "Warning",
+    "severity": "Warning",
     "error_code": "W001",
     "description": "# W001: This type is deprecated\n\nAn item was deprecated.\n"
   }

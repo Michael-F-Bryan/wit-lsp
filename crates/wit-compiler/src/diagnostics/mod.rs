@@ -414,7 +414,7 @@ impl Location {
 pub struct DiagnosticInfo {
     pub type_name: &'static str,
     pub message: &'static str,
-    pub default_severity: Severity,
+    pub severity: Severity,
     pub error_code: &'static str,
     pub description: &'static str,
 }
@@ -424,7 +424,7 @@ impl DiagnosticInfo {
         DiagnosticInfo {
             type_name: std::any::type_name::<T>(),
             message: T::MESSAGE,
-            default_severity: T::SEVERITY,
+            severity: T::SEVERITY,
             error_code: T::CODE,
             description: T::VERBOSE_DESCRIPTION,
         }
@@ -447,7 +447,7 @@ mod tests {
             let DiagnosticInfo {
                 type_name,
                 message,
-                default_severity,
+                severity: default_severity,
                 error_code,
                 description,
             } = diag;
