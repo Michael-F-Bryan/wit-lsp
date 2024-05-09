@@ -4,7 +4,7 @@ use tower_lsp::lsp_types::{
     DocumentDiagnosticReportResult,
 };
 use wit_compiler::{
-    diagnostics::{Diagnostics, Location},
+    diagnostics::Location,
     queries::{FilePath, SourceFile, Workspace},
 };
 
@@ -16,12 +16,9 @@ pub fn file_diagnostics(
     file: SourceFile,
 ) -> DocumentDiagnosticReportResult {
     let path = file.path(db);
-    let pkg = wit_compiler::queries::workspace_packages(db, ws)
-        .into_iter()
-        .find(|pkg| pkg.contains(db, path))
-        .expect("unreachable");
+    let mut diags = wit_compiler::diagnostics::check_all(db, ws);
+    diags.retain(|d| d.location().filename == path);
 
-    let diags = wit_compiler::queries::lower_package::accumulated::<Diagnostics>(db, ws, pkg);
     let items = diags
         .into_iter()
         .filter_map(|diag| lsp_diagnostic(db, ws, diag, file.path(db).raw_path(db)))
