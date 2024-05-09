@@ -1,22 +1,8 @@
 use std::borrow::Cow;
 
-use crate::{BlockComment, Builtins, HasSource, Identifier, Semver, UserDefinedType};
+use crate::{Comment, HasSource};
 
-macro_rules! literal_types {
-    ($($ty:ident),* $(,)?) => {
-        $(
-            impl $ty<'_> {
-                pub fn value(self, src: &str) -> &str {
-                    self.utf8_text(src)
-                }
-            }
-        )*
-    };
-}
-
-literal_types!(Identifier, Builtins, UserDefinedType, Semver);
-
-impl BlockComment<'_> {
+impl Comment<'_> {
     /// The actual comment text.
     pub fn text(self, src: &str) -> Cow<'_, str> {
         let src = self.utf8_text(src);
@@ -64,23 +50,45 @@ mod tests {
 
     use super::*;
 
-    fn block_comment_value(src: &str) -> Cow<'_, str> {
-        let tree = tree_sitter_wit::parse(src);
+    fn comment_value(src: &str) -> Cow<'_, str> {
+        let mut p = tree_sitter::Parser::new();
+        let lang = tree_sitter_wit::language();
+        p.set_language(&lang).unwrap();
+        let tree = p.parse(src, None).unwrap();
+
         let mut cursor = tree.walk();
         let comment = tree
             .root_node()
             .children(&mut cursor)
-            .find_map(BlockComment::cast)
+            .find_map(Comment::cast)
             .unwrap();
 
         comment.text(src)
     }
 
     #[test]
+    fn slash_comment() {
+        let src = "// word";
+
+        let got = comment_value(src);
+
+        assert_eq!(got, "word");
+    }
+
+    #[test]
+    fn slash_comment_with_newlines() {
+        let src = "// word\n\n";
+
+        let got = comment_value(src);
+
+        assert_eq!(got, "word");
+    }
+
+    #[test]
     fn single_line_block_comment() {
         let src = "/* word */";
 
-        let got = block_comment_value(src);
+        let got = comment_value(src);
 
         assert_eq!(got, "word");
     }
@@ -94,7 +102,7 @@ mod tests {
             comment */
     "#;
 
-        let got = block_comment_value(src);
+        let got = comment_value(src);
 
         assert_eq!(got, "this\nis\na\ncomment");
     }
@@ -110,7 +118,7 @@ mod tests {
             */
     "#;
 
-        let got = block_comment_value(src);
+        let got = comment_value(src);
 
         assert_eq!(got, "this\nis\na\ncomment");
     }
@@ -127,7 +135,7 @@ mod tests {
          */
     "#;
 
-        let got = block_comment_value(src);
+        let got = comment_value(src);
 
         assert_eq!(got, "this\nis\n     an indented\ncomment");
     }
