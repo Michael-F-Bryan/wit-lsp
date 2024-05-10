@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["IngredientIndex","Routes"],"type":["DynMutRoute","DynRoute"]};

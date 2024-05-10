@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["codegen","extract_diagnostic_types"],"static":["DIAGNOSTICS_DIR_PATH","DIAGNOSTICS_MOD_PATH","DIAGNOSTICS_OUTPUT_PATH"],"struct":["Diagnostics"]};

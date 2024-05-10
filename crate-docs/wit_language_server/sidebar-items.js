@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["CatchPanicError"],"fn":["service"],"mod":["code_actions"],"struct":["PanicMessage"],"trait":["LanguageServerService"]};

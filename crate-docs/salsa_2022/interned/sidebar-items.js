@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["IdentityInterner","InternedIngredient"],"trait":["InternedData","InternedId"]};

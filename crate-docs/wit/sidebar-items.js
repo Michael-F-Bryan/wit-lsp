@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["RUST_LOG"],"fn":["initialize_logging","main"]};

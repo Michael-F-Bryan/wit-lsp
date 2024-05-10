@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["copy_dir","ensure_file_contents","format_rust","normalize_newlines","project_root"]};

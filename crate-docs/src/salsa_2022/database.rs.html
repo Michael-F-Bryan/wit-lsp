@@ -1,0 +1,279 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/git/checkouts/salsa-61760caba2b17ca5/4151b09/components/salsa-2022/src/database.rs`."><title>database.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="salsa_2022" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.2 (25ef9e3d8 2024-04-09)" data-channel="1.77.2" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../salsa_2022/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<a href="#2" id="2">2</a>
+<a href="#3" id="3">3</a>
+<a href="#4" id="4">4</a>
+<a href="#5" id="5">5</a>
+<a href="#6" id="6">6</a>
+<a href="#7" id="7">7</a>
+<a href="#8" id="8">8</a>
+<a href="#9" id="9">9</a>
+<a href="#10" id="10">10</a>
+<a href="#11" id="11">11</a>
+<a href="#12" id="12">12</a>
+<a href="#13" id="13">13</a>
+<a href="#14" id="14">14</a>
+<a href="#15" id="15">15</a>
+<a href="#16" id="16">16</a>
+<a href="#17" id="17">17</a>
+<a href="#18" id="18">18</a>
+<a href="#19" id="19">19</a>
+<a href="#20" id="20">20</a>
+<a href="#21" id="21">21</a>
+<a href="#22" id="22">22</a>
+<a href="#23" id="23">23</a>
+<a href="#24" id="24">24</a>
+<a href="#25" id="25">25</a>
+<a href="#26" id="26">26</a>
+<a href="#27" id="27">27</a>
+<a href="#28" id="28">28</a>
+<a href="#29" id="29">29</a>
+<a href="#30" id="30">30</a>
+<a href="#31" id="31">31</a>
+<a href="#32" id="32">32</a>
+<a href="#33" id="33">33</a>
+<a href="#34" id="34">34</a>
+<a href="#35" id="35">35</a>
+<a href="#36" id="36">36</a>
+<a href="#37" id="37">37</a>
+<a href="#38" id="38">38</a>
+<a href="#39" id="39">39</a>
+<a href="#40" id="40">40</a>
+<a href="#41" id="41">41</a>
+<a href="#42" id="42">42</a>
+<a href="#43" id="43">43</a>
+<a href="#44" id="44">44</a>
+<a href="#45" id="45">45</a>
+<a href="#46" id="46">46</a>
+<a href="#47" id="47">47</a>
+<a href="#48" id="48">48</a>
+<a href="#49" id="49">49</a>
+<a href="#50" id="50">50</a>
+<a href="#51" id="51">51</a>
+<a href="#52" id="52">52</a>
+<a href="#53" id="53">53</a>
+<a href="#54" id="54">54</a>
+<a href="#55" id="55">55</a>
+<a href="#56" id="56">56</a>
+<a href="#57" id="57">57</a>
+<a href="#58" id="58">58</a>
+<a href="#59" id="59">59</a>
+<a href="#60" id="60">60</a>
+<a href="#61" id="61">61</a>
+<a href="#62" id="62">62</a>
+<a href="#63" id="63">63</a>
+<a href="#64" id="64">64</a>
+<a href="#65" id="65">65</a>
+<a href="#66" id="66">66</a>
+<a href="#67" id="67">67</a>
+<a href="#68" id="68">68</a>
+<a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
+<a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+</pre></div><pre class="rust"><code><span class="kw">use crate</span>::{storage::HasJarsDyn, DebugWithDb, Durability, Event};
+
+<span class="kw">pub trait </span>Database: HasJarsDyn + AsSalsaDatabase {
+    <span class="doccomment">/// This function is invoked at key points in the salsa
+    /// runtime. It permits the database to be customized and to
+    /// inject logging or other custom behavior.
+    ///
+    /// By default, the event is logged at level debug using
+    /// the standard `log` facade.
+    </span><span class="kw">fn </span>salsa_event(<span class="kw-2">&amp;</span><span class="self">self</span>, event: Event) {
+        <span class="macro">log::debug!</span>(<span class="string">"salsa_event: {:?}"</span>, event.debug(<span class="self">self</span>));
+    }
+
+    <span class="doccomment">/// A "synthetic write" causes the system to act *as though* some
+    /// input of durability `durability` has changed. This is mostly
+    /// useful for profiling scenarios.
+    ///
+    /// **WARNING:** Just like an ordinary write, this method triggers
+    /// cancellation. If you invoke it while a snapshot exists, it
+    /// will block until that snapshot is dropped -- if that snapshot
+    /// is owned by the current thread, this could trigger deadlock.
+    </span><span class="kw">fn </span>synthetic_write(<span class="kw-2">&amp;mut </span><span class="self">self</span>, durability: Durability) {
+        <span class="self">self</span>.runtime_mut().report_tracked_write(durability);
+    }
+
+    <span class="doccomment">/// Reports that the query depends on some state unknown to salsa.
+    ///
+    /// Queries which report untracked reads will be re-executed in the next
+    /// revision.
+    </span><span class="kw">fn </span>report_untracked_read(<span class="kw-2">&amp;</span><span class="self">self</span>) {
+        <span class="self">self</span>.runtime().report_untracked_read();
+    }
+}
+
+<span class="doccomment">/// Indicates a database that also supports parallel query
+/// evaluation. All of Salsa's base query support is capable of
+/// parallel execution, but for it to work, your query key/value types
+/// must also be `Send`, as must any additional data in your database.
+</span><span class="kw">pub trait </span>ParallelDatabase: Database + Send {
+    <span class="doccomment">/// Creates a second handle to the database that holds the
+    /// database fixed at a particular revision. So long as this
+    /// "frozen" handle exists, any attempt to [`set`] an input will
+    /// block.
+    ///
+    /// [`set`]: struct.QueryTable.html#method.set
+    ///
+    /// This is the method you are meant to use most of the time in a
+    /// parallel setting where modifications may arise asynchronously
+    /// (e.g., a language server). In this context, it is common to
+    /// wish to "fork off" a snapshot of the database performing some
+    /// series of queries in parallel and arranging the results. Using
+    /// this method for that purpose ensures that those queries will
+    /// see a consistent view of the database (it is also advisable
+    /// for those queries to use the [`Runtime::unwind_if_cancelled`]
+    /// method to check for cancellation).
+    ///
+    /// # Panics
+    ///
+    /// It is not permitted to create a snapshot from inside of a
+    /// query. Attepting to do so will panic.
+    ///
+    /// # Deadlock warning
+    ///
+    /// The intended pattern for snapshots is that, once created, they
+    /// are sent to another thread and used from there. As such, the
+    /// `snapshot` acquires a "read lock" on the database --
+    /// therefore, so long as the `snapshot` is not dropped, any
+    /// attempt to `set` a value in the database will block. If the
+    /// `snapshot` is owned by the same thread that is attempting to
+    /// `set`, this will cause a problem.
+    ///
+    /// # How to implement this
+    ///
+    /// Typically, this method will create a second copy of your
+    /// database type (`MyDatabaseType`, in the example below),
+    /// cloning over each of the fields from `self` into this new
+    /// copy. For the field that stores the salsa runtime, you should
+    /// use [the `Runtime::snapshot` method][rfm] to create a snapshot of the
+    /// runtime. Finally, package up the result using `Snapshot::new`,
+    /// which is a simple wrapper type that only gives `&amp;self` access
+    /// to the database within (thus preventing the use of methods
+    /// that may mutate the inputs):
+    ///
+    /// [rfm]: struct.Runtime.html#method.snapshot
+    ///
+    /// ```rust,ignore
+    /// impl ParallelDatabase for MyDatabaseType {
+    ///     fn snapshot(&amp;self) -&gt; Snapshot&lt;Self&gt; {
+    ///         Snapshot::new(
+    ///             MyDatabaseType {
+    ///                 runtime: self.storage.snapshot(),
+    ///                 other_field: self.other_field.clone(),
+    ///             }
+    ///         )
+    ///     }
+    /// }
+    /// ```
+    </span><span class="kw">fn </span>snapshot(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Snapshot&lt;<span class="self">Self</span>&gt;;
+}
+<span class="kw">pub trait </span>AsSalsaDatabase {
+    <span class="kw">fn </span>as_salsa_database(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="kw">dyn </span>Database;
+}
+
+<span class="doccomment">/// Simple wrapper struct that takes ownership of a database `DB` and
+/// only gives `&amp;self` access to it. See [the `snapshot` method][fm]
+/// for more details.
+///
+/// [fm]: trait.ParallelDatabase.html#method.snapshot
+</span><span class="attr">#[derive(Debug)]
+</span><span class="kw">pub struct </span>Snapshot&lt;DB: <span class="question-mark">?</span>Sized&gt;
+<span class="kw">where
+    </span>DB: ParallelDatabase,
+{
+    db: DB,
+}
+
+<span class="kw">impl</span>&lt;DB&gt; Snapshot&lt;DB&gt;
+<span class="kw">where
+    </span>DB: ParallelDatabase,
+{
+    <span class="doccomment">/// Creates a `Snapshot` that wraps the given database handle
+    /// `db`. From this point forward, only shared references to `db`
+    /// will be possible.
+    </span><span class="kw">pub fn </span>new(db: DB) -&gt; <span class="self">Self </span>{
+        Snapshot { db }
+    }
+}
+
+<span class="kw">impl</span>&lt;DB&gt; std::ops::Deref <span class="kw">for </span>Snapshot&lt;DB&gt;
+<span class="kw">where
+    </span>DB: ParallelDatabase,
+{
+    <span class="kw">type </span>Target = DB;
+
+    <span class="kw">fn </span>deref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>DB {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.db
+    }
+}
+</code></pre></div></section></main></body></html>

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["access","diagnostics","hir","queries","traverse"],"struct":["Compiler","Jar","Text","Tree"],"trait":["Db"]};

@@ -1,0 +1,559 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/git/checkouts/salsa-61760caba2b17ca5/4151b09/components/salsa-2022/src/interned.rs`."><title>interned.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="salsa_2022" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.2 (25ef9e3d8 2024-04-09)" data-channel="1.77.2" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../salsa_2022/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<a href="#2" id="2">2</a>
+<a href="#3" id="3">3</a>
+<a href="#4" id="4">4</a>
+<a href="#5" id="5">5</a>
+<a href="#6" id="6">6</a>
+<a href="#7" id="7">7</a>
+<a href="#8" id="8">8</a>
+<a href="#9" id="9">9</a>
+<a href="#10" id="10">10</a>
+<a href="#11" id="11">11</a>
+<a href="#12" id="12">12</a>
+<a href="#13" id="13">13</a>
+<a href="#14" id="14">14</a>
+<a href="#15" id="15">15</a>
+<a href="#16" id="16">16</a>
+<a href="#17" id="17">17</a>
+<a href="#18" id="18">18</a>
+<a href="#19" id="19">19</a>
+<a href="#20" id="20">20</a>
+<a href="#21" id="21">21</a>
+<a href="#22" id="22">22</a>
+<a href="#23" id="23">23</a>
+<a href="#24" id="24">24</a>
+<a href="#25" id="25">25</a>
+<a href="#26" id="26">26</a>
+<a href="#27" id="27">27</a>
+<a href="#28" id="28">28</a>
+<a href="#29" id="29">29</a>
+<a href="#30" id="30">30</a>
+<a href="#31" id="31">31</a>
+<a href="#32" id="32">32</a>
+<a href="#33" id="33">33</a>
+<a href="#34" id="34">34</a>
+<a href="#35" id="35">35</a>
+<a href="#36" id="36">36</a>
+<a href="#37" id="37">37</a>
+<a href="#38" id="38">38</a>
+<a href="#39" id="39">39</a>
+<a href="#40" id="40">40</a>
+<a href="#41" id="41">41</a>
+<a href="#42" id="42">42</a>
+<a href="#43" id="43">43</a>
+<a href="#44" id="44">44</a>
+<a href="#45" id="45">45</a>
+<a href="#46" id="46">46</a>
+<a href="#47" id="47">47</a>
+<a href="#48" id="48">48</a>
+<a href="#49" id="49">49</a>
+<a href="#50" id="50">50</a>
+<a href="#51" id="51">51</a>
+<a href="#52" id="52">52</a>
+<a href="#53" id="53">53</a>
+<a href="#54" id="54">54</a>
+<a href="#55" id="55">55</a>
+<a href="#56" id="56">56</a>
+<a href="#57" id="57">57</a>
+<a href="#58" id="58">58</a>
+<a href="#59" id="59">59</a>
+<a href="#60" id="60">60</a>
+<a href="#61" id="61">61</a>
+<a href="#62" id="62">62</a>
+<a href="#63" id="63">63</a>
+<a href="#64" id="64">64</a>
+<a href="#65" id="65">65</a>
+<a href="#66" id="66">66</a>
+<a href="#67" id="67">67</a>
+<a href="#68" id="68">68</a>
+<a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
+<a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
+<a href="#236" id="236">236</a>
+<a href="#237" id="237">237</a>
+<a href="#238" id="238">238</a>
+<a href="#239" id="239">239</a>
+<a href="#240" id="240">240</a>
+<a href="#241" id="241">241</a>
+<a href="#242" id="242">242</a>
+<a href="#243" id="243">243</a>
+<a href="#244" id="244">244</a>
+<a href="#245" id="245">245</a>
+<a href="#246" id="246">246</a>
+<a href="#247" id="247">247</a>
+<a href="#248" id="248">248</a>
+<a href="#249" id="249">249</a>
+<a href="#250" id="250">250</a>
+<a href="#251" id="251">251</a>
+<a href="#252" id="252">252</a>
+<a href="#253" id="253">253</a>
+<a href="#254" id="254">254</a>
+<a href="#255" id="255">255</a>
+<a href="#256" id="256">256</a>
+<a href="#257" id="257">257</a>
+<a href="#258" id="258">258</a>
+<a href="#259" id="259">259</a>
+<a href="#260" id="260">260</a>
+<a href="#261" id="261">261</a>
+<a href="#262" id="262">262</a>
+<a href="#263" id="263">263</a>
+<a href="#264" id="264">264</a>
+<a href="#265" id="265">265</a>
+<a href="#266" id="266">266</a>
+<a href="#267" id="267">267</a>
+<a href="#268" id="268">268</a>
+<a href="#269" id="269">269</a>
+<a href="#270" id="270">270</a>
+<a href="#271" id="271">271</a>
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>crossbeam::atomic::AtomicCell;
+<span class="kw">use </span>crossbeam::queue::SegQueue;
+<span class="kw">use </span>std::fmt;
+<span class="kw">use </span>std::hash::Hash;
+<span class="kw">use </span>std::marker::PhantomData;
+
+<span class="kw">use </span><span class="kw">crate</span>::durability::Durability;
+<span class="kw">use </span><span class="kw">crate</span>::id::AsId;
+<span class="kw">use </span><span class="kw">crate</span>::ingredient::{fmt_index, IngredientRequiresReset};
+<span class="kw">use </span><span class="kw">crate</span>::key::DependencyIndex;
+<span class="kw">use </span><span class="kw">crate</span>::runtime::local_state::QueryOrigin;
+<span class="kw">use </span><span class="kw">crate</span>::runtime::Runtime;
+<span class="kw">use </span><span class="kw">crate</span>::DatabaseKeyIndex;
+
+<span class="kw">use </span><span class="kw">super</span>::hash::FxDashMap;
+<span class="kw">use </span><span class="kw">super</span>::ingredient::Ingredient;
+<span class="kw">use </span><span class="kw">super</span>::routes::IngredientIndex;
+<span class="kw">use </span><span class="kw">super</span>::Revision;
+
+<span class="kw">pub trait </span>InternedId: AsId {}
+<span class="kw">impl</span>&lt;T: AsId&gt; InternedId <span class="kw">for </span>T {}
+
+<span class="kw">pub trait </span>InternedData: Sized + Eq + Hash + Clone {}
+<span class="kw">impl</span>&lt;T: Eq + Hash + Clone&gt; InternedData <span class="kw">for </span>T {}
+
+<span class="doccomment">/// The interned ingredient has the job of hashing values of type `Data` to produce an `Id`.
+/// It used to store interned structs but also to store the id fields of a tracked struct.
+/// Interned values endure until they are explicitly removed in some way.
+</span><span class="kw">pub struct </span>InternedIngredient&lt;Id: InternedId, Data: InternedData&gt; {
+    <span class="doccomment">/// Index of this ingredient in the database (used to construct database-ids, etc).
+    </span>ingredient_index: IngredientIndex,
+
+    <span class="doccomment">/// Maps from data to the existing interned id for that data.
+    ///
+    /// Deadlock requirement: We access `value_map` while holding lock on `key_map`, but not vice versa.
+    </span>key_map: FxDashMap&lt;Data, Id&gt;,
+
+    <span class="doccomment">/// Maps from an interned id to its data.
+    ///
+    /// Deadlock requirement: We access `value_map` while holding lock on `key_map`, but not vice versa.
+    </span>value_map: FxDashMap&lt;Id, Box&lt;Data&gt;&gt;,
+
+    <span class="doccomment">/// counter for the next id.
+    </span>counter: AtomicCell&lt;u32&gt;,
+
+    <span class="doccomment">/// Stores the revision when this interned ingredient was last cleared.
+    /// You can clear an interned table at any point, deleting all its entries,
+    /// but that will make anything dependent on those entries dirty and in need
+    /// of being recomputed.
+    </span>reset_at: Revision,
+
+    <span class="doccomment">/// When specific entries are deleted from the interned table, their data is added
+    /// to this vector rather than being immediately freed. This is because we may` have
+    /// references to that data floating about that are tied to the lifetime of some
+    /// `&amp;db` reference. This queue itself is not freed until we have an `&amp;mut db` reference,
+    /// guaranteeing that there are no more references to it.
+    </span>deleted_entries: SegQueue&lt;Box&lt;Data&gt;&gt;,
+
+    debug_name: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
+}
+
+<span class="kw">impl</span>&lt;Id, Data&gt; InternedIngredient&lt;Id, Data&gt;
+<span class="kw">where
+    </span>Id: InternedId,
+    Data: InternedData,
+{
+    <span class="kw">pub fn </span>new(ingredient_index: IngredientIndex, debug_name: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            ingredient_index,
+            key_map: Default::default(),
+            value_map: Default::default(),
+            counter: AtomicCell::default(),
+            reset_at: Revision::start(),
+            deleted_entries: Default::default(),
+            debug_name,
+        }
+    }
+
+    <span class="kw">pub fn </span>intern(<span class="kw-2">&amp;</span><span class="self">self</span>, runtime: <span class="kw-2">&amp;</span>Runtime, data: Data) -&gt; Id {
+        runtime.report_tracked_read(
+            DependencyIndex::for_table(<span class="self">self</span>.ingredient_index),
+            Durability::MAX,
+            <span class="self">self</span>.reset_at,
+        );
+
+        <span class="comment">// Optimisation to only get read lock on the map if the data has already
+        // been interned.
+        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(id) = <span class="self">self</span>.key_map.get(<span class="kw-2">&amp;</span>data) {
+            <span class="kw">return </span><span class="kw-2">*</span>id;
+        }
+
+        <span class="kw">match </span><span class="self">self</span>.key_map.entry(data.clone()) {
+            <span class="comment">// Data has been interned by a racing call, use that ID instead
+            </span>dashmap::mapref::entry::Entry::Occupied(entry) =&gt; <span class="kw-2">*</span>entry.get(),
+            <span class="comment">// We won any races so should intern the data
+            </span>dashmap::mapref::entry::Entry::Vacant(entry) =&gt; {
+                <span class="kw">let </span>next_id = <span class="self">self</span>.counter.fetch_add(<span class="number">1</span>);
+                <span class="kw">let </span>next_id = Id::from_id(<span class="kw">crate</span>::id::Id::from_u32(next_id));
+                <span class="kw">let </span>old_value = <span class="self">self</span>.value_map.insert(next_id, Box::new(data));
+                <span class="macro">assert!</span>(
+                    old_value.is_none(),
+                    <span class="string">"next_id is guaranteed to be unique, bar overflow"
+                </span>);
+                entry.insert(next_id);
+                next_id
+            }
+        }
+    }
+
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>reset_at(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Revision {
+        <span class="self">self</span>.reset_at
+    }
+
+    <span class="kw">pub fn </span>reset(<span class="kw-2">&amp;mut </span><span class="self">self</span>, revision: Revision) {
+        <span class="macro">assert!</span>(revision &gt; <span class="self">self</span>.reset_at);
+        <span class="self">self</span>.reset_at = revision;
+        <span class="self">self</span>.key_map.clear();
+        <span class="self">self</span>.value_map.clear();
+    }
+
+    <span class="attr">#[track_caller]
+    </span><span class="kw">pub fn </span>data&lt;<span class="lifetime">'db</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'db </span><span class="self">self</span>, runtime: <span class="kw-2">&amp;</span><span class="lifetime">'db </span>Runtime, id: Id) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'db </span>Data {
+        runtime.report_tracked_read(
+            DependencyIndex::for_table(<span class="self">self</span>.ingredient_index),
+            Durability::MAX,
+            <span class="self">self</span>.reset_at,
+        );
+
+        <span class="kw">let </span>data = <span class="kw">match </span><span class="self">self</span>.value_map.get(<span class="kw-2">&amp;</span>id) {
+            <span class="prelude-val">Some</span>(d) =&gt; d,
+            <span class="prelude-val">None </span>=&gt; {
+                <span class="macro">panic!</span>(<span class="string">"no data found for id `{:?}`"</span>, id)
+            }
+        };
+
+        <span class="comment">// Unsafety clause:
+        //
+        // * Values are only removed or altered when we have `&amp;mut self`
+        </span><span class="kw">unsafe </span>{ transmute_lifetime(<span class="self">self</span>, <span class="kw-2">&amp;**</span>data) }
+    }
+
+    <span class="doccomment">/// Get the ingredient index for this table.
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>ingredient_index(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; IngredientIndex {
+        <span class="self">self</span>.ingredient_index
+    }
+
+    <span class="doccomment">/// Deletes an index from the interning table, making it available for re-use.
+    ///
+    /// # Warning
+    ///
+    /// This should only be used when you are certain that:
+    ///  1. The given `id` has not (and will not) be used in the current revision.
+    ///  2. The interned data corresponding to `id` will not be interned in this revision.
+    ///
+    /// More specifically, this is used when a query `Q` executes and we can compare the
+    /// entities `E_now` that it produced in this revision vs the entities `E_prev` it
+    /// produced in the last revision. Any missing entities `E_prev - E_new` can be deleted.
+    ///
+    /// If you are wrong about this, it should not be unsafe, but unpredictable results may occur.
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>delete_index(<span class="kw-2">&amp;</span><span class="self">self</span>, id: Id) {
+        <span class="kw">let </span>(<span class="kw">_</span>, key) = <span class="self">self
+            </span>.value_map
+            .remove(<span class="kw-2">&amp;</span>id)
+            .unwrap_or_else(|| <span class="macro">panic!</span>(<span class="string">"No entry for id `{:?}`"</span>, id));
+
+        <span class="self">self</span>.key_map.remove(<span class="kw-2">&amp;</span>key);
+        <span class="comment">// Careful: even though `id` ought not to have been used in this revision,
+        // we don't know that for sure since users could have leaked things. If they did,
+        // they may have stray references into `data`. So push the box onto the
+        // "to be deleted" queue.
+        //
+        // To avoid this, we could include some kind of atomic counter in the `Box` that
+        // gets set whenever `data` executes, so we can track if the data was accessed since
+        // the last time an `&amp;mut self` method was called. But that'd take extra storage
+        // and doesn't obviously seem worth it.
+        </span><span class="self">self</span>.deleted_entries.push(key);
+    }
+
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>clear_deleted_indices(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        std::mem::take(<span class="kw-2">&amp;mut </span><span class="self">self</span>.deleted_entries);
+    }
+}
+
+<span class="comment">// Returns `u` but with the lifetime of `t`.
+//
+// Safe if you know that data at `u` will remain shared
+// until the reference `t` expires.
+</span><span class="kw">unsafe fn </span>transmute_lifetime&lt;<span class="lifetime">'t</span>, <span class="lifetime">'u</span>, T, U&gt;(_t: <span class="kw-2">&amp;</span><span class="lifetime">'t </span>T, u: <span class="kw-2">&amp;</span><span class="lifetime">'u </span>U) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'t </span>U {
+    std::mem::transmute(u)
+}
+
+<span class="kw">impl</span>&lt;DB: <span class="question-mark">?</span>Sized, Id, Data&gt; Ingredient&lt;DB&gt; <span class="kw">for </span>InternedIngredient&lt;Id, Data&gt;
+<span class="kw">where
+    </span>Id: InternedId,
+    Data: InternedData,
+{
+    <span class="kw">fn </span>ingredient_index(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; IngredientIndex {
+        <span class="self">self</span>.ingredient_index
+    }
+
+    <span class="kw">fn </span>maybe_changed_after(<span class="kw-2">&amp;</span><span class="self">self</span>, _db: <span class="kw-2">&amp;</span>DB, _input: DependencyIndex, revision: Revision) -&gt; bool {
+        revision &lt; <span class="self">self</span>.reset_at
+    }
+
+    <span class="kw">fn </span>cycle_recovery_strategy(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">crate</span>::cycle::CycleRecoveryStrategy {
+        <span class="kw">crate</span>::cycle::CycleRecoveryStrategy::Panic
+    }
+
+    <span class="kw">fn </span>origin(<span class="kw-2">&amp;</span><span class="self">self</span>, _key_index: <span class="kw">crate</span>::Id) -&gt; <span class="prelude-ty">Option</span>&lt;QueryOrigin&gt; {
+        <span class="prelude-val">None
+    </span>}
+
+    <span class="kw">fn </span>mark_validated_output(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        _db: <span class="kw-2">&amp;</span>DB,
+        executor: DatabaseKeyIndex,
+        output_key: <span class="prelude-ty">Option</span>&lt;<span class="kw">crate</span>::Id&gt;,
+    ) {
+        <span class="macro">unreachable!</span>(
+            <span class="string">"mark_validated_output({:?}, {:?}): input cannot be the output of a tracked function"</span>,
+            executor, output_key
+        );
+    }
+
+    <span class="kw">fn </span>remove_stale_output(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        _db: <span class="kw-2">&amp;</span>DB,
+        executor: DatabaseKeyIndex,
+        stale_output_key: <span class="prelude-ty">Option</span>&lt;<span class="kw">crate</span>::Id&gt;,
+    ) {
+        <span class="macro">unreachable!</span>(
+            <span class="string">"remove_stale_output({:?}, {:?}): interned ids are not outputs"</span>,
+            executor, stale_output_key
+        );
+    }
+
+    <span class="kw">fn </span>reset_for_new_revision(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="comment">// Interned ingredients do not, normally, get deleted except when they are "reset" en masse.
+        // There ARE methods (e.g., `clear_deleted_entries` and `remove`) for deleting individual
+        // items, but those are only used for tracked struct ingredients.
+        </span><span class="macro">panic!</span>(<span class="string">"unexpected call to `reset_for_new_revision`"</span>)
+    }
+
+    <span class="kw">fn </span>salsa_struct_deleted(<span class="kw-2">&amp;</span><span class="self">self</span>, _db: <span class="kw-2">&amp;</span>DB, _id: <span class="kw">crate</span>::Id) {
+        <span class="macro">panic!</span>(<span class="string">"unexpected call: interned ingredients do not register for salsa struct deletion events"</span>);
+    }
+
+    <span class="kw">fn </span>fmt_index(<span class="kw-2">&amp;</span><span class="self">self</span>, index: <span class="prelude-ty">Option</span>&lt;<span class="kw">crate</span>::Id&gt;, fmt: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
+        fmt_index(<span class="self">self</span>.debug_name, index, fmt)
+    }
+}
+
+<span class="kw">impl</span>&lt;Id, Data&gt; IngredientRequiresReset <span class="kw">for </span>InternedIngredient&lt;Id, Data&gt;
+<span class="kw">where
+    </span>Id: InternedId,
+    Data: InternedData,
+{
+    <span class="kw">const </span>RESET_ON_NEW_REVISION: bool = <span class="bool-val">false</span>;
+}
+
+<span class="kw">pub struct </span>IdentityInterner&lt;Id: AsId&gt; {
+    data: PhantomData&lt;Id&gt;,
+}
+
+<span class="kw">impl</span>&lt;Id: AsId&gt; IdentityInterner&lt;Id&gt; {
+    <span class="attr">#[allow(clippy::new_without_default)]
+    </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        IdentityInterner { data: PhantomData }
+    }
+
+    <span class="kw">pub fn </span>intern(<span class="kw-2">&amp;</span><span class="self">self</span>, _runtime: <span class="kw-2">&amp;</span>Runtime, id: Id) -&gt; Id {
+        id
+    }
+
+    <span class="kw">pub fn </span>data(<span class="kw-2">&amp;</span><span class="self">self</span>, _runtime: <span class="kw-2">&amp;</span>Runtime, id: Id) -&gt; (Id,) {
+        (id,)
+    }
+}
+</code></pre></div></section></main></body></html>

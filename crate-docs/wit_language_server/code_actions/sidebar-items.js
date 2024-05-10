@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["CODE_ACTIONS"],"enum":["ActionKind"],"fn":["resolve"],"struct":["Action","CodeAction","CodeActionContext","Indel","TextEdit","TextEditBuilder"]};

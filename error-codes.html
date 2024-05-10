@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error Code Index</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f2f2f2;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .toc {
+            margin-bottom: 20px;
+            border-top: 1px solid #ccc;
+            border-bottom: 1px solid #ccc;
+            padding-top: 10px;
+        }
+        .toc-title {
+            margin-bottom: 10px;
+            font-size: 1.2em;
+            color: #333;
+        }
+        .toc-list {
+            list-style: none;
+            padding-left: 0;
+        }
+        .toc-item {
+            margin-bottom: 5px;
+        }
+        .toc-item a {
+            text-decoration: none;
+            color: #555;
+        }
+        .toc-item a:hover {
+            color: #007bff;
+        }
+        .diagnostic {
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .error-code {
+            font-weight: bold;
+            color: darkslategray;
+        }
+        .severity-bug .error-code {
+            color: #732c7b;
+        }
+        .severity-error .error-code {
+            color: #d9534f;
+        }
+        .severity-warning .error-code {
+            color: #f5b31e;
+        }
+        .description {
+            margin-top: 5px;
+        }
+        .permalink {
+            visibility: hidden;
+            text-decoration: none;
+        }
+        .diagnostic:hover .permalink {
+            visibility: visible;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Error Code Index</h1>
+
+        <div class="toc">
+            <h2 class="toc-title">Table of Contents</h2>
+            <ul class="toc-list">
+                
+                <li class="toc-item">
+                    <a href="#B500">B500: You ran into a bug 🐛</a>
+                </li>
+                
+                <li class="toc-item">
+                    <a href="#E001">E001: Syntax error</a>
+                </li>
+                
+                <li class="toc-item">
+                    <a href="#E002">E002: Name defined multiple times</a>
+                </li>
+                
+                <li class="toc-item">
+                    <a href="#E003">E003: Resource has multiple constructors</a>
+                </li>
+                
+                <li class="toc-item">
+                    <a href="#E004">E004: Reference to unknown name</a>
+                </li>
+                
+                <li class="toc-item">
+                    <a href="#E005">E005: Mismatched package declarations</a>
+                </li>
+                
+                <li class="toc-item">
+                    <a href="#E006">E006: Package docs can only be defined in a single file</a>
+                </li>
+                
+                <li class="toc-item">
+                    <a href="#E007">E007: Reference to unknown package</a>
+                </li>
+                
+                <li class="toc-item">
+                    <a href="#W001">W001: This type is deprecated</a>
+                </li>
+                
+            </ul>
+        </div>
+
+        
+        <div class="diagnostic severity-bug">
+            <h2 id="B500">
+                <span class="error-code">B500:</span>
+                <span class="message">You ran into a bug 🐛</span>
+                <a class="permalink" href="#B500" title="Permalink">&#128279;</a>
+            </h2>
+            <div class="description">
+                <p>This is a bug.</p>
+
+            </div>
+        </div>
+        
+        <div class="diagnostic severity-error">
+            <h2 id="E001">
+                <span class="error-code">E001:</span>
+                <span class="message">Syntax error</span>
+                <a class="permalink" href="#E001" title="Permalink">&#128279;</a>
+            </h2>
+            <div class="description">
+                <p>The file contained invalid syntax.</p>
+
+            </div>
+        </div>
+        
+        <div class="diagnostic severity-error">
+            <h2 id="E002">
+                <span class="error-code">E002:</span>
+                <span class="message">Name defined multiple times</span>
+                <a class="permalink" href="#E002" title="Permalink">&#128279;</a>
+            </h2>
+            <div class="description">
+                <p>Items with the same name were defined in the same scope.</p>
+
+            </div>
+        </div>
+        
+        <div class="diagnostic severity-error">
+            <h2 id="E003">
+                <span class="error-code">E003:</span>
+                <span class="message">Resource has multiple constructors</span>
+                <a class="permalink" href="#E003" title="Permalink">&#128279;</a>
+            </h2>
+            <div class="description">
+                <p>A <em>Resource</em> contains multiple <code>constructor()</code> functions.</p>
+
+            </div>
+        </div>
+        
+        <div class="diagnostic severity-error">
+            <h2 id="E004">
+                <span class="error-code">E004:</span>
+                <span class="message">Reference to unknown name</span>
+                <a class="permalink" href="#E004" title="Permalink">&#128279;</a>
+            </h2>
+            <div class="description">
+                <p>The code referenced a name that doesn’t exist in the current scope.</p>
+
+            </div>
+        </div>
+        
+        <div class="diagnostic severity-error">
+            <h2 id="E005">
+                <span class="error-code">E005:</span>
+                <span class="message">Mismatched package declarations</span>
+                <a class="permalink" href="#E005" title="Permalink">&#128279;</a>
+            </h2>
+            <div class="description">
+                <p>A directory contains multiple <code>*.wit</code> files with a <code>package</code> declaration, but
+the package declarations aren’t identical.</p>
+
+            </div>
+        </div>
+        
+        <div class="diagnostic severity-error">
+            <h2 id="E006">
+                <span class="error-code">E006:</span>
+                <span class="message">Package docs can only be defined in a single file</span>
+                <a class="permalink" href="#E006" title="Permalink">&#128279;</a>
+            </h2>
+            <div class="description">
+                <p>Only one file is allowed to document a package.</p>
+
+            </div>
+        </div>
+        
+        <div class="diagnostic severity-error">
+            <h2 id="E007">
+                <span class="error-code">E007:</span>
+                <span class="message">Reference to unknown package</span>
+                <a class="permalink" href="#E007" title="Permalink">&#128279;</a>
+            </h2>
+            <div class="description">
+                <p>The package you are referring to isn’t known by the compiler.</p>
+
+            </div>
+        </div>
+        
+        <div class="diagnostic severity-warning">
+            <h2 id="W001">
+                <span class="error-code">W001:</span>
+                <span class="message">This type is deprecated</span>
+                <a class="permalink" href="#W001" title="Permalink">&#128279;</a>
+            </h2>
+            <div class="description">
+                <p>An item was deprecated.</p>
+
+            </div>
+        </div>
+        
+    </div>
+</body>
+</html>

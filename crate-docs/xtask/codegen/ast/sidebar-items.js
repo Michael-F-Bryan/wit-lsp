@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["IDENT_BLACKLIST","TOKENS"],"enum":["TokenKind"],"fn":["ast_node_impl","child_getter","field_getter","generate_ast","generate_ast_node","generate_helper_trait_impls","rust_type_name"],"macro":["format_ident"],"static":["AST_GENERATED_PATH"],"struct":["Ast","Field","FieldType","NodeType","Token"]};
