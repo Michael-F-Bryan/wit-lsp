@@ -4,6 +4,18 @@ All notable changes to the WIT Language Server extension will be documented in t
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [1.2.0](https://github.com/Michael-F-Bryan/wit-lsp/compare/vscode-plugin-v1.1.0...vscode-plugin-v1.2.0) (2024-05-10)
+
+
+### Features
+
+* Switched over to the `wit` executable ([a72e1eb](https://github.com/Michael-F-Bryan/wit-lsp/commit/a72e1eba13b4cfc4018d8a652da2ccb0b702df0b))
+
+
+### Bug Fixes
+
+* Clarified that the `WIT: Show Changelog` and `WIT: Show Version` commands are for inspecting the language server, not the plugin ([e0e4d1b](https://github.com/Michael-F-Bryan/wit-lsp/commit/e0e4d1bb32e7154c02fe956e78fe6c25d1109c13))
+
 ## [1.1.0](https://github.com/Michael-F-Bryan/wit-lsp/compare/vscode-plugin-v1.0.0...vscode-plugin-v1.1.0) (2024-04-11)
 
 

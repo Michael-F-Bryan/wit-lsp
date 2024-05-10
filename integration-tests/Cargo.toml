@@ -1,6 +1,6 @@
 [package]
 name = "integration-tests"
-version = "0.1.0"
+version = "0.1.1"
 publish = false
 authors.workspace = true
 edition.workspace = true
@@ -18,7 +18,7 @@ color-eyre = { workspace = true }
 im = { workspace = true }
 libtest-mimic = "0.7.2"
 tracing = { workspace = true }
-wit-compiler = { version = "0.2.0", path = "../crates/wit-compiler" }
+wit-compiler = { version = "1.0.0", path = "../crates/wit-compiler" }
 
 [dev-dependencies]
 clap = { workspace = true }
