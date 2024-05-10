@@ -60,8 +60,8 @@ fn code_coverage(sh: &Shell) -> color_eyre::Result<()> {
     Ok(())
 }
 
-fn diagnostics_index() -> color_eyre::Result<String> {
-    let template = include_str!("diagnostics.html.j2");
+fn error_code_index() -> color_eyre::Result<String> {
+    let template = include_str!("error-codes.html.j2");
     let diagnostics_json = include_str!("../../wit-compiler/src/diagnostics/diagnostics.json");
     let mut diags: Vec<DiagnosticInfo> = serde_json::from_str(diagnostics_json)?;
 
@@ -101,7 +101,7 @@ struct DiagnosticInfo {
 enum Target {
     Api,
     Coverage,
-    Diagnostics,
+    ErrorCodes,
     Redirects,
 }
 
@@ -120,10 +120,10 @@ impl Target {
                 let coverage_dir = project_root.join("target").join("llvm-cov").join("html");
                 utils::copy_dir(sh, coverage_dir, "coverage")?;
             }
-            Target::Diagnostics => {
-                tracing::info!("Diagnostics Index");
-                let diagnostics = diagnostics_index()?;
-                sh.write_file("diagnostics.html", diagnostics)?;
+            Target::ErrorCodes => {
+                tracing::info!("Error Code Index");
+                let error_codes = error_code_index()?;
+                sh.write_file("error-codes.html", error_codes)?;
             }
             Target::Redirects => {
                 tracing::info!("Creating redirects");
