@@ -4,6 +4,36 @@ All notable changes to `wit-compiler` will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [1.0.0](https://github.com/Michael-F-Bryan/wit-lsp/compare/wit-compiler-v0.2.0...wit-compiler-v1.0.0) (2024-05-10)
+
+
+### ⚠ BREAKING CHANGES
+
+* Switched over to a different version of `tree-sitter-wit`
+* Introduced a `NodeKind` abstraction and re-worked the entire `wit_compiler::access` module
+* Made a `package_items()` query for listing information about all items defined in a package
+* Converted `FilePath` to an interned type
+
+### Features
+
+* Added a `calculate_line_numbers()` query ([fcda3f2](https://github.com/Michael-F-Bryan/wit-lsp/commit/fcda3f26d29237616305becd061e64a18a3d1698))
+* Added a convenient `wit_compiler::diagnostics::check_all()` function to make checking a workspace easier ([2ab531a](https://github.com/Michael-F-Bryan/wit-lsp/commit/2ab531acf6decd0fef1a5fb556944a0c547147fb))
+* Added an adapter which lets you use a `Workspace` as a `codespan_reporting::files::Files` ([fcda3f2](https://github.com/Michael-F-Bryan/wit-lsp/commit/fcda3f26d29237616305becd061e64a18a3d1698))
+* Converted `FilePath` to an interned type ([fcda3f2](https://github.com/Michael-F-Bryan/wit-lsp/commit/fcda3f26d29237616305becd061e64a18a3d1698))
+* Introduced a `DiagnosticInfo` type with metadata about a diagnostic (error code, explanatory text, etc.) and a `wit_compiler::diagnostics::all()` function for listing all known diagnostics ([c712eb4](https://github.com/Michael-F-Bryan/wit-lsp/commit/c712eb41908dc30d85bcba9f1fde293f8135a079))
+* Introduced a `IntoDiagnostic` trait that all `Diagnostic` types should implement ([c712eb4](https://github.com/Michael-F-Bryan/wit-lsp/commit/c712eb41908dc30d85bcba9f1fde293f8135a079))
+* Introduced a `NodeKind` abstraction and re-worked the entire `wit_compiler::access` module ([22ab0c1](https://github.com/Michael-F-Bryan/wit-lsp/commit/22ab0c194698981f2571128866847c7f50ce9bb2))
+* Introduced the concept of lints ([2ab531a](https://github.com/Michael-F-Bryan/wit-lsp/commit/2ab531acf6decd0fef1a5fb556944a0c547147fb))
+* Made a `package_items()` query for listing information about all items defined in a package ([8d57e21](https://github.com/Michael-F-Bryan/wit-lsp/commit/8d57e219f9490600630f3b56030bc1873fa3470d))
+* Switched over to a different version of `tree-sitter-wit` ([c97da9f](https://github.com/Michael-F-Bryan/wit-lsp/commit/c97da9fad65a76c22a6221812f4b128926d40143))
+* The repo now contains a `diagnostics.json` file with metadata for all known diagnostics ([c712eb4](https://github.com/Michael-F-Bryan/wit-lsp/commit/c712eb41908dc30d85bcba9f1fde293f8135a079))
+
+
+### Bug Fixes
+
+* A `named_type` node (e.g. a function parameter or named return value) can now have attributes ([e0cf9c9](https://github.com/Michael-F-Bryan/wit-lsp/commit/e0cf9c927a559136b8d33baf6be5e82cf76e4dcd))
+* The leading `%` from a raw identifier is now correctly ignored when looking up a name ([7ac76fe](https://github.com/Michael-F-Bryan/wit-lsp/commit/7ac76fe29d3dd21366044ed54491d2015aa7b447))
+
 ## [0.2.0](https://github.com/Michael-F-Bryan/wit-lsp/compare/wit-compiler-v0.1.0...wit-compiler-v0.2.0) (2024-04-11)
 
 

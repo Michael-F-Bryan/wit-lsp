@@ -846,7 +846,7 @@ dependencies = [
 
 [[package]]
 name = "integration-tests"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "clap",
  "codespan-reporting",
@@ -2109,7 +2109,7 @@ checksum = "32b752e52a2da0ddfbdbcc6fceadfeede4c939ed16d13e648833a61dfb611ed8"
 
 [[package]]
 name = "wit-cli"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "build-info",
  "build-info-build",
@@ -2132,7 +2132,7 @@ dependencies = [
 
 [[package]]
 name = "wit-compiler"
-version = "0.2.0"
+version = "1.0.0"
 dependencies = [
  "codespan-reporting",
  "im",
@@ -2149,7 +2149,7 @@ dependencies = [
 
 [[package]]
 name = "wit-language-server"
-version = "0.2.0"
+version = "1.0.0"
 dependencies = [
  "ahash",
  "codespan-reporting",

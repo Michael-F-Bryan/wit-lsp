@@ -1,6 +1,6 @@
 [package]
 name = "wit-cli"
-version = "0.0.0"
+version = "0.1.0"
 publish = false
 authors.workspace = true
 edition.workspace = true
@@ -27,8 +27,8 @@ tracing = { workspace = true }
 tracing-error = { workspace = true }
 tracing-subscriber = { workspace = true }
 tree-sitter = { workspace = true }
-wit-compiler = { version = "0.2.0", path = "../wit-compiler" }
-wit-language-server = { path = "../wit-language-server", version = "0.2.0" }
+wit-compiler = { version = "1.0.0", path = "../wit-compiler" }
+wit-language-server = { path = "../wit-language-server", version = "1.0.0" }
 
 [build-dependencies]
 build-info-build = "0.0.36"

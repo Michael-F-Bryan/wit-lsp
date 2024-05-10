@@ -4,6 +4,36 @@ All notable changes to the `wit-language-server` will be documented in this file
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [1.0.0](https://github.com/Michael-F-Bryan/wit-lsp/compare/wit-language-server-v0.2.0...wit-language-server-v1.0.0) (2024-05-10)
+
+
+### ⚠ BREAKING CHANGES
+
+* Switched over to a different version of `tree-sitter-wit`
+* Reducing the `wit-language-server` crate's API surface
+* Removed the `wit-language-server` binary
+
+### Features
+
+* Implemented an "Extract Type Alias" code action ([54a4b86](https://github.com/Michael-F-Bryan/wit-lsp/commit/54a4b860add9c6eb70e47152aaab150b99472161))
+* Moved most of the language server middleware into the `wit-language-server` crate ([03b2980](https://github.com/Michael-F-Bryan/wit-lsp/commit/03b2980b342a89912d7a834236550d85290febb5))
+* Reducing the `wit-language-server` crate's API surface ([062e096](https://github.com/Michael-F-Bryan/wit-lsp/commit/062e0968cc62698a2d2705d7327936327ca89350))
+* Removed the `wit-language-server` binary ([2c408a7](https://github.com/Michael-F-Bryan/wit-lsp/commit/2c408a73239fae09e978ae418ad7593ae4057cc0))
+* Switched over to a different version of `tree-sitter-wit` ([c97da9f](https://github.com/Michael-F-Bryan/wit-lsp/commit/c97da9fad65a76c22a6221812f4b128926d40143))
+* The *Wit Language Server* can now provide *Code Actions* ([df2396b](https://github.com/Michael-F-Bryan/wit-lsp/commit/df2396bd09d03821c3dd099bf94a748dd8d9ed35))
+
+
+### Bug Fixes
+
+* The leading `%` from a raw identifier is now correctly ignored when looking up a name ([7ac76fe](https://github.com/Michael-F-Bryan/wit-lsp/commit/7ac76fe29d3dd21366044ed54491d2015aa7b447))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * wit-compiler bumped from 0.2.0 to 1.0.0
+
 ## [0.2.0](https://github.com/Michael-F-Bryan/wit-lsp/compare/wit-language-server-v0.1.0...wit-language-server-v0.2.0) (2024-04-11)
 
 

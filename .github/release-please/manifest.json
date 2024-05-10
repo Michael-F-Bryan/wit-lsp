@@ -1,7 +1,8 @@
 {
-    "crates/wit-cli": "0.0.0",
-    "crates/wit-compiler": "0.2.0",
-    "crates/wit-language-server": "0.2.0",
-    "crates/wit-syntax": "0.0.0",
-    "plugins/vscode": "1.1.0"
+    "crates/wit-cli": "0.1.0",
+    "crates/wit-compiler": "1.0.0",
+    "crates/wit-language-server": "1.0.0",
+    "crates/wit-syntax": "0.1.0",
+    "plugins/vscode": "1.2.0",
+    "integration-tests": "0.1.1"
 }
