@@ -12,7 +12,7 @@ pub use self::{
     line_numbers::{calculate_line_numbers, LineNumbers},
     lowering::lower_package,
     metadata::{file_items, package_items},
-    namespace::{imported_types, top_level_names},
+    namespace::{imported_types, resolve_type, top_level_names},
     parsing::{parse, Ast},
     selection::selection_ranges,
     workspace::{

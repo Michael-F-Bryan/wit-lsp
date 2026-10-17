@@ -159,7 +159,7 @@ pub(crate) fn lower_func_definition(
 #[derive(Copy, Clone)]
 struct Context<'db> {
     db: &'db dyn Db,
-    _ws: Workspace,
+    ws: Workspace,
     file: SourceFile,
     src: &'db str,
     ast: Ast,
@@ -173,7 +173,7 @@ impl<'db> Context<'db> {
 
         Context {
             db,
-            _ws: ws,
+            ws,
             file,
             ast,
             src,
@@ -679,7 +679,13 @@ fn resolve_user_defined_type(ctx: Context<'_>, ty: ast::Id<'_>) -> Option<hir::T
     let ident = ty.utf8_text(ctx.src);
     let location = Location::new(ctx.path(), ty.range());
 
-    // TODO: Implement this
+    let name = Ident::new(ctx.db, ident.into());
+    if let Some(reference) =
+        crate::queries::resolve_type(ctx.db, ctx.ws, ctx.file, ty.range().start_point, name)
+    {
+        return Some(hir::Type::UserDefinedType(reference));
+    }
+
     let diag = UnknownName {
         name: ident.into(),
         location,
@@ -919,20 +925,6 @@ mod tests {
         resource_with_constructor: "interface i { resource r { constructor(arg1: string, arg2: bool); } }",
         resource_with_method: "interface i { resource r { method: func(arg1: string, arg2: bool) -> u32; } }",
         resource_with_static_method: "interface i { resource r { method: static func(arg1: string, arg2: bool) -> u32; } }",
-        #[ignore]
-        refer_to_user_defined_type: "interface i {
-            record r {}
-            type x = list<r>;
-        }",
-        #[ignore]
-        refer_to_user_defined_type_from_other_interface: "
-            interface first { record r {} }
-            interface second {
-                use first.{r};
-                type x = r;
-            }
-        ",
-
         empty_variant: "interface i { variant v {} }",
         varant_with_one_field: "interface i { variant v { case } }",
         varant_with_multiple_fields_and_payloads: "interface i {
@@ -967,9 +959,43 @@ mod tests {
         }"
     }
 
+    #[test]
+    fn refer_to_user_defined_types() {
+        for source in [
+            "interface i { record r {} type x = list<r>; }",
+            "interface first { record r {} } interface second { use first.{r}; type x = list<r>; }",
+        ] {
+            let db = Compiler::default();
+            let path = FilePath::new(&db, "types.wit".into());
+            let file = SourceFile::new(&db, path, source.into());
+            let ws = Workspace::new(&db, [(path, file)].into_iter().collect());
+            let pkg = crate::queries::workspace_packages(&db, ws)[0];
+            let lowered = super::lower_package(&db, ws, pkg);
+            assert!(super::lower_package::accumulated::<Diagnostics>(&db, ws, pkg).is_empty());
+            let alias = lowered
+                .interfaces
+                .values()
+                .flat_map(|interface| &interface.items)
+                .find_map(|item| match item {
+                    hir::InterfaceItem::Type(hir::TypeDefinition::TypeAlias(alias)) => Some(alias),
+                    _ => None,
+                })
+                .unwrap();
+            let hir::Type::List(element) = &alias.ty else {
+                panic!("{:?}", alias.ty)
+            };
+            assert!(matches!(
+                element.as_ref(),
+                hir::Type::UserDefinedType(hir::ItemReference {
+                    kind: hir::ItemReferenceKind::Record(_),
+                    ..
+                })
+            ));
+        }
+    }
+
     lowering_error_tests! {
         syntax_errors_are_emitted: "#$",
-        #[ignore]
         refer_to_unknown_type: "interface i { type x = this-does-not-exist; }",
         #[ignore]
         recursive_records_are_not_allowed: "interface i { record recursive { inner: recursive } }",
