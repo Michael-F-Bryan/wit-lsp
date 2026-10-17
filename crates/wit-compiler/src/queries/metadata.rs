@@ -3,7 +3,6 @@ use std::{any::TypeId, collections::HashMap};
 use ast::HasSource;
 use im::{OrdMap, Vector};
 use salsa::DebugWithDb;
-use tree_sitter::Point;
 
 use crate::{
     access::{self, *},
@@ -98,20 +97,6 @@ pub struct PackageMetadata {
 }
 
 impl PackageMetadata {
-    pub fn enclosing_item(self, db: &dyn Db, point: Point) -> Option<ScopeIndex> {
-        self.items_by_name(db)
-            .into_iter()
-            .map(|(_, item)| item)
-            .find_map(|meta| {
-                let location = meta.definition(db);
-                if location.contains(point) {
-                    Some(meta.index(db))
-                } else {
-                    None
-                }
-            })
-    }
-
     pub fn get_world(self, db: &dyn Db, index: WorldIndex) -> WorldMetadata {
         self.worlds(db).get(&index).copied().unwrap()
     }

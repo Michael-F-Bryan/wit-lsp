@@ -301,12 +301,15 @@ impl tower_lsp::LanguageServer for LanguageServer {
         tracing::debug!(document.uri=%path);
         let snap = self.snapshot().await;
 
-        let Some(_file) = snap.ws.lookup_by_path(snap.wit_db(), path.as_str()) else {
+        let Some(file) = snap.ws.lookup_by_path(snap.wit_db(), path.as_str()) else {
             return Ok(None);
         };
 
-        // TODO: Finish wiring this up
-        Ok(None)
+        let point = utils::position_to_ts(params.text_document_position_params.position);
+        let location = crate::ops::goto_definition(snap.wit_db(), snap.ws, file, point);
+        Ok(location.map(|location| {
+            GotoDefinitionResponse::Scalar(utils::location_to_lsp(snap.wit_db(), location))
+        }))
     }
 
     #[tracing::instrument(level = "debug", skip_all)]

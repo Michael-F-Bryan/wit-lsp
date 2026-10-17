@@ -24,26 +24,63 @@ pub fn resolve_type(
     point: tree_sitter::Point,
     name: Ident,
 ) -> Option<hir::ItemReference> {
-    // Restrict the search to this file: positions alone are not unique across
-    // the files in a package.
-    let enclosing = crate::queries::file_items(db, file)
+    visible_types(db, ws, file, point).get(&name).copied()
+}
+
+/// Find the enclosing interface or world in this file.
+pub fn enclosing_scope(
+    db: &dyn Db,
+    file: SourceFile,
+    point: tree_sitter::Point,
+) -> Option<TopLevelItemMetadata> {
+    crate::queries::file_items(db, file)
         .into_iter()
-        .find(|item| item.definition(db).contains(point))?;
+        .find(|item| item.definition(db).contains(point))
+}
+
+/// Type names visible at a position, including local names for imported types.
+pub fn visible_types(
+    db: &dyn Db,
+    ws: Workspace,
+    file: SourceFile,
+    point: tree_sitter::Point,
+) -> OrdMap<Ident, hir::ItemReference> {
+    let Some(enclosing) = enclosing_scope(db, file, point) else {
+        return OrdMap::new();
+    };
     let scope = enclosing.index(db);
-    let definitions = match enclosing {
+    let mut types = imported_types(db, ws, scope);
+    for meta in scope_definitions(db, enclosing) {
+        types.insert(meta.ident(db), type_reference(db, scope, meta));
+    }
+    types
+}
+
+/// Locate the declaration identified by a resolved type reference.
+pub fn type_definition(
+    db: &dyn Db,
+    ws: Workspace,
+    reference: hir::ItemReference,
+) -> Option<Location> {
+    let file = ws.file(db, reference.file);
+    let scope = crate::queries::file_items(db, file)
+        .into_iter()
+        .find(|item| item.index(db) == reference.scope)?;
+    scope_definitions(db, scope)
+        .into_iter()
+        .find(|meta| type_reference(db, reference.scope, *meta) == reference)
+        .map(|meta| meta.definition(db))
+}
+
+fn scope_definitions(db: &dyn Db, scope: TopLevelItemMetadata) -> Vector<TypeDefinitionMetadata> {
+    match scope {
         TopLevelItemMetadata::Interface(meta) => meta
             .items(db)
             .into_iter()
             .filter_map(|item| item.as_type())
             .collect(),
         TopLevelItemMetadata::World(meta) => meta.definitions(db),
-    };
-
-    if let Some(meta) = definitions.into_iter().find(|meta| meta.ident(db) == name) {
-        return Some(type_reference(db, scope, meta));
     }
-
-    imported_types(db, ws, scope).get(&name).copied()
 }
 
 fn type_reference(
@@ -87,9 +124,12 @@ pub fn imported_types(
     let file = ws.file(db, path);
     let ast = crate::queries::parse(db, file);
 
-    let use_statements: Vec<_> = match scope {
-        ScopeIndex::World(w) => {
-            let ptr = meta.get_by_index(db, w).ptr(db);
+    let use_statements: Vec<_> = match crate::queries::file_items(db, file)
+        .into_iter()
+        .find(|item| item.index(db) == scope)
+    {
+        Some(TopLevelItemMetadata::World(w)) => {
+            let ptr = w.ptr(db);
             let node = ast.get(db, ptr);
             node.body()
                 .into_iter()
@@ -97,8 +137,8 @@ pub fn imported_types(
                 .filter_map(|item| item.use_item_opt())
                 .collect()
         }
-        ScopeIndex::Interface(i) => {
-            let ptr = meta.get_by_index(db, i).ptr(db);
+        Some(TopLevelItemMetadata::Interface(i)) => {
+            let ptr = i.ptr(db);
             let node = ast.get(db, ptr);
             node.body()
                 .into_iter()
@@ -106,6 +146,7 @@ pub fn imported_types(
                 .filter_map(|item| item.use_opt())
                 .collect()
         }
+        None => return OrdMap::new(),
     };
 
     let mut ctx = Context {
