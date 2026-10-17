@@ -32,6 +32,18 @@ An alternative Language Server implementation for [WIT][wit].
   - [ ] Merge imports
   - [ ] Sort items
 
+## Workspace files
+
+The server discovers `.wit` files in workspace folders, including WIT dependency
+folders, so navigation, completion, and hover work without opening every file.
+It skips symlinked subtrees and common build, version-control, and dependency-cache
+directories such as `target`, `.git`, and `node_modules`.
+
+Unsaved editor buffers take precedence over disk contents. Closing a document
+reloads its saved contents, or removes it if it no longer exists in the workspace.
+Disk updates use the editor's `workspace/didChangeWatchedFiles` support. Clients
+without dynamic file watching still get initial discovery and open-buffer updates.
+
 ## License
 
 This project is licensed under either of

@@ -47,6 +47,15 @@ impl Workspace {
         }
     }
 
+    /// Remove a document that is no longer part of the workspace.
+    pub fn remove(self, db: &mut dyn Db, path: &str) {
+        if let Some(file) = self.lookup_by_path(db, path) {
+            let mut files = self.files(db);
+            files.remove(&file.path(db));
+            self.set_files(db).to(files);
+        }
+    }
+
     pub fn lookup_by_path(self, db: &dyn Db, path: &str) -> Option<SourceFile> {
         let files = self.files(db);
 

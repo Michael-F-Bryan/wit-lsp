@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use im::{OrdMap, Vector};
 use salsa::ParallelDatabase;
 use tokio::sync::{Mutex, MutexGuard};
@@ -7,30 +9,34 @@ use tower_lsp::{
     lsp_types::{
         CodeActionParams, CodeActionResponse, CompletionOptions, CompletionParams,
         CompletionResponse, DiagnosticOptions, DiagnosticServerCapabilities,
-        DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
-        DidSaveTextDocumentParams, DocumentDiagnosticParams, DocumentDiagnosticReportResult,
-        FoldingRange, FoldingRangeParams, GotoDefinitionParams, GotoDefinitionResponse, Hover,
-        HoverParams, InitializeParams, InitializeResult, MarkupKind, OneOf, PositionEncodingKind,
-        SelectionRange, SelectionRangeParams, ServerCapabilities, ServerInfo,
-        TextDocumentContentChangeEvent, TextDocumentItem, TextDocumentSyncCapability,
-        TextDocumentSyncKind, Url,
+        DidChangeTextDocumentParams, DidChangeWatchedFilesParams,
+        DidChangeWatchedFilesRegistrationOptions, DidChangeWorkspaceFoldersParams,
+        DidCloseTextDocumentParams, DidOpenTextDocumentParams, DidSaveTextDocumentParams,
+        DocumentDiagnosticParams, DocumentDiagnosticReportResult, FileSystemWatcher, FoldingRange,
+        FoldingRangeParams, GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams,
+        InitializeParams, InitializeResult, InitializedParams, MarkupKind, OneOf,
+        PositionEncodingKind, Registration, SaveOptions, SelectionRange, SelectionRangeParams,
+        ServerCapabilities, ServerInfo, TextDocumentContentChangeEvent, TextDocumentItem,
+        TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
+        TextDocumentSyncSaveOptions, Url, WorkspaceFoldersServerCapabilities,
+        WorkspaceServerCapabilities,
     },
 };
 use wit_compiler::{Text, queries::Workspace};
 
-use crate::{Database, utils};
+use crate::{Database, utils, workspace_files::WorkspaceFiles};
 
 /// The language server implementation.
 #[derive(Debug)]
 pub struct LanguageServer {
-    _client: Client,
+    client: Client,
     state: Mutex<State>,
 }
 
 impl LanguageServer {
     pub(crate) fn new(client: Client) -> Self {
         LanguageServer {
-            _client: client,
+            client,
             state: Mutex::default(),
         }
     }
@@ -72,6 +78,13 @@ impl LanguageServer {
         Ok(crate::CHANGELOG)
     }
 
+    async fn refresh_diagnostics(&self) {
+        let supported = self.lock().await.diagnostic_refresh;
+        if supported && let Err(error) = self.client.workspace_diagnostic_refresh().await {
+            tracing::warn!(%error, "Client rejected diagnostic refresh");
+        }
+    }
+
     async fn lock(&self) -> MutexGuard<'_, State> {
         self.state.lock().await
     }
@@ -92,8 +105,22 @@ impl tower_lsp::LanguageServer for LanguageServer {
         );
         tracing::trace!(?params, "Initialization parameters");
 
-        if let Some(_folders) = params.workspace_folders {
-            // FIXME: Should we try to preload all *.wit files?
+        {
+            let mut state = self.lock().await;
+            state.disk.initialize(&params);
+            if let Some(workspace) = &params.capabilities.workspace {
+                state.watch_registration = workspace
+                    .did_change_watched_files
+                    .as_ref()
+                    .and_then(|caps| caps.dynamic_registration)
+                    .unwrap_or(false);
+                state.diagnostic_refresh = workspace
+                    .diagnostic
+                    .as_ref()
+                    .and_then(|caps| caps.refresh_support)
+                    .unwrap_or(false);
+            }
+            state.reload_workspace().await;
         }
 
         self.lock().await.hover_markdown = params
@@ -113,8 +140,22 @@ impl tower_lsp::LanguageServer for LanguageServer {
                 hover_provider: Some(true.into()),
                 definition_provider: Some(OneOf::Left(true)),
                 completion_provider: Some(CompletionOptions::default()),
-                text_document_sync: Some(TextDocumentSyncCapability::Kind(
-                    TextDocumentSyncKind::FULL,
+                workspace: Some(WorkspaceServerCapabilities {
+                    workspace_folders: Some(WorkspaceFoldersServerCapabilities {
+                        supported: Some(true),
+                        change_notifications: Some(OneOf::Left(true)),
+                    }),
+                    ..Default::default()
+                }),
+                text_document_sync: Some(TextDocumentSyncCapability::Options(
+                    TextDocumentSyncOptions {
+                        open_close: Some(true),
+                        change: Some(TextDocumentSyncKind::FULL),
+                        save: Some(TextDocumentSyncSaveOptions::SaveOptions(SaveOptions {
+                            include_text: Some(true),
+                        })),
+                        ..Default::default()
+                    },
                 )),
                 diagnostic_provider: Some(DiagnosticServerCapabilities::Options(
                     DiagnosticOptions {
@@ -131,6 +172,65 @@ impl tower_lsp::LanguageServer for LanguageServer {
         })
     }
 
+    async fn initialized(&self, _: InitializedParams) {
+        let supported = self.lock().await.watch_registration;
+        if !supported {
+            tracing::info!("Client does not support dynamic WIT file watching");
+            return;
+        }
+        let options = DidChangeWatchedFilesRegistrationOptions {
+            watchers: vec![FileSystemWatcher {
+                glob_pattern: "**/*.wit".to_owned().into(),
+                kind: None,
+            }],
+        };
+        let registration = Registration {
+            id: "wit-workspace-files".into(),
+            method: "workspace/didChangeWatchedFiles".into(),
+            register_options: Some(serde_json::to_value(options).expect("watch options serialize")),
+        };
+        match self.client.register_capability(vec![registration]).await {
+            Ok(()) => {
+                // Catch changes made between initial discovery and watcher registration.
+                self.lock().await.reload_workspace().await;
+            }
+            Err(error) => tracing::warn!(%error, "Client rejected WIT file watching"),
+        }
+    }
+
+    async fn did_change_watched_files(&self, params: DidChangeWatchedFilesParams) {
+        let mut state = self.lock().await;
+        let uris: Vec<_> = params
+            .changes
+            .into_iter()
+            .map(|event| event.uri)
+            .filter(|uri| state.disk.contains(uri))
+            .collect();
+        if uris.is_empty() {
+            return;
+        }
+        if uris.iter().any(|uri| !uri.path().ends_with(".wit")) {
+            state.reload_workspace().await;
+        } else {
+            state.reload_files(uris).await;
+        }
+        drop(state);
+        self.refresh_diagnostics().await;
+    }
+
+    async fn did_change_workspace_folders(&self, params: DidChangeWorkspaceFoldersParams) {
+        let mut state = self.lock().await;
+        for folder in params.event.removed {
+            state.disk.remove(&folder.uri);
+        }
+        for folder in params.event.added {
+            state.disk.add(&folder.uri);
+        }
+        state.reload_workspace().await;
+        drop(state);
+        self.refresh_diagnostics().await;
+    }
+
     async fn shutdown(&self) -> Result<(), Error> {
         tracing::info!("Shutting down");
         Ok(())
@@ -140,13 +240,18 @@ impl tower_lsp::LanguageServer for LanguageServer {
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
         tracing::debug!(document.uri=%params.text_document.uri);
 
-        let TextDocumentItem { uri, text, .. } = params.text_document;
+        let TextDocumentItem {
+            uri, text, version, ..
+        } = params.text_document;
         let path = uri.as_str();
         let mut state = self.lock().await;
 
         tracing::debug!(size = text.len(), path, "File opened");
         let ws = state.ws;
         ws.update(state.wit_db(), path, text);
+        state.open.insert(uri.to_string(), version);
+        drop(state);
+        self.refresh_diagnostics().await;
     }
 
     #[tracing::instrument(level = "debug", skip_all)]
@@ -156,43 +261,61 @@ impl tower_lsp::LanguageServer for LanguageServer {
 
         let mut state = self.lock().await;
 
-        debug_assert!(
-            params.content_changes.len() < 2,
-            "TODO: figure out how to handle bulk changes"
-        );
+        let Some(version) = state.open.get(path) else {
+            return;
+        };
+        if params.text_document.version <= *version {
+            return;
+        }
+        if params
+            .content_changes
+            .iter()
+            .any(|change| change.range.is_some())
+        {
+            tracing::warn!("Incremental document updating isn't supported");
+            return;
+        }
+        state
+            .open
+            .insert(path.to_owned(), params.text_document.version);
 
         for change in params.content_changes {
-            let TextDocumentContentChangeEvent { text, range, .. } = change;
-
-            if let Some(range) = range {
-                tracing::warn!(?range, "Incremental document updating isn't supported");
-                return;
-            }
+            let TextDocumentContentChangeEvent { text, .. } = change;
 
             tracing::debug!(size = text.len(), path, "File changed");
             let ws = state.ws;
             ws.update(state.wit_db(), path, text);
         }
+        drop(state);
+        self.refresh_diagnostics().await;
     }
 
     #[tracing::instrument(level = "debug", skip_all)]
     async fn did_save(&self, params: DidSaveTextDocumentParams) {
         tracing::debug!(document.uri=%params.text_document.uri);
 
-        if let Some(text) = params.text {
-            let path = params.text_document.uri.as_str();
-
-            let mut state = self.lock().await;
-
-            tracing::debug!(size = text.len(), path, "File saved");
-            let ws = state.ws;
-            ws.update(state.wit_db(), path, text);
+        let mut state = self.lock().await;
+        let uri = params.text_document.uri;
+        if state.open.contains_key(uri.as_str()) {
+            if let Some(text) = params.text {
+                let ws = state.ws;
+                ws.update(state.wit_db(), uri.as_str(), text);
+            }
+        } else {
+            state.reload_files(vec![uri]).await;
         }
+        drop(state);
+        self.refresh_diagnostics().await;
     }
 
     #[tracing::instrument(level = "debug", skip_all)]
     async fn did_close(&self, params: DidCloseTextDocumentParams) {
-        tracing::debug!(document.uri=%params.text_document.uri);
+        let uri = params.text_document.uri;
+        let mut state = self.lock().await;
+        state.open.remove(uri.as_str());
+        state.reload_files(vec![uri]).await;
+        drop(state);
+        self.refresh_diagnostics().await;
     }
 
     #[tracing::instrument(level = "debug", skip_all)]
@@ -394,9 +517,69 @@ struct State {
     ws: Workspace,
     db: Database,
     hover_markdown: bool,
+    disk: WorkspaceFiles,
+    open: HashMap<String, i32>,
+    watch_registration: bool,
+    diagnostic_refresh: bool,
 }
 
 impl State {
+    async fn reload_workspace(&mut self) {
+        let files = match self.disk.scan().await {
+            Ok(files) => files,
+            Err(error) => {
+                tracing::error!(%error, "WIT discovery task failed");
+                return;
+            }
+        };
+        let ws = self.ws;
+        let obsolete: Vec<_> = ws
+            .files(&self.db)
+            .keys()
+            .map(|path| path.raw_path(&self.db).to_string())
+            .filter(|path| !self.open.contains_key(path) && !files.contains_key(path))
+            .collect();
+        for path in obsolete {
+            ws.remove(self.wit_db(), &path);
+        }
+        for (path, text) in files {
+            self.apply_disk(&path, Some(text));
+        }
+    }
+
+    async fn reload_files(&mut self, uris: Vec<Url>) {
+        let uris = uris
+            .into_iter()
+            .filter(|uri| !self.open.contains_key(uri.as_str()))
+            .collect();
+        match self.disk.read(uris).await {
+            Ok(files) => {
+                for (path, text) in files {
+                    self.apply_disk(&path, text);
+                }
+            }
+            Err(error) => tracing::error!(%error, "WIT file read task failed"),
+        }
+    }
+
+    fn apply_disk(&mut self, path: &str, text: Option<String>) {
+        if self.open.contains_key(path) {
+            return;
+        }
+        let ws = self.ws;
+        match text {
+            Some(text) => {
+                if !ws
+                    .lookup_by_path(&self.db, path)
+                    .is_some_and(|file| file.contents(&self.db).as_str() == text)
+                {
+                    ws.update(self.wit_db(), path, text);
+                }
+            }
+            None => ws.remove(self.wit_db(), path),
+        }
+    }
+
     fn db(&mut self) -> &mut dyn crate::Db {
         &mut self.db
     }
@@ -422,6 +605,10 @@ impl Default for State {
             ws: workspace,
             db,
             hover_markdown: false,
+            disk: WorkspaceFiles::default(),
+            open: HashMap::new(),
+            watch_registration: false,
+            diagnostic_refresh: false,
         }
     }
 }

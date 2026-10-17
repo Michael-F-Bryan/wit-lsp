@@ -10,6 +10,7 @@ mod middleware;
 mod ops;
 mod server;
 mod utils;
+mod workspace_files;
 
 pub(crate) use crate::database::{Database, Db, Jar};
 
