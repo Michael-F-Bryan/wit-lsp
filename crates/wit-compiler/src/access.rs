@@ -6,10 +6,10 @@ use std::{fmt::Debug, marker::PhantomData, num::NonZeroU16};
 use salsa::DebugWithDb;
 
 use crate::{
+    Tree,
     ast::AstNode,
     diagnostics::Location,
-    queries::{metadata::HasDefinition, FilePath},
-    Tree,
+    queries::{FilePath, metadata::HasDefinition},
 };
 
 pub trait NodeKind {

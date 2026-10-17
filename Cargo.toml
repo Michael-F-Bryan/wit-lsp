@@ -1,15 +1,14 @@
 [workspace]
 members = ["crates/*", "integration-tests"]
-resolver = "2"
+resolver = "3"
 
 [workspace.package]
 authors = ["Michael-F-Bryan <consulting@michaelfbryan.com>"]
-edition = "2021"
+edition = "2024"
 homepage = "https://github.com/Michael-F-Bryan/wit-lsp"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/Michael-F-Bryan/wit-lsp"
-rust-version = "1.77"
 
 [workspace.dependencies]
 clap = { version = "4.5.3", features = ["derive", "env"] }

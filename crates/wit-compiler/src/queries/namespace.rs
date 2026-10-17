@@ -1,18 +1,18 @@
 use im::{OrdMap, Vector};
 
 use crate::{
+    Db,
     access::{InterfaceIndex, ScopeIndex},
     ast::{self, AstNode, HasSource},
     diagnostics::{Diagnostic, Diagnostics, DuplicateName, Location, UnknownName, UnknownPackage},
     hir,
     queries::{
+        FilePath, Package, PackageId, SourceFile, Workspace,
         metadata::{
             GetByIndex, HasDefinition, HasIdent, Ident, PackageMetadata, TopLevelItemMetadata,
             TypeDefinitionMetadata,
         },
-        FilePath, Package, PackageId, SourceFile, Workspace,
     },
-    Db,
 };
 
 /// Resolve a type name in the interface or world containing its use site.
@@ -216,7 +216,8 @@ impl Context<'_> {
             let item = self.meta.items_by_name(self.db).get(&ident).copied();
 
             (item, bare_ident)
-        } else if let Some(fully_qualified) = path.fully_qualified_use_path() {
+        } else {
+            let fully_qualified = path.fully_qualified_use_path()?;
             let pkg_id = self.resolve_package_id(fully_qualified)?;
             let pkg = self.find_pkg(pkg_id, fully_qualified)?;
 
@@ -228,8 +229,6 @@ impl Context<'_> {
             let meta = meta.items_by_name(self.db).get(&ident).copied();
 
             (meta, item_name)
-        } else {
-            return None;
         };
 
         match meta {
@@ -343,9 +342,8 @@ impl Context<'_> {
 mod tests {
 
     use crate::{
-        diagnostics,
-        queries::{metadata::InterfaceItemMetadata, FilePath},
-        Compiler,
+        Compiler, diagnostics,
+        queries::{FilePath, metadata::InterfaceItemMetadata},
     };
     use im::OrdMap;
 
@@ -573,10 +571,16 @@ mod tests {
             "interface source { type other = u32; }",
         ] {
             let db = Compiler::default();
-            let ws = workspace(&db, &[
-                ("source.wit", declaration),
-                ("consumer.wit", "interface consumer { use source.{value as renamed}; type alias = renamed; }"),
-            ]);
+            let ws = workspace(
+                &db,
+                &[
+                    ("source.wit", declaration),
+                    (
+                        "consumer.wit",
+                        "interface consumer { use source.{value as renamed}; type alias = renamed; }",
+                    ),
+                ],
+            );
             let diags = diagnostics::check_all(&db, ws);
             assert!(!diags.is_empty(), "{declaration}");
             for diag in diags {

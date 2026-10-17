@@ -1,7 +1,7 @@
 use crate::{
+    Db,
     diagnostics::{Diagnostics, IntoDiagnostic, Location},
     queries::{Ast, Package, SourceFile, Workspace},
-    Db,
 };
 
 #[derive(Debug, Copy, Clone)]

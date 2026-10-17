@@ -6,10 +6,10 @@ use codespan_reporting::{
 };
 use im::OrdMap;
 use wit_compiler::{
+    Compiler, Db, Text,
     diagnostics::{Diagnostic, Diagnostics},
     queries::{FilePath, SourceFile, Workspace},
     traverse::Cursor,
-    Compiler, Db, Text,
 };
 
 use crate::Format;

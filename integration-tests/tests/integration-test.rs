@@ -4,7 +4,7 @@ use clap::Parser;
 use libtest_mimic::Arguments;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{
-    fmt::format::FmtSpan, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter,
+    EnvFilter, fmt::format::FmtSpan, layer::SubscriberExt, util::SubscriberInitExt,
 };
 
 const RUST_LOG: &[&str] = &["info", "wit_compiler=info", "salsa_2022=warn"];
@@ -36,12 +36,14 @@ fn initialize_logging() -> color_eyre::Result<()> {
         .add_default_filters()
         .install()?;
 
-    if std::env::var_os("RUST_LOG").is_none() {
-        std::env::set_var("RUST_LOG", RUST_LOG.join(","));
-    }
+    let filter = if std::env::var_os("RUST_LOG").is_some() {
+        EnvFilter::from_default_env()
+    } else {
+        EnvFilter::new(RUST_LOG.join(","))
+    };
 
     tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::from_default_env())
+        .with_env_filter(filter)
         .with_writer(std::io::stderr)
         .with_ansi(isatty)
         .with_span_events(FmtSpan::CLOSE)

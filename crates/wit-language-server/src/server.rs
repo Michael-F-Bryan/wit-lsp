@@ -2,6 +2,7 @@ use im::{OrdMap, Vector};
 use salsa::ParallelDatabase;
 use tokio::sync::{Mutex, MutexGuard};
 use tower_lsp::{
+    Client, ClientSocket, LspService,
     jsonrpc::Error,
     lsp_types::{
         CodeActionParams, CodeActionResponse, CompletionOptions, CompletionParams,
@@ -13,11 +14,10 @@ use tower_lsp::{
         ServerCapabilities, ServerInfo, TextDocumentContentChangeEvent, TextDocumentItem,
         TextDocumentSyncCapability, TextDocumentSyncKind, Url,
     },
-    Client, ClientSocket, LspService,
 };
-use wit_compiler::{queries::Workspace, Text};
+use wit_compiler::{Text, queries::Workspace};
 
-use crate::{utils, Database};
+use crate::{Database, utils};
 
 /// The language server implementation.
 #[derive(Debug)]

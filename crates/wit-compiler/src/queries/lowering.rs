@@ -2,20 +2,20 @@ use ast::HasSource;
 use im::{OrdMap, Vector};
 
 use crate::{
+    Db, Text,
     access::{AnyFuncItemIndex, InterfaceIndex, NodeKind, Pointer, WorldIndex},
     ast::{self, AstNode, HasAttr, HasIdent as _},
     diagnostics::{Diagnostics, DuplicateName, Location, MultiplePackageDocs, UnknownName},
     hir,
     queries::{
+        Ast, FilePath, Package, SourceFile, Workspace,
         metadata::{
             ConstructorMetadata, EnumMetadata, FlagsMetadata, FuncItemMetadata, HasDefinition,
             HasIdent, Ident, InterfaceItemMetadata, InterfaceMetadata, MethodMetadata,
             RecordMetadata, ResourceMetadata, StaticMethodMetadata, TypeAliasMetadata,
             TypeDefinitionMetadata, VariantCaseMetadata, VariantMetadata, WorldMetadata,
         },
-        Ast, FilePath, Package, SourceFile, Workspace,
     },
-    Db, Text,
 };
 
 #[salsa::tracked]
@@ -646,10 +646,9 @@ fn lower_type(ctx: Context<'_>, node: ast::Ty<'_>) -> Option<hir::Type> {
 fn resolve_handle(ctx: Context<'_>, handle: ast::Handle<'_>) -> Option<hir::Type> {
     let (ty, borrowed) = if let Some(node) = handle.borrowed_handle() {
         (node.id()?, true)
-    } else if let Some(node) = handle.owned_handle() {
-        (node.id()?, false)
     } else {
-        return None;
+        let node = handle.owned_handle()?;
+        (node.id()?, false)
     };
 
     let ty = resolve_user_defined_type(ctx, ty)?;
@@ -757,9 +756,9 @@ fn resolve_builtin(ctx: Context<'_>, builtin: ast::Builtin<'_>) -> Option<hir::B
 #[cfg(test)]
 mod tests {
     use crate::{
+        Compiler,
         diagnostics::Diagnostics,
         queries::{FilePath, SourceFile},
-        Compiler,
     };
 
     use super::*;

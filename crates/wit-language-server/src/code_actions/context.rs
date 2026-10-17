@@ -3,13 +3,13 @@ use std::collections::HashSet;
 use tower_lsp::lsp_types::CodeActionParams;
 use tree_sitter::{Range, TreeCursor};
 use wit_compiler::{
+    Tree,
     ast::AstNode,
     diagnostics::{Diagnostic, Diagnostics},
     queries::{FilePath, Package, SourceFile, Workspace},
-    Tree,
 };
 
-use crate::{utils, Db};
+use crate::{Db, utils};
 
 #[derive(Debug, Clone)]
 pub struct CodeActionContext<'db> {

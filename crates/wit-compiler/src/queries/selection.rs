@@ -1,7 +1,7 @@
 use im::Vector;
 use tree_sitter::{Point, Range};
 
-use crate::{queries::Ast, Db, Tree};
+use crate::{Db, Tree, queries::Ast};
 
 /// Calculate successively wider ranges of tokens.
 #[salsa::tracked]

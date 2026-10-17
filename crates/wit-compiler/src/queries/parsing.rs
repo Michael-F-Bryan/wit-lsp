@@ -1,14 +1,15 @@
 use crate::{
+    Db, Text, Tree,
     access::{NodeKind, Pointer},
     ast::AstNode,
     diagnostics::{Diagnostics, Location, SyntaxError},
     queries::SourceFile,
-    Db, Text, Tree,
 };
 
 /// Parse a [`SourceFile`] into an [`Ast`], emitting any [`SyntaxError`]s as
 /// they occur.
 #[salsa::tracked]
+#[allow(clippy::clone_on_copy)]
 #[tracing::instrument(level = "debug", skip_all, fields(file = %file.path(db).raw_path(db)))]
 pub fn parse(db: &dyn Db, file: SourceFile) -> Ast {
     let src = file.contents(db);

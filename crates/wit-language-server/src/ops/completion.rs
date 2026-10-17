@@ -1,8 +1,8 @@
 use tower_lsp::lsp_types::{CompletionItem, CompletionItemKind};
 use wit_compiler::{
+    Db,
     ast::{self, AstNode, HasSource},
     queries::{SourceFile, Workspace},
-    Db,
 };
 
 pub fn complete(
@@ -94,7 +94,7 @@ mod tests {
     use std::borrow::Cow;
 
     use im::OrdMap;
-    use wit_compiler::{queries::FilePath, Compiler, Tree};
+    use wit_compiler::{Compiler, Tree, queries::FilePath};
 
     use super::*;
 
@@ -147,7 +147,9 @@ mod tests {
                 "interface source { type original = u32; type hidden = string; }".into(),
             );
             let path = FilePath::new(&db, "file:///consumer.wit".into());
-            let source = format!("{scope} consumer {{ use source.{{original as renamed}}; type local = u32; /* here */ }}");
+            let source = format!(
+                "{scope} consumer {{ use source.{{original as renamed}}; type local = u32; /* here */ }}"
+            );
             let point = tree_sitter::Point::new(0, source.find("/* here */").unwrap());
             let file = SourceFile::new(&db, path, source.into());
             let ws = Workspace::new(

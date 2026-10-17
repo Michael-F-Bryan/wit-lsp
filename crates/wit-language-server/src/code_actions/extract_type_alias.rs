@@ -25,10 +25,9 @@ pub(crate) fn extract_type_alias_action(ctx: &CodeActionContext<'_>) -> Option<A
 
     let parent_item = if let Some(item) = ctx.next_ancestor::<ast::InterfaceItems<'_>>() {
         item.syntax()
-    } else if let Some(item) = ctx.next_ancestor::<ast::WorldItems<'_>>() {
-        item.syntax()
     } else {
-        return None;
+        let item = ctx.next_ancestor::<ast::WorldItems<'_>>()?;
+        item.syntax()
     };
 
     let Range { start_byte, .. } = parent_item.range();

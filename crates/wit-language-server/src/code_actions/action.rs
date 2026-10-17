@@ -1,8 +1,8 @@
 use im::OrdMap;
 use tower_lsp::lsp_types::{CodeAction, CodeActionKind, WorkspaceEdit};
 use wit_compiler::{
-    queries::{FilePath, LineNumbers, Workspace},
     Db,
+    queries::{FilePath, LineNumbers, Workspace},
 };
 
 use crate::code_actions::{Indel, TextEdit};

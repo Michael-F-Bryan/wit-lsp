@@ -8,7 +8,7 @@ use clap::Parser;
 use color_eyre::Report;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{
-    fmt::format::FmtSpan, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter,
+    EnvFilter, fmt::format::FmtSpan, layer::SubscriberExt, util::SubscriberInitExt,
 };
 
 use crate::{codegen::Codegen, doc::Doc};
@@ -38,9 +38,11 @@ enum Cmd {
 fn initialize_logging() -> color_eyre::Result<()> {
     let isatty = std::io::stderr().is_terminal();
 
-    if std::env::var_os("RUST_LOG").is_none() {
-        std::env::set_var("RUST_LOG", RUST_LOG.join(","));
-    }
+    let filter = if std::env::var_os("RUST_LOG").is_some() {
+        EnvFilter::from_default_env()
+    } else {
+        EnvFilter::new(RUST_LOG.join(","))
+    };
 
     color_eyre::config::HookBuilder::default()
         .capture_span_trace_by_default(true)
@@ -48,7 +50,7 @@ fn initialize_logging() -> color_eyre::Result<()> {
         .install()?;
 
     tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::from_default_env())
+        .with_env_filter(filter)
         .with_writer(std::io::stderr)
         .with_ansi(isatty)
         .with_span_events(FmtSpan::CLOSE)

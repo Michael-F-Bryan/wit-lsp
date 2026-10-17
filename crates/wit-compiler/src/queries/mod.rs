@@ -9,16 +9,16 @@ mod selection;
 mod workspace;
 
 pub use self::{
-    line_numbers::{calculate_line_numbers, LineNumbers},
+    line_numbers::{LineNumbers, calculate_line_numbers},
     lowering::lower_package,
     metadata::{file_items, package_items},
     namespace::{
         enclosing_scope, imported_types, resolve_type, top_level_names, type_definition,
         visible_types,
     },
-    parsing::{parse, Ast},
+    parsing::{Ast, parse},
     selection::selection_ranges,
     workspace::{
-        workspace_packages, FilePath, Package, PackageId, SourceFile, Workspace, WorkspaceFiles,
+        FilePath, Package, PackageId, SourceFile, Workspace, WorkspaceFiles, workspace_packages,
     },
 };

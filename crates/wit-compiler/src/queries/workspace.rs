@@ -4,9 +4,9 @@ use codespan_reporting::files::Error as CodespanError;
 use im::{OrdMap, Vector};
 
 use crate::{
+    Db, Text,
     ast::{AstNode, HasSource},
     diagnostics::{Diagnostics, Location, MismatchedPackageDeclaration},
-    Db, Text,
 };
 
 /// The path to a [`SourceFile`] in the [`Workspace`].
@@ -118,7 +118,7 @@ pub fn workspace_packages(db: &dyn Db, ws: Workspace) -> Vector<Package> {
         // practice we'll only ever be receiving URIs or fs paths, and both
         // satisfy that assumption.
         let path = path.raw_path(db);
-        let dir = match path.rsplit_once(|c| c == '/' || c == '\\') {
+        let dir = match path.rsplit_once(['/', '\\']) {
             Some((dir, _)) => dir,
             None => ".",
         };

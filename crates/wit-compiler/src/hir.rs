@@ -5,12 +5,12 @@ use std::fmt::Debug;
 use im::{OrdMap, Vector};
 
 use crate::{
+    Text,
     access::{
         AnyFuncItemIndex, EnumIndex, FlagsIndex, FunctionIndex, InterfaceIndex, RecordIndex,
         ResourceIndex, ScopeIndex, TypeAliasIndex, VariantIndex, WorldIndex,
     },
-    queries::{metadata::Ident, FilePath, PackageId},
-    Text,
+    queries::{FilePath, PackageId, metadata::Ident},
 };
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]

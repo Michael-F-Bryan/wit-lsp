@@ -1,5 +1,5 @@
-use codespan_reporting::term::{termcolor::WriteColor, Config};
-use wit_compiler::{diagnostics::Diagnostic, queries::Workspace, Db};
+use codespan_reporting::term::{Config, termcolor::WriteColor};
+use wit_compiler::{Db, diagnostics::Diagnostic, queries::Workspace};
 
 #[tracing::instrument(skip_all)]
 pub(crate) fn print_diagnostics(

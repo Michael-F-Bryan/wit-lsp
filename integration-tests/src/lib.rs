@@ -1,15 +1,15 @@
 use std::path::{Path, PathBuf};
 
 use codespan_reporting::term::{
-    termcolor::{ColorChoice, StandardStream, WriteColor},
     Config,
+    termcolor::{ColorChoice, StandardStream, WriteColor},
 };
 use im::OrdMap;
 use libtest_mimic::{Failed, Trial};
 use wit_compiler::{
+    Compiler, Db, Text,
     diagnostics::Diagnostic,
     queries::{FilePath, SourceFile, Workspace},
-    Compiler, Db, Text,
 };
 
 #[tracing::instrument(skip_all, fields(base_dir = %base_dir.as_ref().display()))]

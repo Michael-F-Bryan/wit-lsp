@@ -5,11 +5,11 @@ use im::{OrdMap, Vector};
 use salsa::DebugWithDb;
 
 use crate::{
+    Db, Text,
     access::{self, *},
     ast::{self, AstNode, HasIdent as _},
     diagnostics::{Diagnostics, DuplicateName, Location, MultipleConstructors},
     queries::{FilePath, Package, SourceFile},
-    Db, Text,
 };
 
 /// Find all the top-level items exposed by a [`Package`].
@@ -17,6 +17,7 @@ use crate::{
 /// If there are any duplicate items, a [`DuplicateName`] diagnostic will be
 /// emitted.
 #[salsa::tracked]
+#[allow(clippy::clone_on_copy)]
 #[tracing::instrument(level = "debug", skip_all, fields(dir = %pkg.dir(db).raw_path(db)))]
 pub fn package_items(db: &dyn Db, pkg: Package) -> PackageMetadata {
     let mut items: HashMap<Ident, TopLevelItemMetadata> = HashMap::new();
@@ -71,7 +72,9 @@ pub fn file_items(db: &dyn Db, file: SourceFile) -> Vector<TopLevelItemMetadata>
         }
     }
 
-    items.into_values().collect()
+    in_source_order(db, items.into_values())
+        .into_iter()
+        .collect()
 }
 
 fn lower_top_level_item(
@@ -165,7 +168,9 @@ fn interface_metadata(
         name,
         ctx.index(),
         InterfacePtr::for_node(ctx.path, node),
-        items.into_values().collect(),
+        in_source_order(ctx.db, items.into_values())
+            .into_iter()
+            .collect(),
     ))
 }
 
@@ -216,7 +221,9 @@ fn world_metadata(ctx: &mut Context<'_>, node: ast::WorldItem<'_>) -> Option<Wor
         name,
         ctx.index(),
         WorldPtr::for_node(ctx.path, node),
-        definitions.into_values().collect(),
+        in_source_order(ctx.db, definitions.into_values())
+            .into_iter()
+            .collect(),
         exports,
         imports,
     ))
@@ -434,17 +441,17 @@ fn resource_metadata(
             if let Some(item) = simple_item_metadata(ctx, method, MethodMetadata::new) {
                 push_item(ctx.db, &mut all_methods, AnyMethod::Method(item));
             }
-        } else if let Some(method) = method.static_resource_method() {
-            if let Some(item) = simple_item_metadata(ctx, method, StaticMethodMetadata::new) {
-                push_item(ctx.db, &mut all_methods, AnyMethod::Static(item));
-            }
+        } else if let Some(method) = method.static_resource_method()
+            && let Some(item) = simple_item_metadata(ctx, method, StaticMethodMetadata::new)
+        {
+            push_item(ctx.db, &mut all_methods, AnyMethod::Static(item));
         }
     }
 
     let mut methods = Vector::new();
     let mut static_methods = Vector::new();
 
-    for m in all_methods.into_values() {
+    for m in in_source_order(ctx.db, all_methods.into_values()) {
         match m {
             AnyMethod::Method(m) => methods.push_back(m),
             AnyMethod::Static(s) => static_methods.push_back(s),
@@ -903,6 +910,14 @@ pub struct Ident {
     pub raw: Text,
 }
 
+// These collections contain declarations from one source file. Keep their
+// source order after using a map to detect duplicate names.
+fn in_source_order<T: HasDefinition>(db: &dyn Db, items: impl IntoIterator<Item = T>) -> Vec<T> {
+    let mut items: Vec<_> = items.into_iter().collect();
+    items.sort_unstable_by_key(|item| item.definition(db).range.start_byte);
+    items
+}
+
 fn push_item<T>(db: &dyn Db, items: &mut HashMap<Ident, T>, item: T)
 where
     T: HasIdent + HasDefinition,
@@ -928,7 +943,7 @@ where
 mod tests {
     use std::ops::Range;
 
-    use crate::{queries::FilePath, Compiler};
+    use crate::{Compiler, queries::FilePath};
 
     use super::*;
 
@@ -1141,6 +1156,100 @@ mod tests {
                 }
             )*
         };
+    }
+
+    fn names<T: HasIdent>(db: &dyn Db, items: impl IntoIterator<Item = T>) -> Vec<String> {
+        items
+            .into_iter()
+            .map(|item| item.ident(db).raw(db).to_string())
+            .collect()
+    }
+
+    #[test]
+    fn declarations_follow_source_order() {
+        let db = Compiler::default();
+        // Existing interned names must not determine declaration order.
+        for name in ["alpha", "middle", "zulu"] {
+            Ident::new(&db, name.into());
+        }
+        let path = FilePath::new(&db, "order.wit".into());
+        let file = SourceFile::new(
+            &db,
+            path,
+            r#"
+            interface zulu {
+                type zulu = u32;
+                alpha: func();
+                resource middle {
+                    zulu: func();
+                    build-zulu: static func();
+                    alpha: func();
+                    build-alpha: static func();
+                }
+            }
+            world alpha { type zulu = u32; type alpha = string; type middle = bool; }
+            interface middle {}
+        "#
+            .into(),
+        );
+        let items = file_items(&db, file);
+        assert_eq!(names(&db, items.clone()), ["zulu", "alpha", "middle"]);
+        let TopLevelItemMetadata::Interface(interface) = items[0] else {
+            panic!()
+        };
+        assert_eq!(
+            names(&db, interface.items(&db)),
+            ["zulu", "alpha", "middle"]
+        );
+        let InterfaceItemMetadata::Type(TypeDefinitionMetadata::Resource(resource)) =
+            interface.items(&db)[2]
+        else {
+            panic!()
+        };
+        assert_eq!(names(&db, resource.methods(&db)), ["zulu", "alpha"]);
+        assert_eq!(
+            names(&db, resource.static_methods(&db)),
+            ["build-zulu", "build-alpha"]
+        );
+        let TopLevelItemMetadata::World(world) = items[1] else {
+            panic!()
+        };
+        assert_eq!(
+            names(&db, world.definitions(&db)),
+            ["zulu", "alpha", "middle"]
+        );
+        assert!(file_items::accumulated::<Diagnostics>(&db, file).is_empty());
+    }
+
+    #[test]
+    fn declaration_order_tracks_edits() {
+        let mut db = Compiler::default();
+        let path = FilePath::new(&db, "edits.wit".into());
+        let file = SourceFile::new(&db, path, "interface zulu {} interface alpha {}".into());
+        assert_eq!(names(&db, file_items(&db, file)), ["zulu", "alpha"]);
+        file.set_contents(&mut db)
+            .to("interface alpha {} interface zulu {}".into());
+        assert_eq!(names(&db, file_items(&db, file)), ["alpha", "zulu"]);
+    }
+
+    #[test]
+    fn source_order_keeps_first_duplicate_and_its_diagnostic() {
+        let db = Compiler::default();
+        let path = FilePath::new(&db, "duplicates.wit".into());
+        let source = "interface zulu {} interface alpha {} interface zulu {}";
+        let file = SourceFile::new(&db, path, source.into());
+        let items = file_items(&db, file);
+        assert_eq!(names(&db, items.clone()), ["zulu", "alpha"]);
+        assert_eq!(items[0].definition(&db).range.start_byte, 0);
+        let diags = file_items::accumulated::<Diagnostics>(&db, file);
+        let [crate::diagnostics::Diagnostic::DuplicateName(diag)] = diags.as_slice() else {
+            panic!("{diags:?}")
+        };
+        assert_eq!(diag.original_definition.range.start_byte, 0);
+        assert_eq!(
+            diag.location.range.start_byte,
+            source.rfind("interface zulu").unwrap()
+        );
     }
 
     item_metadata_tests! {

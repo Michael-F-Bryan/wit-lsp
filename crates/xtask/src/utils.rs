@@ -29,11 +29,11 @@ pub fn ensure_file_contents(
     let path = path.as_ref();
     let contents = normalize_newlines(contents.as_ref());
 
-    if let Ok(old_contents) = std::fs::read_to_string(path) {
-        if contents == normalize_newlines(&old_contents) {
-            tracing::debug!("File is already up to date");
-            return Ok(());
-        }
+    if let Ok(old_contents) = std::fs::read_to_string(path)
+        && contents == normalize_newlines(&old_contents)
+    {
+        tracing::debug!("File is already up to date");
+        return Ok(());
     }
 
     let display_path = path.strip_prefix(project_root()).unwrap_or(path);

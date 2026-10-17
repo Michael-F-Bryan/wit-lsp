@@ -1,8 +1,8 @@
 use wit_compiler::{
+    Db,
     ast::{self, AstNode, HasSource},
     diagnostics::Location,
-    queries::{self, metadata::Ident, SourceFile, Workspace},
-    Db,
+    queries::{self, SourceFile, Workspace, metadata::Ident},
 };
 
 /// Find the declaration of the type reference under the cursor.
@@ -37,7 +37,7 @@ pub fn goto_definition(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use wit_compiler::{queries::FilePath, Compiler};
+    use wit_compiler::{Compiler, queries::FilePath};
 
     fn marked_source(source: &str) -> (String, tree_sitter::Point) {
         let offset = source.find('|').unwrap();

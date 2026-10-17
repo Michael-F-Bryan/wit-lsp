@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use clap::{Parser, ValueEnum};
 use minijinja::Environment;
 use once_cell::sync::Lazy;
-use xshell::{cmd, Shell};
+use xshell::Shell;
 
 use crate::utils;
 
@@ -45,17 +45,24 @@ impl Doc {
 
 #[tracing::instrument(skip_all)]
 fn api_docs(sh: &Shell) -> color_eyre::Result<()> {
-    cmd!(sh, "cargo doc --workspace --verbose --locked").run()?;
+    sh.cmd("cargo")
+        .args(["doc", "--workspace", "--verbose", "--locked"])
+        .run()?;
     Ok(())
 }
 
 #[tracing::instrument(skip_all)]
 fn code_coverage(sh: &Shell) -> color_eyre::Result<()> {
-    cmd!(
-        sh,
-        "cargo llvm-cov nextest --html --workspace --no-fail-fast --show-instantiations"
-    )
-    .run()?;
+    sh.cmd("cargo")
+        .args([
+            "llvm-cov",
+            "nextest",
+            "--html",
+            "--workspace",
+            "--no-fail-fast",
+            "--show-instantiations",
+        ])
+        .run()?;
 
     Ok(())
 }

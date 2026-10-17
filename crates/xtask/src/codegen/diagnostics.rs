@@ -64,7 +64,7 @@ fn extract_diagnostic_types(src: &str) -> color_eyre::Result<Vec<&str>> {
         .skip(1)
         .take_while(|line| !line.contains('}'))
         .map(|line| {
-            let line: Vec<_> = line.split(|c| c == '(' || c == ')').collect();
+            let line: Vec<_> = line.split(['(', ')']).collect();
             assert_eq!(line.len(), 3, "{line:?}");
             line[1]
         })

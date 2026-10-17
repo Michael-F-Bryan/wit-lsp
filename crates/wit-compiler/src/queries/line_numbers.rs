@@ -4,7 +4,7 @@ use codespan_reporting::files::Error as CodespanError;
 use im::Vector;
 use tree_sitter::Point;
 
-use crate::{queries::SourceFile, Db, Text};
+use crate::{Db, Text, queries::SourceFile};
 
 #[salsa::tracked]
 pub fn calculate_line_numbers(db: &dyn Db, file: SourceFile) -> LineNumbers {

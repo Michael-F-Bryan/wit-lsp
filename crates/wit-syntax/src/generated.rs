@@ -143,7 +143,7 @@ impl<'tree> super::AstNode<'tree> for DocComment<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct EnumBody<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> EnumBody<'tree> {
-    pub fn iter_enum_cases(&self) -> impl Iterator<Item = EnumCase<'tree>> {
+    pub fn iter_enum_cases(self) -> impl Iterator<Item = EnumCase<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -169,7 +169,7 @@ impl<'tree> super::AstNode<'tree> for EnumBody<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct EnumCase<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> EnumCase<'tree> {
-    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
+    pub fn iter_attributes(self) -> impl Iterator<Item = Attribute<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -210,7 +210,7 @@ impl<'tree> super::AstNode<'tree> for EnumCase<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct EnumItems<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> EnumItems<'tree> {
-    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
+    pub fn iter_attributes(self) -> impl Iterator<Item = Attribute<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -307,7 +307,7 @@ impl<'tree> super::AstNode<'tree> for ExternType<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct FlagsBody<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> FlagsBody<'tree> {
-    pub fn iter_flags_fields(&self) -> impl Iterator<Item = FlagsCase<'tree>> {
+    pub fn iter_flags_fields(self) -> impl Iterator<Item = FlagsCase<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -333,7 +333,7 @@ impl<'tree> super::AstNode<'tree> for FlagsBody<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct FlagsCase<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> FlagsCase<'tree> {
-    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
+    pub fn iter_attributes(self) -> impl Iterator<Item = Attribute<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -374,7 +374,7 @@ impl<'tree> super::AstNode<'tree> for FlagsCase<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct FlagsItems<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> FlagsItems<'tree> {
-    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
+    pub fn iter_attributes(self) -> impl Iterator<Item = Attribute<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -441,7 +441,7 @@ impl<'tree> super::AstNode<'tree> for FullyQualifiedUsePath<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct FuncItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> FuncItem<'tree> {
-    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
+    pub fn iter_attributes(self) -> impl Iterator<Item = Attribute<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -647,7 +647,7 @@ impl<'tree> super::AstNode<'tree> for IncludeNamesItem<'tree> {
 pub struct IncludeNamesList<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> IncludeNamesList<'tree> {
     pub fn iter_include_names_items(
-        &self,
+        self,
     ) -> impl Iterator<Item = IncludeNamesItem<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
@@ -674,7 +674,7 @@ impl<'tree> super::AstNode<'tree> for IncludeNamesList<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct InterfaceBody<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> InterfaceBody<'tree> {
-    pub fn iter_interface_items(&self) -> impl Iterator<Item = InterfaceItems<'tree>> {
+    pub fn iter_interface_items(self) -> impl Iterator<Item = InterfaceItems<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -700,7 +700,7 @@ impl<'tree> super::AstNode<'tree> for InterfaceBody<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct InterfaceItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> InterfaceItem<'tree> {
-    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
+    pub fn iter_attributes(self) -> impl Iterator<Item = Attribute<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -794,7 +794,7 @@ impl<'tree> super::AstNode<'tree> for List<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct NamedType<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> NamedType<'tree> {
-    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
+    pub fn iter_attributes(self) -> impl Iterator<Item = Attribute<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -898,7 +898,7 @@ impl<'tree> super::AstNode<'tree> for OwnedHandle<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct PackageDecl<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> PackageDecl<'tree> {
-    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
+    pub fn iter_attributes(self) -> impl Iterator<Item = Attribute<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -979,7 +979,7 @@ impl<'tree> super::AstNode<'tree> for ParamList<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct RecordBody<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> RecordBody<'tree> {
-    pub fn iter_record_fields(&self) -> impl Iterator<Item = RecordField<'tree>> {
+    pub fn iter_record_fields(self) -> impl Iterator<Item = RecordField<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -1005,7 +1005,7 @@ impl<'tree> super::AstNode<'tree> for RecordBody<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct RecordField<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> RecordField<'tree> {
-    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
+    pub fn iter_attributes(self) -> impl Iterator<Item = Attribute<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -1049,7 +1049,7 @@ impl<'tree> super::AstNode<'tree> for RecordField<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct RecordItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> RecordItem<'tree> {
-    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
+    pub fn iter_attributes(self) -> impl Iterator<Item = Attribute<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -1113,7 +1113,7 @@ impl<'tree> super::AstNode<'tree> for ResourceBody<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ResourceConstructor<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> ResourceConstructor<'tree> {
-    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
+    pub fn iter_attributes(self) -> impl Iterator<Item = Attribute<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -1149,7 +1149,7 @@ impl<'tree> super::AstNode<'tree> for ResourceConstructor<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ResourceItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> ResourceItem<'tree> {
-    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
+    pub fn iter_attributes(self) -> impl Iterator<Item = Attribute<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -1298,7 +1298,7 @@ impl<'tree> super::AstNode<'tree> for SourceFile<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct StaticResourceMethod<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> StaticResourceMethod<'tree> {
-    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
+    pub fn iter_attributes(self) -> impl Iterator<Item = Attribute<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -1374,7 +1374,7 @@ impl<'tree> super::AstNode<'tree> for TopLevelItem<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ToplevelUseItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> ToplevelUseItem<'tree> {
-    pub fn iter_alias(&self) -> impl Iterator<Item = Id<'tree>> {
+    pub fn iter_alias(self) -> impl Iterator<Item = Id<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -1486,7 +1486,7 @@ impl<'tree> TypeItem<'tree> {
     pub fn alias(&self) -> Option<Id<'tree>> {
         self.0.child_by_field_name("alias").and_then(<Id as super::AstNode>::cast)
     }
-    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
+    pub fn iter_attributes(self) -> impl Iterator<Item = Attribute<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -1620,7 +1620,7 @@ impl<'tree> super::AstNode<'tree> for UseNamesItem<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct UseNamesList<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> UseNamesList<'tree> {
-    pub fn iter_use_names_items(&self) -> impl Iterator<Item = UseNamesItem<'tree>> {
+    pub fn iter_use_names_items(self) -> impl Iterator<Item = UseNamesItem<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -1671,7 +1671,7 @@ impl<'tree> super::AstNode<'tree> for UsePath<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct VariantBody<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> VariantBody<'tree> {
-    pub fn iter_variant_cases(&self) -> impl Iterator<Item = VariantCase<'tree>> {
+    pub fn iter_variant_cases(self) -> impl Iterator<Item = VariantCase<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -1697,7 +1697,7 @@ impl<'tree> super::AstNode<'tree> for VariantBody<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct VariantCase<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> VariantCase<'tree> {
-    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
+    pub fn iter_attributes(self) -> impl Iterator<Item = Attribute<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -1741,7 +1741,7 @@ impl<'tree> super::AstNode<'tree> for VariantCase<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct VariantItems<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> VariantItems<'tree> {
-    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
+    pub fn iter_attributes(self) -> impl Iterator<Item = Attribute<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -1787,7 +1787,7 @@ impl<'tree> super::AstNode<'tree> for VariantItems<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct WorldBody<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> WorldBody<'tree> {
-    pub fn iter_world_items(&self) -> impl Iterator<Item = WorldItems<'tree>> {
+    pub fn iter_world_items(self) -> impl Iterator<Item = WorldItems<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
@@ -1813,7 +1813,7 @@ impl<'tree> super::AstNode<'tree> for WorldBody<'tree> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct WorldItem<'tree>(tree_sitter::Node<'tree>);
 impl<'tree> WorldItem<'tree> {
-    pub fn iter_attributes(&self) -> impl Iterator<Item = Attribute<'tree>> {
+    pub fn iter_attributes(self) -> impl Iterator<Item = Attribute<'tree>> {
         let mut cursor = self.0.walk();
         let children: Vec<_> = self
             .0
