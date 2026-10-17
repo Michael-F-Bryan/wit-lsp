@@ -200,7 +200,11 @@ async fn invalid_positions_return_errors_without_breaking_the_server() {
         json!({"line": 0, "character": 4}),
         json!({"line": 99, "character": 0}),
     ] {
-        for method in ["textDocument/completion", "textDocument/definition"] {
+        for method in [
+            "textDocument/completion",
+            "textDocument/definition",
+            "textDocument/hover",
+        ] {
             let response = call(
                 &mut server,
                 method,
@@ -315,4 +319,146 @@ async fn import_navigation_uses_shared_resolution_and_utf16_positions() {
     )
     .await;
     assert_eq!(diagnostics(&mut server, consumer_uri).await, json!([]));
+}
+
+#[tokio::test]
+async fn hover_resolves_imports_with_utf16_ranges_and_refreshes_after_edits() {
+    for newline in ["\n", "\r\n"] {
+        let (mut server, _socket) = wit_language_server::service();
+        let result = request(
+            &mut server,
+            "initialize",
+            json!({"capabilities": {
+                "textDocument": {"hover": {"contentFormat": ["markdown", "plaintext"]}}
+            }}),
+        )
+        .await;
+        assert_eq!(result["capabilities"]["hoverProvider"], true);
+        notify(&mut server, "initialized", json!({})).await;
+        let source_uri = "file:///deps/types.wit";
+        let consumer_uri = "file:///app/main.wit";
+        let source = format!(
+            "package example:remote@1.2.3;{newline}/// Types.{newline}interface types {{{newline}/// A **position**. 😀{newline}record position {{ line: u32 }}{newline}}}"
+        );
+        let consumer = format!(
+            "/* é😀 */ use example:remote/types@1.2.3 as remote-types;{newline}interface consumer {{ use remote-types.{{position as location}};{newline}/* é😀 */ type alias = location; }}"
+        );
+        open(&mut server, source_uri, &source).await;
+        open(&mut server, consumer_uri, &consumer).await;
+        for (marked, token, expected) in [
+            (
+                "as |remote-types",
+                "remote-types",
+                "```wit\ninterface types { … }\n```\n\nTypes.",
+            ),
+            (
+                "remote-types.{|position",
+                "position",
+                "```wit\nrecord position { line: u32 }\n```\n\nA **position**. 😀",
+            ),
+            (
+                "position as |location",
+                "location",
+                "```wit\nrecord position { line: u32 }\n```\n\nA **position**. 😀",
+            ),
+            (
+                "alias = |location",
+                "location",
+                "```wit\nrecord position { line: u32 }\n```\n\nA **position**. 😀",
+            ),
+        ] {
+            let offset =
+                consumer.find(&marked.replace('|', "")).unwrap() + marked.find('|').unwrap();
+            let hover = request(&mut server, "textDocument/hover", json!({
+                "textDocument": {"uri": consumer_uri}, "position": position(&consumer, offset + 1)
+            })).await;
+            assert_eq!(
+                hover,
+                json!({
+                    "contents": {"kind": "markdown", "value": expected},
+                    "range": {"start": position(&consumer, offset), "end": position(&consumer, offset + token.len())}
+                }),
+                "{marked}"
+            );
+        }
+        let params = json!({"textDocument": {"uri": consumer_uri}, "position": position(&consumer, consumer.rfind("location").unwrap())});
+        let revised = source
+            .replace("A **position**.", "Updated docs.")
+            .replace("line: u32", "line: u64");
+        notify(&mut server, "textDocument/didChange", json!({
+            "textDocument": {"uri": source_uri, "version": 2}, "contentChanges": [{"text": revised}]
+        })).await;
+        let hover = request(&mut server, "textDocument/hover", params.clone()).await;
+        assert_eq!(
+            hover["contents"]["value"],
+            "```wit\nrecord position { line: u64 }\n```\n\nUpdated docs. 😀"
+        );
+        notify(&mut server, "textDocument/didChange", json!({
+            "textDocument": {"uri": source_uri, "version": 3}, "contentChanges": [{"text": source.replace("record position", "record renamed")}]
+        })).await;
+        assert_eq!(
+            request(&mut server, "textDocument/hover", params.clone()).await,
+            Value::Null
+        );
+        notify(&mut server, "textDocument/didChange", json!({
+            "textDocument": {"uri": source_uri, "version": 4}, "contentChanges": [{"text": source}]
+        })).await;
+        assert_eq!(
+            request(&mut server, "textDocument/hover", params).await["contents"]["value"],
+            "```wit\nrecord position { line: u32 }\n```\n\nA **position**. 😀"
+        );
+    }
+}
+
+#[tokio::test]
+async fn hover_defaults_to_plain_text_and_handles_missing_targets() {
+    for formats in [json!(null), json!(["plaintext", "markdown"])] {
+        let (mut server, _socket) = wit_language_server::service();
+        request(
+            &mut server,
+            "initialize",
+            json!({"capabilities": {
+                "textDocument": {"hover": {"contentFormat": formats}}
+            }}),
+        )
+        .await;
+        notify(&mut server, "initialized", json!({})).await;
+        let uri = "file:///types.wit";
+        let src = "interface types {\n/// A count.\ntype count = u32;\n/* é😀 */ type x = count; type y = missing; }";
+        open(&mut server, uri, src).await;
+        for offset in [src.find("count =").unwrap(), src.rfind("count;").unwrap()] {
+            let hover = request(
+                &mut server,
+                "textDocument/hover",
+                json!({
+                    "textDocument": {"uri": uri}, "position": position(src, offset)
+                }),
+            )
+            .await;
+            assert_eq!(
+                hover,
+                json!({
+                    "contents": {"kind": "plaintext", "value": "type count = u32;\n\nA count."},
+                    "range": {"start": position(src, offset), "end": position(src, offset + 5)}
+                })
+            );
+        }
+        for (uri, offset) in [
+            (uri, src.find("missing").unwrap()),
+            (uri, src.find("count;").unwrap() + 5),
+            ("file:///unopened.wit", 0),
+        ] {
+            assert_eq!(
+                request(
+                    &mut server,
+                    "textDocument/hover",
+                    json!({
+                        "textDocument": {"uri": uri}, "position": position(src, offset)
+                    })
+                )
+                .await,
+                Value::Null
+            );
+        }
+    }
 }

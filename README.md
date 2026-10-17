@@ -18,7 +18,7 @@ An alternative Language Server implementation for [WIT][wit].
 - [x] Semantic Autocomplete
 - [x] Jump to Definition
 - [ ] Jump to Declaration
-- [ ] Hover
+- [x] Hover
 - [ ] View Memory Layout
 - [ ] Show Dependency Tree
 - [ ] Find All References

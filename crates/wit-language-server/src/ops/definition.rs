@@ -15,19 +15,33 @@ pub fn goto_definition(
     file: SourceFile,
     point: tree_sitter::Point,
 ) -> Option<Location> {
+    definition_for_identifier(db, ws, file, identifier_at(db, file, point)?)
+}
+
+pub(super) fn identifier_at(
+    db: &dyn Db,
+    file: SourceFile,
+    point: tree_sitter::Point,
+) -> Option<ast::Id<'_>> {
     let ast = queries::parse(db, file);
     if point >= ast.root_node(db).end_position() {
         return None;
     }
     let node = ast.root_node(db).descendant_for_point_range(point, point)?;
     let id = ancestors(node).find_map(ast::Id::cast)?;
-    if point < id.range().start_point || point >= id.range().end_point {
-        return None;
-    }
+    (point >= id.range().start_point && point < id.range().end_point).then_some(id)
+}
+
+pub(super) fn definition_for_identifier(
+    db: &dyn Db,
+    ws: Workspace,
+    file: SourceFile,
+    id: ast::Id<'_>,
+) -> Option<Location> {
     let name = Ident::from_ast(db, id, file.contents(db));
     for node in ancestors(id.syntax()) {
         if ast::Ty::cast(node).is_some() {
-            let reference = queries::resolve_type(db, ws, file, point, name)?;
+            let reference = queries::resolve_type(db, ws, file, id.range().start_point, name)?;
             return queries::type_definition(db, ws, reference);
         }
         if let Some(item) = ast::UseNamesItem::cast(node) {

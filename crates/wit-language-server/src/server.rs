@@ -9,10 +9,11 @@ use tower_lsp::{
         CompletionResponse, DiagnosticOptions, DiagnosticServerCapabilities,
         DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
         DidSaveTextDocumentParams, DocumentDiagnosticParams, DocumentDiagnosticReportResult,
-        FoldingRange, FoldingRangeParams, GotoDefinitionParams, GotoDefinitionResponse,
-        InitializeParams, InitializeResult, OneOf, PositionEncodingKind, SelectionRange,
-        SelectionRangeParams, ServerCapabilities, ServerInfo, TextDocumentContentChangeEvent,
-        TextDocumentItem, TextDocumentSyncCapability, TextDocumentSyncKind, Url,
+        FoldingRange, FoldingRangeParams, GotoDefinitionParams, GotoDefinitionResponse, Hover,
+        HoverParams, InitializeParams, InitializeResult, MarkupKind, OneOf, PositionEncodingKind,
+        SelectionRange, SelectionRangeParams, ServerCapabilities, ServerInfo,
+        TextDocumentContentChangeEvent, TextDocumentItem, TextDocumentSyncCapability,
+        TextDocumentSyncKind, Url,
     },
 };
 use wit_compiler::{Text, queries::Workspace};
@@ -95,12 +96,21 @@ impl tower_lsp::LanguageServer for LanguageServer {
             // FIXME: Should we try to preload all *.wit files?
         }
 
+        self.lock().await.hover_markdown = params
+            .capabilities
+            .text_document
+            .and_then(|caps| caps.hover)
+            .and_then(|caps| caps.content_format)
+            .and_then(|formats| formats.into_iter().next())
+            == Some(MarkupKind::Markdown);
+
         Ok(InitializeResult {
             capabilities: ServerCapabilities {
                 position_encoding: Some(PositionEncodingKind::UTF16),
                 folding_range_provider: Some(true.into()),
                 selection_range_provider: Some(true.into()),
                 code_action_provider: Some(true.into()),
+                hover_provider: Some(true.into()),
                 definition_provider: Some(OneOf::Left(true)),
                 completion_provider: Some(CompletionOptions::default()),
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(
@@ -314,6 +324,27 @@ impl tower_lsp::LanguageServer for LanguageServer {
     }
 
     #[tracing::instrument(level = "debug", skip_all)]
+    async fn hover(&self, params: HoverParams) -> Result<Option<Hover>, Error> {
+        let params = params.text_document_position_params;
+        let snap = self.snapshot().await;
+        let db = snap.wit_db();
+        let Some(file) = snap
+            .ws
+            .lookup_by_path(db, params.text_document.uri.as_str())
+        else {
+            return Ok(None);
+        };
+        let point = utils::Positions::new(db, file).to_point(params.position)?;
+        Ok(crate::ops::hover(
+            db,
+            snap.ws,
+            file,
+            point,
+            snap.hover_markdown,
+        ))
+    }
+
+    #[tracing::instrument(level = "debug", skip_all)]
     async fn code_action(
         &self,
         params: CodeActionParams,
@@ -362,6 +393,7 @@ struct DumpAstResponse {
 struct State {
     ws: Workspace,
     db: Database,
+    hover_markdown: bool,
 }
 
 impl State {
@@ -377,6 +409,7 @@ impl State {
         Snapshot {
             db: self.db.snapshot(),
             ws: self.ws,
+            hover_markdown: self.hover_markdown,
         }
     }
 }
@@ -385,7 +418,11 @@ impl Default for State {
     fn default() -> Self {
         let db = Database::default();
         let workspace = Workspace::new(&db, OrdMap::new());
-        Self { ws: workspace, db }
+        Self {
+            ws: workspace,
+            db,
+            hover_markdown: false,
+        }
     }
 }
 
@@ -398,6 +435,7 @@ impl Default for State {
 struct Snapshot {
     ws: Workspace,
     db: salsa::Snapshot<Database>,
+    hover_markdown: bool,
 }
 
 impl Snapshot {
