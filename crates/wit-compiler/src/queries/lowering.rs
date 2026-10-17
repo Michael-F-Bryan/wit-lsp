@@ -678,7 +678,7 @@ fn resolve_user_defined_type(ctx: Context<'_>, ty: ast::Id<'_>) -> Option<hir::T
     let ident = ty.utf8_text(ctx.src);
     let location = Location::new(ctx.path(), ty.range());
 
-    let name = Ident::new(ctx.db, ident.into());
+    let name = Ident::from_ast(ctx.db, ty, ctx.src);
     if let Some(reference) =
         crate::queries::resolve_type(ctx.db, ctx.ws, ctx.file, ty.range().start_point, name)
     {

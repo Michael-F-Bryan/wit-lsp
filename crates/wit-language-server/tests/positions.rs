@@ -246,3 +246,73 @@ async fn related_diagnostics_and_folding_use_utf16_ranges() {
         "{folds}"
     );
 }
+
+#[tokio::test]
+async fn import_navigation_uses_shared_resolution_and_utf16_positions() {
+    let (mut server, _socket) = wit_language_server::service();
+    initialize(&mut server).await;
+    let source_uri = "file:///deps/types.wit";
+    let consumer_uri = "file:///app/main.wit";
+    let source = "package example:remote@1.2.3;\r\n/* é😀 */ interface types { record position { line: u32 } }\r\nworld base { import log: func(); }";
+    let consumer = "/* é😀 */ use example:remote/types@1.2.3 as remote-types;\r\ninterface consumer { use remote-types.{position as location}; type alias = location; }\r\nworld w { import remote-types; export remote-types; include example:remote/base@1.2.3 with {log as logger}; }";
+    open(&mut server, source_uri, source).await;
+    open(&mut server, consumer_uri, consumer).await;
+    assert_eq!(diagnostics(&mut server, consumer_uri).await, json!([]));
+    let interface = "interface types { record position { line: u32 } }";
+    for (marked, expected) in [
+        ("use |example:remote/types", interface),
+        ("types@1.2.3 as |remote-types", interface),
+        ("use |remote-types.{", interface),
+        ("remote-types.{|position", "record position { line: u32 }"),
+        ("position as |location", "record position { line: u32 }"),
+        ("type alias = |location", "record position { line: u32 }"),
+        ("import |remote-types", interface),
+        ("export |remote-types", interface),
+        ("example:remote/|base", "world base { import log: func(); }"),
+        ("with {|log", "import log: func();"),
+        ("log as |logger", "import log: func();"),
+    ] {
+        let offset = consumer.find(&marked.replace('|', "")).unwrap() + marked.find('|').unwrap();
+        let definition = request(
+            &mut server,
+            "textDocument/definition",
+            json!({
+                "textDocument": {"uri": consumer_uri}, "position": position(consumer, offset)
+            }),
+        )
+        .await;
+        assert_eq!(
+            definition,
+            json!({"uri": source_uri, "range": range(source, expected)}),
+            "{marked}"
+        );
+    }
+
+    let renamed = source.replace("record position", "record renamed");
+    notify(
+        &mut server,
+        "textDocument/didChange",
+        json!({"textDocument": {"uri": source_uri, "version": 2},
+        "contentChanges": [{"text": renamed}]}),
+    )
+    .await;
+    let missing = request(&mut server, "textDocument/definition", json!({
+        "textDocument": {"uri": consumer_uri}, "position": position(consumer, consumer.find("position as").unwrap())
+    })).await;
+    assert!(missing.is_null());
+    assert!(
+        !diagnostics(&mut server, consumer_uri)
+            .await
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+    notify(
+        &mut server,
+        "textDocument/didChange",
+        json!({"textDocument": {"uri": source_uri, "version": 3},
+        "contentChanges": [{"text": source}]}),
+    )
+    .await;
+    assert_eq!(diagnostics(&mut server, consumer_uri).await, json!([]));
+}

@@ -1,11 +1,14 @@
 use wit_compiler::{
     Db,
-    ast::{self, AstNode, HasSource},
+    ast::{self, AstNode},
     diagnostics::Location,
-    queries::{self, SourceFile, Workspace, metadata::Ident},
+    queries::{
+        self, SourceFile, Workspace,
+        metadata::{HasDefinition, Ident, TopLevelItemMetadata},
+    },
 };
 
-/// Find the declaration of the type reference under the cursor.
+/// Find the declaration referenced by the identifier under the cursor.
 pub fn goto_definition(
     db: &dyn Db,
     ws: Workspace,
@@ -17,21 +20,67 @@ pub fn goto_definition(
         return None;
     }
     let node = ast.root_node(db).descendant_for_point_range(point, point)?;
-    let ty = std::iter::successors(Some(node), |node| node.parent()).find_map(ast::Ty::cast)?;
-    let name = ty.id().or_else(|| {
-        let handle = ty.handle()?;
-        handle
-            .borrowed_handle()
-            .and_then(|h| h.id())
-            .or_else(|| handle.owned_handle().and_then(|h| h.id()))
-    })?;
-    let range = name.range();
-    if point < range.start_point || point >= range.end_point {
+    let id = ancestors(node).find_map(ast::Id::cast)?;
+    if point < id.range().start_point || point >= id.range().end_point {
         return None;
     }
-    let name = Ident::new(db, name.utf8_text(file.contents(db)).into());
-    let reference = queries::resolve_type(db, ws, file, point, name)?;
-    queries::type_definition(db, ws, reference)
+    let name = Ident::from_ast(db, id, file.contents(db));
+    for node in ancestors(id.syntax()) {
+        if ast::Ty::cast(node).is_some() {
+            let reference = queries::resolve_type(db, ws, file, point, name)?;
+            return queries::type_definition(db, ws, reference);
+        }
+        if let Some(item) = ast::UseNamesItem::cast(node) {
+            let owner = ancestors(node).find_map(ast::UseItem::cast)?;
+            let source = Ident::from_ast(db, item.name()?, file.contents(db));
+            let reference = queries::resolve_imported_type(db, ws, file, owner.path()?, source)?;
+            return queries::type_definition(db, ws, reference);
+        }
+        if let Some(path) = ast::UsePath::cast(node) {
+            let target = queries::resolve_use_path(db, ws, file, path)?;
+            let parent = node.parent()?;
+            if ast::IncludeItem::cast(parent).is_some() {
+                if !matches!(target, TopLevelItemMetadata::World(_)) {
+                    return None;
+                }
+            } else if ast::ToplevelUseItem::cast(parent).is_none()
+                && !matches!(target, TopLevelItemMetadata::Interface(_))
+            {
+                return None;
+            }
+            return Some(target.definition(db));
+        }
+        if let Some(item) = ast::ToplevelUseItem::cast(node) {
+            return queries::resolve_use_path(db, ws, file, item.path()?)
+                .map(|item| item.definition(db));
+        }
+        if let Some(item) = ast::IncludeNamesItem::cast(node) {
+            let owner = ancestors(node).find_map(ast::IncludeItem::cast)?;
+            let TopLevelItemMetadata::World(world) =
+                queries::resolve_use_path(db, ws, file, owner.use_path()?)?
+            else {
+                return None;
+            };
+            let source = Ident::from_ast(db, item.name()?, file.contents(db));
+            return world
+                .imports(db)
+                .into_iter()
+                .find(|item| item.name(db) == Some(source))
+                .map(|item| item.definition(db))
+                .or_else(|| {
+                    world
+                        .exports(db)
+                        .into_iter()
+                        .find(|item| item.name(db) == Some(source))
+                        .map(|item| item.definition(db))
+                });
+        }
+    }
+    None
+}
+
+fn ancestors(node: tree_sitter::Node<'_>) -> impl Iterator<Item = tree_sitter::Node<'_>> {
+    std::iter::successors(Some(node), |node| node.parent())
 }
 
 #[cfg(test)]
@@ -114,6 +163,177 @@ mod tests {
             &definitions[location.range.start_byte..location.range.end_byte],
             "record point { x: u32 }"
         );
+    }
+
+    fn import_target(source: &str) -> Option<(String, String)> {
+        let db = Compiler::default();
+        let (source, point) = marked_source(source);
+        let fixtures = [
+            (
+                "file:///types.wit",
+                "interface types { record point { x: u32 } type %type = u32; } interface bridge { use types.{point as other}; } world base { import log: func(); export run: func(); }",
+            ),
+            (
+                "file:///dep/types.wit",
+                "package example:remote@1.2.3; interface types { type point = string; } world base {}",
+            ),
+            ("file:///other.wit", "use types as hidden;"),
+            ("file:///consumer.wit", source.as_str()),
+        ];
+        let ws = Workspace::new(
+            &db,
+            fixtures
+                .into_iter()
+                .map(|(path, source)| {
+                    let path = FilePath::new(&db, path.into());
+                    (path, SourceFile::new(&db, path, source.into()))
+                })
+                .collect(),
+        );
+        let file = ws.lookup_by_path(&db, "file:///consumer.wit").unwrap();
+        let location = goto_definition(&db, ws, file, point)?;
+        let path = location.filename.raw_path(&db).to_string();
+        let target = ws.lookup_by_path(&db, &path).unwrap();
+        Some((
+            path,
+            target.contents(&db)[location.range.start_byte..location.range.end_byte].to_owned(),
+        ))
+    }
+
+    #[test]
+    fn navigates_import_names_aliases_and_paths() {
+        let interface = "interface types { record point { x: u32 } type %type = u32; }";
+        for (source, expected) in [
+            ("interface i { use |types.{point}; }", interface),
+            (
+                "interface i { use types.{|point as location}; }",
+                "record point { x: u32 }",
+            ),
+            (
+                "interface i { use types.{point as |location}; }",
+                "record point { x: u32 }",
+            ),
+            ("world w { use types.{|point}; }", "record point { x: u32 }"),
+            (
+                "interface i { use types.{point as |local}; type local = bool; }",
+                "record point { x: u32 }",
+            ),
+            ("use |types as local;", interface),
+            ("use types as |local;", interface),
+            (
+                "use types as local; interface i { use |local.{point}; }",
+                interface,
+            ),
+            (
+                "use types as local; interface i { use local.{|point}; }",
+                "record point { x: u32 }",
+            ),
+            ("world w { import |types; }", interface),
+            ("world w { export |types; }", interface),
+            (
+                "world w { include |base; }",
+                "world base { import log: func(); export run: func(); }",
+            ),
+            (
+                "world w { include base with { |log as logger }; }",
+                "import log: func();",
+            ),
+            (
+                "world w { include base with { log as |logger }; }",
+                "import log: func();",
+            ),
+            (
+                "world w { include base with { run as |runner }; }",
+                "export run: func();",
+            ),
+            (
+                "interface i { use bridge.{|other as local}; }",
+                "record point { x: u32 }",
+            ),
+            (
+                "interface i { use bridge.{other as local}; type result-type = |local; }",
+                "record point { x: u32 }",
+            ),
+            (
+                "interface i { use types.{|%type as local}; }",
+                "type %type = u32;",
+            ),
+            (
+                "interface i { use types.{%type}; type result-type = |%type; }",
+                "type %type = u32;",
+            ),
+        ] {
+            assert_eq!(
+                import_target(source),
+                Some(("file:///types.wit".into(), expected.into())),
+                "{source}"
+            );
+        }
+    }
+
+    #[test]
+    fn navigates_qualified_paths_and_file_local_aliases() {
+        for (source, expected) in [
+            (
+                "interface i { use example:remote/|types@1.2.3.{point}; }",
+                "interface types { type point = string; }",
+            ),
+            (
+                "interface i { use example:remote/types@1.2.3.{|point}; }",
+                "type point = string;",
+            ),
+            (
+                "use example:remote/types@1.2.3 as |remote-types;",
+                "interface types { type point = string; }",
+            ),
+            (
+                "use example:remote/types@1.2.3; interface i { use |types.{point}; }",
+                "interface types { type point = string; }",
+            ),
+            (
+                "use example:remote/types@1.2.3 as remote-types; interface i { use remote-types.{point as |local}; }",
+                "type point = string;",
+            ),
+            (
+                "use example:remote/types@1.2.3 as remote-types; interface i { use remote-types.{point}; type alias = |point; }",
+                "type point = string;",
+            ),
+            (
+                "world w { import example:remote/|types@1.2.3; }",
+                "interface types { type point = string; }",
+            ),
+            (
+                "world w { include example:remote/|base@1.2.3; }",
+                "world base {}",
+            ),
+        ] {
+            assert_eq!(
+                import_target(source),
+                Some(("file:///dep/types.wit".into(), expected.into())),
+                "{source}"
+            );
+        }
+    }
+
+    #[test]
+    fn invalid_imports_do_not_navigate_or_panic() {
+        for source in [
+            "interface i { use types.{|missing}; }",
+            "interface i { use |missing.{point}; }",
+            "interface i { use |hidden.{point}; }",
+            "interface i { use types.{point |as local}; }",
+            "interface i { use types.{point}|; }",
+            "interface i { use example:remote/types@9.9.9.{|point}; }",
+            "interface i { use example:missing/|types.{point}; }",
+            "interface i { use |base.{point}; }",
+            "world w { import |base; }",
+            "world w { include |types; }",
+            "world w { include base with { |missing as local }; }",
+            "use second as first; use first as second; interface i { use |first.{point}; }",
+            "interface first { use second.{point}; } interface second { use first.{point}; } interface i { use first.{|point}; }",
+        ] {
+            assert_eq!(import_target(source), None, "{source}");
+        }
     }
 
     #[test]

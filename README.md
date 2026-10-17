@@ -16,7 +16,7 @@ An alternative Language Server implementation for [WIT][wit].
 - [x] Diagnostic reporting
 - [ ] Semantic Syntax Highlighting
 - [x] Semantic Autocomplete
-- [ ] Jump to Definition
+- [x] Jump to Definition
 - [ ] Jump to Declaration
 - [ ] Hover
 - [ ] View Memory Layout
@@ -36,10 +36,10 @@ An alternative Language Server implementation for [WIT][wit].
 
 This project is licensed under either of
 
-- Apache License, Version 2.0, ([LICENSE-APACHE](./LICENSE-APACHE.md) or
+- Apache License, Version 2.0, ([LICENSE-APACHE](./LICENSE_APACHE.md) or
   <http://www.apache.org/licenses/LICENSE-2.0>)
-- MIT license ([LICENSE-MIT](./LICENSE-MIT.md) or
-   <http://opensource.org/licenses/MIT>)
+- MIT license ([LICENSE-MIT](./LICENSE_MIT.md) or
+  <http://opensource.org/licenses/MIT>)
 
 at your option.
 

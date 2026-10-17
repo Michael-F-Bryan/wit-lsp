@@ -1,13 +1,12 @@
 use std::{any::TypeId, collections::HashMap};
 
-use ast::HasSource;
 use im::{OrdMap, Vector};
 use salsa::DebugWithDb;
 
 use crate::{
     Db, Text,
-    access::{self, *},
-    ast::{self, AstNode, HasIdent as _},
+    access::*,
+    ast::{self, AstNode, HasIdent as _, HasSource},
     diagnostics::{Diagnostics, DuplicateName, Location, MultipleConstructors},
     queries::{FilePath, Package, SourceFile},
 };
@@ -106,22 +105,6 @@ impl PackageMetadata {
 
     pub fn get_interface(self, db: &dyn Db, index: InterfaceIndex) -> InterfaceMetadata {
         self.interfaces(db).get(&index).copied().unwrap()
-    }
-}
-
-impl GetByIndex<access::World> for PackageMetadata {
-    type Metadata = WorldMetadata;
-
-    fn try_get_by_index(&self, db: &dyn Db, index: WorldIndex) -> Option<WorldMetadata> {
-        self.worlds(db).get(&index).copied()
-    }
-}
-
-impl GetByIndex<access::Interface> for PackageMetadata {
-    type Metadata = InterfaceMetadata;
-
-    fn try_get_by_index(&self, db: &dyn Db, index: InterfaceIndex) -> Option<InterfaceMetadata> {
-        self.interfaces(db).get(&index).copied()
     }
 }
 
@@ -260,9 +243,7 @@ fn push_with_optional_name<T>(
 }
 
 fn export_metadata(ctx: &mut Context, node: ast::ExportItem<'_>) -> Option<ExportMetadata> {
-    let ident = node
-        .name_opt()
-        .map(|n| Ident::new(ctx.db, n.utf8_text(ctx.src).into()));
+    let ident = node.name_opt().map(|n| Ident::from_ast(ctx.db, n, ctx.src));
 
     Some(ExportMetadata::new(
         ctx.db,
@@ -273,9 +254,7 @@ fn export_metadata(ctx: &mut Context, node: ast::ExportItem<'_>) -> Option<Expor
 }
 
 fn import_metadata(ctx: &mut Context, node: ast::ImportItem<'_>) -> Option<ImportMetadata> {
-    let ident = node
-        .name_opt()
-        .map(|n| Ident::new(ctx.db, n.utf8_text(ctx.src).into()));
+    let ident = node.name_opt().map(|n| Ident::from_ast(ctx.db, n, ctx.src));
 
     Some(ImportMetadata::new(
         ctx.db,
@@ -473,11 +452,11 @@ fn type_alias_metadata(
     ctx: &mut Context<'_>,
     node: ast::TypeItem<'_>,
 ) -> Option<TypeAliasMetadata> {
-    let name = node.alias()?.utf8_text(ctx.src);
+    let name = Ident::from_ast(ctx.db, node.alias()?, ctx.src);
 
     Some(TypeAliasMetadata::new(
         ctx.db,
-        Ident::new(ctx.db, name.into()),
+        name,
         ctx.index(),
         Pointer::for_node(ctx.path, node),
     ))
@@ -510,19 +489,6 @@ pub trait HasDefinition {
 
 pub trait HasIdent {
     fn ident(&self, db: &dyn Db) -> Ident;
-}
-
-pub(crate) trait GetByIndex<K> {
-    type Metadata;
-
-    fn try_get_by_index(&self, db: &dyn Db, index: Index<K>) -> Option<Self::Metadata>;
-
-    fn get_by_index(&self, db: &dyn Db, index: Index<K>) -> Self::Metadata {
-        match self.try_get_by_index(db, index) {
-            Some(value) => value,
-            None => panic!("Lookup failed: {index:?}"),
-        }
-    }
 }
 
 pub trait HasIndex {
@@ -908,6 +874,13 @@ enum_like_metadata! {
 pub struct Ident {
     #[return_ref]
     pub raw: Text,
+}
+
+impl Ident {
+    pub fn from_ast(db: &dyn Db, node: ast::Id<'_>, src: &str) -> Self {
+        let raw = node.utf8_text(src);
+        Self::new(db, raw.strip_prefix('%').unwrap_or(raw).into())
+    }
 }
 
 // These collections contain declarations from one source file. Keep their
