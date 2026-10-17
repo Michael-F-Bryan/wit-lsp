@@ -19,6 +19,7 @@ An alternative Language Server implementation for [WIT][wit].
 - [x] Jump to Definition
 - [ ] Jump to Declaration
 - [x] Hover
+- [x] Document Symbols
 - [ ] View Memory Layout
 - [ ] Show Dependency Tree
 - [ ] Find All References

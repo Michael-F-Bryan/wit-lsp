@@ -12,14 +12,14 @@ use tower_lsp::{
         DidChangeTextDocumentParams, DidChangeWatchedFilesParams,
         DidChangeWatchedFilesRegistrationOptions, DidChangeWorkspaceFoldersParams,
         DidCloseTextDocumentParams, DidOpenTextDocumentParams, DidSaveTextDocumentParams,
-        DocumentDiagnosticParams, DocumentDiagnosticReportResult, FileSystemWatcher, FoldingRange,
-        FoldingRangeParams, GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams,
-        InitializeParams, InitializeResult, InitializedParams, MarkupKind, OneOf,
-        PositionEncodingKind, Registration, SaveOptions, SelectionRange, SelectionRangeParams,
-        ServerCapabilities, ServerInfo, TextDocumentContentChangeEvent, TextDocumentItem,
-        TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
-        TextDocumentSyncSaveOptions, Url, WorkspaceFoldersServerCapabilities,
-        WorkspaceServerCapabilities,
+        DocumentDiagnosticParams, DocumentDiagnosticReportResult, DocumentSymbolParams,
+        DocumentSymbolResponse, FileSystemWatcher, FoldingRange, FoldingRangeParams,
+        GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams, InitializeParams,
+        InitializeResult, InitializedParams, MarkupKind, OneOf, PositionEncodingKind, Registration,
+        SaveOptions, SelectionRange, SelectionRangeParams, ServerCapabilities, ServerInfo,
+        TextDocumentContentChangeEvent, TextDocumentItem, TextDocumentSyncCapability,
+        TextDocumentSyncKind, TextDocumentSyncOptions, TextDocumentSyncSaveOptions, Url,
+        WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
     },
 };
 use wit_compiler::{Text, queries::Workspace};
@@ -108,6 +108,21 @@ impl tower_lsp::LanguageServer for LanguageServer {
         {
             let mut state = self.lock().await;
             state.disk.initialize(&params);
+            state.hierarchical_symbols = params
+                .capabilities
+                .text_document
+                .as_ref()
+                .and_then(|caps| caps.document_symbol.as_ref())
+                .and_then(|caps| caps.hierarchical_document_symbol_support)
+                .unwrap_or(false);
+            state.extended_symbol_kinds = params
+                .capabilities
+                .text_document
+                .as_ref()
+                .and_then(|caps| caps.document_symbol.as_ref())
+                .and_then(|caps| caps.symbol_kind.as_ref())
+                .and_then(|caps| caps.value_set.as_ref())
+                .is_some();
             if let Some(workspace) = &params.capabilities.workspace {
                 state.watch_registration = workspace
                     .did_change_watched_files
@@ -138,6 +153,7 @@ impl tower_lsp::LanguageServer for LanguageServer {
                 selection_range_provider: Some(true.into()),
                 code_action_provider: Some(true.into()),
                 hover_provider: Some(true.into()),
+                document_symbol_provider: Some(OneOf::Left(true)),
                 definition_provider: Some(OneOf::Left(true)),
                 completion_provider: Some(CompletionOptions::default()),
                 workspace: Some(WorkspaceServerCapabilities {
@@ -316,6 +332,26 @@ impl tower_lsp::LanguageServer for LanguageServer {
         state.reload_files(vec![uri]).await;
         drop(state);
         self.refresh_diagnostics().await;
+    }
+
+    #[tracing::instrument(level = "debug", skip_all)]
+    async fn document_symbol(
+        &self,
+        params: DocumentSymbolParams,
+    ) -> Result<Option<DocumentSymbolResponse>, Error> {
+        let uri = params.text_document.uri;
+        let snap = self.snapshot().await;
+        let db = snap.wit_db();
+        let Some(file) = snap.ws.lookup_by_path(db, uri.as_str()) else {
+            return Ok(None);
+        };
+        Ok(Some(crate::ops::document_symbols(
+            db,
+            file,
+            uri,
+            snap.hierarchical_symbols,
+            snap.extended_symbol_kinds,
+        )))
     }
 
     #[tracing::instrument(level = "debug", skip_all)]
@@ -517,6 +553,8 @@ struct State {
     ws: Workspace,
     db: Database,
     hover_markdown: bool,
+    hierarchical_symbols: bool,
+    extended_symbol_kinds: bool,
     disk: WorkspaceFiles,
     open: HashMap<String, i32>,
     watch_registration: bool,
@@ -593,6 +631,8 @@ impl State {
             db: self.db.snapshot(),
             ws: self.ws,
             hover_markdown: self.hover_markdown,
+            hierarchical_symbols: self.hierarchical_symbols,
+            extended_symbol_kinds: self.extended_symbol_kinds,
         }
     }
 }
@@ -605,6 +645,8 @@ impl Default for State {
             ws: workspace,
             db,
             hover_markdown: false,
+            hierarchical_symbols: false,
+            extended_symbol_kinds: false,
             disk: WorkspaceFiles::default(),
             open: HashMap::new(),
             watch_registration: false,
@@ -623,6 +665,8 @@ struct Snapshot {
     ws: Workspace,
     db: salsa::Snapshot<Database>,
     hover_markdown: bool,
+    hierarchical_symbols: bool,
+    extended_symbol_kinds: bool,
 }
 
 impl Snapshot {

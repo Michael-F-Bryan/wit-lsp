@@ -3,8 +3,9 @@ mod definition;
 mod diagnostics;
 mod fold;
 mod hover;
+mod symbols;
 
 pub use self::{
     completion::complete, definition::goto_definition, diagnostics::file_diagnostics,
-    fold::folding_range, hover::hover,
+    fold::folding_range, hover::hover, symbols::document_symbols,
 };
