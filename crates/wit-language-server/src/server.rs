@@ -10,9 +10,9 @@ use tower_lsp::{
         DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
         DidSaveTextDocumentParams, DocumentDiagnosticParams, DocumentDiagnosticReportResult,
         FoldingRange, FoldingRangeParams, GotoDefinitionParams, GotoDefinitionResponse,
-        InitializeParams, InitializeResult, OneOf, SelectionRange, SelectionRangeParams,
-        ServerCapabilities, ServerInfo, TextDocumentContentChangeEvent, TextDocumentItem,
-        TextDocumentSyncCapability, TextDocumentSyncKind, Url,
+        InitializeParams, InitializeResult, OneOf, PositionEncodingKind, SelectionRange,
+        SelectionRangeParams, ServerCapabilities, ServerInfo, TextDocumentContentChangeEvent,
+        TextDocumentItem, TextDocumentSyncCapability, TextDocumentSyncKind, Url,
     },
 };
 use wit_compiler::{Text, queries::Workspace};
@@ -97,6 +97,7 @@ impl tower_lsp::LanguageServer for LanguageServer {
 
         Ok(InitializeResult {
             capabilities: ServerCapabilities {
+                position_encoding: Some(PositionEncodingKind::UTF16),
                 folding_range_provider: Some(true.into()),
                 selection_range_provider: Some(true.into()),
                 code_action_provider: Some(true.into()),
@@ -225,20 +226,18 @@ impl tower_lsp::LanguageServer for LanguageServer {
 
         let ast = wit_compiler::queries::parse(db, file);
 
+        let positions = utils::Positions::new(db, file);
         let mut ranges = Vec::new();
 
         for position in params.positions {
-            let point = tree_sitter::Point {
-                row: position.line.try_into().unwrap(),
-                column: position.character.try_into().unwrap(),
-            };
+            let point = positions.to_point(position)?;
 
             match wit_compiler::queries::selection_ranges(db, ast, point) {
                 Some(mut r) => {
                     let first = r
                         .pop_front()
                         .expect("Should always return at least one range");
-                    ranges.push(selection_range(first, r));
+                    ranges.push(selection_range(&positions, first, r));
                 }
                 None => {
                     return Err(Error::invalid_params(format!(
@@ -283,7 +282,8 @@ impl tower_lsp::LanguageServer for LanguageServer {
             return Ok(None);
         };
 
-        let point = crate::utils::position_to_ts(params.text_document_position.position);
+        let point = utils::Positions::new(snap.wit_db(), file)
+            .to_point(params.text_document_position.position)?;
         let completions = crate::ops::complete(snap.wit_db(), snap.ws, file, point)
             .into_iter()
             .map(Into::into)
@@ -305,11 +305,12 @@ impl tower_lsp::LanguageServer for LanguageServer {
             return Ok(None);
         };
 
-        let point = utils::position_to_ts(params.text_document_position_params.position);
+        let point = utils::Positions::new(snap.wit_db(), file)
+            .to_point(params.text_document_position_params.position)?;
         let location = crate::ops::goto_definition(snap.wit_db(), snap.ws, file, point);
-        Ok(location.map(|location| {
-            GotoDefinitionResponse::Scalar(utils::location_to_lsp(snap.wit_db(), location))
-        }))
+        Ok(location
+            .and_then(|location| utils::location_to_lsp(snap.wit_db(), snap.ws, location))
+            .map(GotoDefinitionResponse::Scalar))
     }
 
     #[tracing::instrument(level = "debug", skip_all)]
@@ -325,19 +326,23 @@ impl tower_lsp::LanguageServer for LanguageServer {
     }
 }
 
-fn selection_range(first: tree_sitter::Range, rest: Vector<tree_sitter::Range>) -> SelectionRange {
+fn selection_range(
+    positions: &utils::Positions<'_>,
+    first: tree_sitter::Range,
+    rest: Vector<tree_sitter::Range>,
+) -> SelectionRange {
     let mut parent = None;
 
     for range in rest.iter().rev() {
         let sel = SelectionRange {
-            range: utils::ts_to_range(*range),
+            range: positions.to_lsp(*range),
             parent: parent.take(),
         };
         parent = Some(Box::new(sel));
     }
 
     SelectionRange {
-        range: utils::ts_to_range(first),
+        range: positions.to_lsp(first),
         parent,
     }
 }

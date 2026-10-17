@@ -72,14 +72,14 @@ fn lsp_diagnostic(
         .filter_map(|label| {
             let location = label_location(db, ws, label)?;
             Some(DiagnosticRelatedInformation {
-                location: utils::location_to_lsp(db, location),
+                location: utils::location_to_lsp(db, ws, location)?,
                 message: label.message.clone(),
             })
         })
         .collect();
 
     Some(tower_lsp::lsp_types::Diagnostic {
-        range: utils::ts_to_range(location.range),
+        range: utils::location_to_lsp(db, ws, location)?.range,
         message: msg.to_string(),
         related_information: Some(related_information),
         code: Some(tower_lsp::lsp_types::NumberOrString::String(

@@ -61,7 +61,7 @@ jobs:
       - name: Check Formatting
         run: cargo fmt --all --verbose --check
       - name: Clippy
-        run: cargo clippy --workspace --verbose --locked
+        run: cargo clippy --workspace --all-targets --verbose --locked -- -D warnings
 
   vscode:
     name: VS Code Plugin

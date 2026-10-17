@@ -3,6 +3,7 @@ members = ["crates/*", "integration-tests"]
 resolver = "3"
 
 [workspace.package]
+# tombi:lint.rules.deprecated.disabled = true
 authors = ["Michael-F-Bryan <consulting@michaelfbryan.com>"]
 edition = "2024"
 homepage = "https://github.com/Michael-F-Bryan/wit-lsp"

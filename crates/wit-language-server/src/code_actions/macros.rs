@@ -30,7 +30,7 @@ macro_rules! code_action_test {
                         .iter()
                         .find_map(wit_compiler::ast::Comment::cast)?;
                     let path = f.path(&db).raw_path(&db).clone();
-                    Some((path, comment.range()))
+                    Some((path, crate::utils::Positions::new(&db, f).to_lsp(comment.range())))
                 })
                 .unwrap();
 
@@ -41,7 +41,7 @@ macro_rules! code_action_test {
                     text_document: tower_lsp::lsp_types::TextDocumentIdentifier {
                         uri: filename.parse().unwrap(),
                     },
-                    range: crate::utils::ts_to_range(range),
+                    range,
                     context: Default::default(),
                     partial_result_params: Default::default(),
                     work_done_progress_params: Default::default(),
