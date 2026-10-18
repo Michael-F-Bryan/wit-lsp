@@ -34,7 +34,7 @@ tower-service      = "0.3.2"
 tracing            = { version = "0.1.40", features = ["async-await"] }
 tracing-error      = "0.2.0"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
-tree-sitter        = ">=0.22.5"
+tree-sitter        = "0.22.6"
 # tree-sitter-wit = { path = "../forks/tree-sitter-wit" }
 tree-sitter-wit    = { git = "https://github.com/Michael-F-Bryan/tree-sitter-wit", branch = "include-queries-in-rust" }
 uuid               = { version = "1.8.0", features = ["v4"] }
