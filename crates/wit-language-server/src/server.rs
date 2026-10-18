@@ -12,16 +12,17 @@ use tower_lsp::{
         DidChangeTextDocumentParams, DidChangeWatchedFilesParams,
         DidChangeWatchedFilesRegistrationOptions, DidChangeWorkspaceFoldersParams,
         DidCloseTextDocumentParams, DidOpenTextDocumentParams, DidSaveTextDocumentParams,
-        DocumentDiagnosticParams, DocumentDiagnosticReportResult, DocumentSymbolParams,
-        DocumentSymbolResponse, FileSystemWatcher, FoldingRange, FoldingRangeParams,
-        GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams, InitializeParams,
-        InitializeResult, InitializedParams, MarkupKind, MessageType, OneOf, PositionEncodingKind,
-        PrepareRenameResponse, ReferenceParams, Registration, RenameOptions, RenameParams,
-        SaveOptions, SelectionRange, SelectionRangeParams, ServerCapabilities, ServerInfo,
-        SymbolInformation, SymbolKind, TextDocumentContentChangeEvent, TextDocumentItem,
-        TextDocumentPositionParams, TextDocumentSyncCapability, TextDocumentSyncKind,
-        TextDocumentSyncOptions, TextDocumentSyncSaveOptions, Url, WorkspaceEdit,
-        WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities, WorkspaceSymbolParams,
+        DocumentDiagnosticParams, DocumentDiagnosticReportResult, DocumentHighlight,
+        DocumentHighlightParams, DocumentSymbolParams, DocumentSymbolResponse, FileSystemWatcher,
+        FoldingRange, FoldingRangeParams, GotoDefinitionParams, GotoDefinitionResponse, Hover,
+        HoverParams, InitializeParams, InitializeResult, InitializedParams, MarkupKind,
+        MessageType, OneOf, PositionEncodingKind, PrepareRenameResponse, ReferenceParams,
+        Registration, RenameOptions, RenameParams, SaveOptions, SelectionRange,
+        SelectionRangeParams, ServerCapabilities, ServerInfo, SymbolInformation, SymbolKind,
+        TextDocumentContentChangeEvent, TextDocumentItem, TextDocumentPositionParams,
+        TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
+        TextDocumentSyncSaveOptions, Url, WorkspaceEdit, WorkspaceFoldersServerCapabilities,
+        WorkspaceServerCapabilities, WorkspaceSymbolParams,
         request::{GotoDeclarationParams, GotoDeclarationResponse},
     },
 };
@@ -169,6 +170,7 @@ impl tower_lsp::LanguageServer for LanguageServer {
                 document_symbol_provider: Some(OneOf::Left(true)),
                 workspace_symbol_provider: Some(OneOf::Left(true)),
                 references_provider: Some(OneOf::Left(true)),
+                document_highlight_provider: Some(OneOf::Left(true)),
                 rename_provider: Some(OneOf::Right(RenameOptions {
                     prepare_provider: Some(true),
                     work_done_progress_options: Default::default(),
@@ -610,6 +612,26 @@ impl tower_lsp::LanguageServer for LanguageServer {
             file,
             point,
             params.context.include_declaration,
+        )))
+    }
+
+    #[tracing::instrument(level = "debug", skip_all)]
+    async fn document_highlight(
+        &self,
+        params: DocumentHighlightParams,
+    ) -> Result<Option<Vec<DocumentHighlight>>, Error> {
+        let params = params.text_document_position_params;
+        let snap = self.snapshot().await;
+        let db = snap.wit_db();
+        let Some(file) = snap
+            .ws
+            .lookup_by_path(db, params.text_document.uri.as_str())
+        else {
+            return Ok(None);
+        };
+        let point = utils::Positions::new(db, file).to_point(params.position)?;
+        Ok(Some(crate::ops::document_highlights(
+            db, snap.ws, file, point,
         )))
     }
 
