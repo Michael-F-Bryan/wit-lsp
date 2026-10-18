@@ -38,15 +38,44 @@ pub(super) fn definition_for_identifier(
     file: SourceFile,
     id: ast::Id<'_>,
 ) -> Option<Location> {
+    resolve_identifier(db, ws, file, id, false)
+}
+
+/// Resolve the binding being named, without expanding explicit aliases.
+pub(super) fn symbol_binding(
+    db: &dyn Db,
+    ws: Workspace,
+    file: SourceFile,
+    id: ast::Id<'_>,
+) -> Option<Location> {
+    resolve_identifier(db, ws, file, id, true).or_else(|| declaration_for_identifier(db, file, id))
+}
+
+fn resolve_identifier(
+    db: &dyn Db,
+    ws: Workspace,
+    file: SourceFile,
+    id: ast::Id<'_>,
+    binding: bool,
+) -> Option<Location> {
     let name = Ident::from_ast(db, id, file.contents(db));
     for node in ancestors(id.syntax()) {
         if ast::Ty::cast(node).is_some() {
+            if binding {
+                return queries::resolve_type_binding(db, ws, file, id.range().start_point, name);
+            }
             let reference = queries::resolve_type(db, ws, file, id.range().start_point, name)?;
             return queries::type_definition(db, ws, reference);
         }
         if let Some(item) = ast::UseNamesItem::cast(node) {
             let owner = ancestors(node).find_map(ast::UseItem::cast)?;
             let source = Ident::from_ast(db, item.name()?, file.contents(db));
+            if binding {
+                if item.alias_opt() == Some(id) {
+                    return Some(Location::new(file.path(db), id.range()));
+                }
+                return queries::resolve_imported_type_binding(db, ws, file, owner.path()?, source);
+            }
             let reference = queries::resolve_imported_type(db, ws, file, owner.path()?, source)?;
             return queries::type_definition(db, ws, reference);
         }
@@ -62,13 +91,23 @@ pub(super) fn definition_for_identifier(
             {
                 return None;
             }
-            return Some(target.definition(db));
+            return if binding {
+                queries::resolve_use_path_binding(db, ws, file, path)
+            } else {
+                Some(target.definition(db))
+            };
         }
         if let Some(item) = ast::ToplevelUseItem::cast(node) {
+            if binding && item.iter_alias().any(|alias| alias == id) {
+                return Some(Location::new(file.path(db), id.range()));
+            }
             return queries::resolve_use_path(db, ws, file, item.path()?)
                 .map(|item| item.definition(db));
         }
         if let Some(item) = ast::IncludeNamesItem::cast(node) {
+            if binding && item.alias() == Some(id) {
+                return Some(Location::new(file.path(db), id.range()));
+            }
             let owner = ancestors(node).find_map(ast::IncludeItem::cast)?;
             let TopLevelItemMetadata::World(world) =
                 queries::resolve_use_path(db, ws, file, owner.use_path()?)?

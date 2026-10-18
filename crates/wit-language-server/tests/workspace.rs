@@ -111,6 +111,65 @@ const CONSUMER: &str =
     "interface app { use example:types/types.{value}; type result-type = value; }";
 
 #[tokio::test]
+async fn rename_includes_unopened_files_without_writing_them() {
+    let files = Files::new();
+    let dependency = files.write("deps/types/types.wit", TYPES);
+    let consumer = files.write("app.wit", CONSUMER);
+    let (mut server, _socket) = wit_language_server::service();
+    request(
+        &mut server,
+        "initialize",
+        json!({
+            "workspaceFolders": [files.folder("")],
+            "capabilities": {"workspace": {"workspaceEdit": {"documentChanges": true}}}
+        }),
+    )
+    .await;
+    notify(&mut server, "initialized", json!({})).await;
+    open(&mut server, &consumer, CONSUMER).await;
+    let params = json!({"textDocument": {"uri": consumer},
+        "position": position(CONSUMER, CONSUMER.rfind("value").unwrap()), "newName": "count"});
+    let edit = request(&mut server, "textDocument/rename", params.clone()).await;
+    let documents = edit["documentChanges"].as_array().unwrap();
+    assert_eq!(documents.len(), 2);
+    let dep = documents
+        .iter()
+        .find(|doc| doc["textDocument"]["uri"] == dependency)
+        .unwrap();
+    assert_eq!(dep["textDocument"]["version"], Value::Null);
+    assert_eq!(
+        dep["edits"],
+        json!([{"range": range(TYPES, "value"), "newText": "count"}])
+    );
+    let app = documents
+        .iter()
+        .find(|doc| doc["textDocument"]["uri"] == consumer)
+        .unwrap();
+    assert_eq!(app["textDocument"]["version"], 1);
+    assert_eq!(app["edits"].as_array().unwrap().len(), 2);
+    assert_eq!(
+        fs::read_to_string(files.0.join("deps/types/types.wit")).unwrap(),
+        TYPES
+    );
+    assert_eq!(
+        fs::read_to_string(files.0.join("app.wit")).unwrap(),
+        CONSUMER
+    );
+
+    files.write(
+        "deps/types/types.wit",
+        "package example:types; interface types {}",
+    );
+    watched(&mut server, &dependency, 2).await;
+    assert!(
+        call(&mut server, "textDocument/rename", params)
+            .await
+            .error()
+            .is_some()
+    );
+}
+
+#[tokio::test]
 async fn symbol_search_tracks_unopened_files_and_workspace_removal() {
     let files = Files::new();
     let uri = files.write("deps/types/types.wit", TYPES);

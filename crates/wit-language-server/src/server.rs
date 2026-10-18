@@ -16,10 +16,11 @@ use tower_lsp::{
         DocumentSymbolResponse, FileSystemWatcher, FoldingRange, FoldingRangeParams,
         GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams, InitializeParams,
         InitializeResult, InitializedParams, MarkupKind, OneOf, PositionEncodingKind,
-        ReferenceParams, Registration, SaveOptions, SelectionRange, SelectionRangeParams,
-        ServerCapabilities, ServerInfo, SymbolInformation, SymbolKind,
-        TextDocumentContentChangeEvent, TextDocumentItem, TextDocumentSyncCapability,
-        TextDocumentSyncKind, TextDocumentSyncOptions, TextDocumentSyncSaveOptions, Url,
+        PrepareRenameResponse, ReferenceParams, Registration, RenameOptions, RenameParams,
+        SaveOptions, SelectionRange, SelectionRangeParams, ServerCapabilities, ServerInfo,
+        SymbolInformation, SymbolKind, TextDocumentContentChangeEvent, TextDocumentItem,
+        TextDocumentPositionParams, TextDocumentSyncCapability, TextDocumentSyncKind,
+        TextDocumentSyncOptions, TextDocumentSyncSaveOptions, Url, WorkspaceEdit,
         WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities, WorkspaceSymbolParams,
     },
 };
@@ -125,6 +126,11 @@ impl tower_lsp::LanguageServer for LanguageServer {
                 .and_then(|caps| caps.value_set.as_ref())
                 .is_some();
             if let Some(workspace) = &params.capabilities.workspace {
+                state.versioned_edits = workspace
+                    .workspace_edit
+                    .as_ref()
+                    .and_then(|caps| caps.document_changes)
+                    .unwrap_or(false);
                 state.workspace_symbol_kinds = workspace
                     .symbol
                     .as_ref()
@@ -162,6 +168,10 @@ impl tower_lsp::LanguageServer for LanguageServer {
                 document_symbol_provider: Some(OneOf::Left(true)),
                 workspace_symbol_provider: Some(OneOf::Left(true)),
                 references_provider: Some(OneOf::Left(true)),
+                rename_provider: Some(OneOf::Right(RenameOptions {
+                    prepare_provider: Some(true),
+                    work_done_progress_options: Default::default(),
+                })),
                 definition_provider: Some(OneOf::Left(true)),
                 completion_provider: Some(CompletionOptions::default()),
                 workspace: Some(WorkspaceServerCapabilities {
@@ -505,6 +515,44 @@ impl tower_lsp::LanguageServer for LanguageServer {
     }
 
     #[tracing::instrument(level = "debug", skip_all)]
+    async fn prepare_rename(
+        &self,
+        params: TextDocumentPositionParams,
+    ) -> Result<Option<PrepareRenameResponse>, Error> {
+        let snap = self.snapshot().await;
+        let db = snap.wit_db();
+        let Some(file) = snap
+            .ws
+            .lookup_by_path(db, params.text_document.uri.as_str())
+        else {
+            return Ok(None);
+        };
+        let point = utils::Positions::new(db, file).to_point(params.position)?;
+        Ok(crate::ops::prepare_rename(db, snap.ws, file, point))
+    }
+
+    #[tracing::instrument(level = "debug", skip_all)]
+    async fn rename(&self, params: RenameParams) -> Result<Option<WorkspaceEdit>, Error> {
+        let snap = self.snapshot().await;
+        let db = snap.wit_db();
+        let position = params.text_document_position;
+        let file = snap
+            .ws
+            .lookup_by_path(db, position.text_document.uri.as_str())
+            .ok_or_else(|| Error::invalid_params("The document is not in the workspace"))?;
+        let point = utils::Positions::new(db, file).to_point(position.position)?;
+        crate::ops::rename(
+            db,
+            snap.ws,
+            file,
+            point,
+            &params.new_name,
+            snap.versioned_edits.then_some(&snap.versions),
+        )
+        .map(Some)
+    }
+
+    #[tracing::instrument(level = "debug", skip_all)]
     async fn references(
         &self,
         params: ReferenceParams,
@@ -600,6 +648,7 @@ struct State {
     hierarchical_symbols: bool,
     extended_symbol_kinds: bool,
     workspace_symbol_kinds: Option<Vec<SymbolKind>>,
+    versioned_edits: bool,
     disk: WorkspaceFiles,
     open: HashMap<String, i32>,
     watch_registration: bool,
@@ -674,6 +723,8 @@ impl State {
     fn snapshot(&self) -> Snapshot {
         Snapshot {
             db: self.db.snapshot(),
+            versions: self.open.clone(),
+            versioned_edits: self.versioned_edits,
             ws: self.ws,
             hover_markdown: self.hover_markdown,
             hierarchical_symbols: self.hierarchical_symbols,
@@ -694,6 +745,7 @@ impl Default for State {
             hierarchical_symbols: false,
             extended_symbol_kinds: false,
             workspace_symbol_kinds: None,
+            versioned_edits: false,
             disk: WorkspaceFiles::default(),
             open: HashMap::new(),
             watch_registration: false,
@@ -709,12 +761,14 @@ impl Default for State {
 /// directly you allow other readonly queries to run in parallel.
 #[derive(Debug)]
 struct Snapshot {
+    versions: HashMap<String, i32>,
     ws: Workspace,
     db: salsa::Snapshot<Database>,
     hover_markdown: bool,
     hierarchical_symbols: bool,
     extended_symbol_kinds: bool,
     workspace_symbol_kinds: Option<Vec<SymbolKind>>,
+    versioned_edits: bool,
 }
 
 impl Snapshot {

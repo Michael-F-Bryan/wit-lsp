@@ -26,33 +26,21 @@ pub fn find_references(
         let Ok(uri) = path.raw_path(db).parse::<Url>() else {
             continue;
         };
-        let ast = queries::parse(db, file);
         let positions = Positions::new(db, file);
-        let mut pending = vec![ast.root_node(db)];
-        while let Some(node) = pending.pop() {
-            if let Some(id) = ast::Id::cast(node) {
-                // Only the final segment names the interface/world in a qualified path.
-                if let Some(path) = node.parent().and_then(ast::FullyQualifiedUsePath::cast)
-                    && path.iter_ids().last() != Some(id)
-                {
-                    continue;
-                }
-                let declaration = declaration_for_identifier(db, file, id);
-                if !include_declaration && (declaration.is_some() || is_alias(id)) {
-                    continue;
-                }
-                if declaration.or_else(|| symbol_definition(db, ws, file, id)) == Some(target) {
-                    references.push(Location {
-                        uri: uri.clone(),
-                        range: positions.to_lsp(id.range()),
-                    });
-                }
-            } else {
-                let mut cursor = node.walk();
-                pending.extend(node.named_children(&mut cursor));
+        for id in identifiers(db, file) {
+            let declaration = declaration_for_identifier(db, file, id);
+            if !include_declaration && (declaration.is_some() || is_alias(id)) {
+                continue;
+            }
+            if declaration.or_else(|| symbol_definition(db, ws, file, id)) == Some(target) {
+                references.push(Location {
+                    uri: uri.clone(),
+                    range: positions.to_lsp(id.range()),
+                });
             }
         }
     }
+
     references.sort_by(|left, right| {
         left.uri
             .cmp(&right.uri)
@@ -61,6 +49,30 @@ pub fn find_references(
     });
     references.dedup();
     references
+}
+
+/// Identifier occurrences, excluding package segments and parser recovery placeholders.
+pub(super) fn identifiers(db: &dyn Db, file: SourceFile) -> Vec<ast::Id<'_>> {
+    let ast = queries::parse(db, file);
+    let mut ids = Vec::new();
+    let mut pending = vec![ast.root_node(db)];
+    while let Some(node) = pending.pop() {
+        if let Some(id) = ast::Id::cast(node) {
+            if node.is_missing() || node.start_byte() == node.end_byte() {
+                continue;
+            }
+            if let Some(path) = node.parent().and_then(ast::FullyQualifiedUsePath::cast)
+                && path.iter_ids().last() != Some(id)
+            {
+                continue;
+            }
+            ids.push(id);
+        } else {
+            let mut cursor = node.walk();
+            pending.extend(node.named_children(&mut cursor));
+        }
+    }
+    ids
 }
 
 fn is_alias(id: ast::Id<'_>) -> bool {

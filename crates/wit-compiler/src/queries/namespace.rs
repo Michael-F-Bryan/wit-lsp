@@ -115,12 +115,48 @@ pub fn resolve_imported_type(
     interface_type(db, ws, meta.index(db), name)
 }
 
+/// Resolve the name that a rename should change, retaining explicit import aliases.
+pub fn resolve_type_binding(
+    db: &dyn Db,
+    ws: Workspace,
+    file: SourceFile,
+    point: tree_sitter::Point,
+    name: Ident,
+) -> Option<Location> {
+    let scope = enclosing_scope(db, file, point)?;
+    type_resolution(db, ws, scope.index(db), name).map(|(_, binding)| binding)
+}
+
+/// Resolve the source side of an import without crossing explicit alias bindings.
+pub fn resolve_imported_type_binding(
+    db: &dyn Db,
+    ws: Workspace,
+    file: SourceFile,
+    path: ast::UsePath<'_>,
+    name: Ident,
+) -> Option<Location> {
+    let TopLevelItemMetadata::Interface(meta) = super::resolve_use_path(db, ws, file, path)? else {
+        return None;
+    };
+    type_resolution(db, ws, meta.index(db).into(), name).map(|(_, binding)| binding)
+}
+
 fn interface_type(
     db: &dyn Db,
     ws: Workspace,
-    mut index: InterfaceIndex,
-    mut name: Ident,
+    index: InterfaceIndex,
+    name: Ident,
 ) -> Option<hir::ItemReference> {
+    type_resolution(db, ws, index.into(), name).map(|(reference, _)| reference)
+}
+
+fn type_resolution(
+    db: &dyn Db,
+    ws: Workspace,
+    mut index: ScopeIndex,
+    mut name: Ident,
+) -> Option<(hir::ItemReference, Location)> {
+    let mut binding = None;
     let mut visited = std::collections::HashSet::new();
     loop {
         if !visited.insert((index, name)) {
@@ -129,29 +165,38 @@ fn interface_type(
         let file = ws.file(db, index.file());
         let scope = super::file_items(db, file)
             .into_iter()
-            .find(|item| item.index(db) == ScopeIndex::from(index))?;
+            .find(|item| item.index(db) == index)?;
         if let Some(item) = scope_definitions(db, scope)
             .into_iter()
             .find(|item| item.ident(db) == name)
         {
-            return Some(type_reference(db, index.into(), item));
+            return Some((
+                type_reference(db, index, item),
+                binding.unwrap_or_else(|| item.definition(db)),
+            ));
         }
         let src = file.contents(db);
-        let (path, source) = scope_uses(db, ws, index.into())
-            .into_iter()
-            .find_map(|item| {
-                item.names()?.iter_use_names_items().find_map(|entry| {
-                    let source = entry.name()?;
-                    let local = entry.alias_opt().unwrap_or(source);
-                    (Ident::from_ast(db, local, src) == name)
-                        .then(|| (item.path(), Ident::from_ast(db, source, src)))
+        let (path, source, alias) = scope_uses(db, ws, index).into_iter().find_map(|item| {
+            item.names()?.iter_use_names_items().find_map(|entry| {
+                let source = entry.name()?;
+                let local = entry.alias_opt().unwrap_or(source);
+                (Ident::from_ast(db, local, src) == name).then(|| {
+                    (
+                        item.path(),
+                        Ident::from_ast(db, source, src),
+                        entry.alias_opt(),
+                    )
                 })
-            })?;
+            })
+        })?;
+        if binding.is_none() {
+            binding = alias.map(|id| Location::new(file.path(db), id.range()));
+        }
         let TopLevelItemMetadata::Interface(target) = super::resolve_use_path(db, ws, file, path?)?
         else {
             return None;
         };
-        index = target.index(db);
+        index = target.index(db).into();
         name = source;
     }
 }

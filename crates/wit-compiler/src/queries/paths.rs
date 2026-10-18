@@ -3,9 +3,10 @@ use std::collections::HashSet;
 use crate::{
     Db,
     ast::{self, AstNode, HasSource},
+    diagnostics::Location,
     queries::{
         SourceFile, Workspace,
-        metadata::{Ident, TopLevelItemMetadata},
+        metadata::{HasDefinition, Ident, TopLevelItemMetadata},
     },
 };
 
@@ -15,8 +16,28 @@ pub fn resolve_use_path<'db>(
     db: &'db dyn Db,
     ws: Workspace,
     file: SourceFile,
-    mut path: ast::UsePath<'db>,
+    path: ast::UsePath<'db>,
 ) -> Option<TopLevelItemMetadata> {
+    resolve_path(db, ws, file, path).map(|(target, _)| target)
+}
+
+/// Keep the nearest explicit file-local alias as a distinct rename binding.
+pub fn resolve_use_path_binding(
+    db: &dyn Db,
+    ws: Workspace,
+    file: SourceFile,
+    path: ast::UsePath<'_>,
+) -> Option<Location> {
+    resolve_path(db, ws, file, path).map(|(_, binding)| binding)
+}
+
+fn resolve_path<'db>(
+    db: &'db dyn Db,
+    ws: Workspace,
+    file: SourceFile,
+    mut path: ast::UsePath<'db>,
+) -> Option<(TopLevelItemMetadata, Location)> {
+    let mut binding = None;
     let packages = super::workspace_packages(db, ws);
     let own_package = packages
         .iter()
@@ -39,16 +60,21 @@ pub fn resolve_use_path<'db>(
                 .find_map(|item| {
                     let target = item.path()?;
                     let local = item.iter_alias().next().or_else(|| path_name(target))?;
-                    (Ident::from_ast(db, local, src) == name).then_some(target)
+                    (Ident::from_ast(db, local, src) == name)
+                        .then_some((target, item.iter_alias().next()))
                 });
-            if let Some(target) = alias {
+            if let Some((target, alias)) = alias {
+                if binding.is_none() {
+                    binding = alias.map(|id| Location::new(file.path(db), id.range()));
+                }
                 path = target;
                 continue;
             }
             return super::package_items(db, own_package)
                 .items_by_name(db)
                 .get(&name)
-                .copied();
+                .copied()
+                .map(|target| (target, binding.unwrap_or_else(|| target.definition(db))));
         }
 
         let qualified = path.fully_qualified_use_path()?;
@@ -68,7 +94,8 @@ pub fn resolve_use_path<'db>(
         return super::package_items(db, package)
             .items_by_name(db)
             .get(&item)
-            .copied();
+            .copied()
+            .map(|target| (target, binding.unwrap_or_else(|| target.definition(db))));
     }
 }
 

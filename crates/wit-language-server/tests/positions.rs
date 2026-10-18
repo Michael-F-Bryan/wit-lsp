@@ -126,12 +126,14 @@ async fn invalid_positions_return_errors_without_breaking_the_server() {
             "textDocument/definition",
             "textDocument/hover",
             "textDocument/references",
+            "textDocument/prepareRename",
+            "textDocument/rename",
         ] {
             let response = call(
                 &mut server,
                 method,
                 json!({"textDocument": {"uri": uri}, "position": position,
-                    "context": {"includeDeclaration": false}}),
+                    "context": {"includeDeclaration": false}, "newName": "updated"}),
             )
             .await;
             assert_eq!(response.error().unwrap().code.code(), -32602);

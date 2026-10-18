@@ -28,7 +28,7 @@ An alternative Language Server implementation for [WIT][wit].
   - [x] Extract type alias
   - [ ] Generate documentation template
   - [ ] Autoimport
-  - [ ] Rename
+  - [x] Rename
   - [ ] Inline type alias
   - [ ] Merge imports
   - [ ] Sort items
