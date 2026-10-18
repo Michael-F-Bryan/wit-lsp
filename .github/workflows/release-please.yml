@@ -4,7 +4,7 @@ on:
  push:
   branches:
     - main
-  tags: "*"
+  tags: ["*"]
  repository_dispatch:
 
 env:
@@ -43,7 +43,7 @@ jobs:
       - release
     concurrency: release-please-publish-crates-io
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v7
       - name: Setup Rust
         uses: dsherret/rust-toolchain-file@v1
       - name: Rust Cache
@@ -75,13 +75,13 @@ jobs:
         working-directory: plugins/vscode
         shell: bash
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v7
       - name: Setup Rust
         uses: dsherret/rust-toolchain-file@v1
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: latest
           cache: npm
@@ -118,7 +118,7 @@ jobs:
           - runner: windows-latest
             target: x86_64-pc-windows-msvc
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v7
       - name: Setup Rust
         uses: dsherret/rust-toolchain-file@v1
       - name: Rust Cache
