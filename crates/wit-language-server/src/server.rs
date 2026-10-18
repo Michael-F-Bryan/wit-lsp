@@ -18,11 +18,13 @@ use tower_lsp::{
         HoverParams, InitializeParams, InitializeResult, InitializedParams, MarkupKind,
         MessageType, OneOf, PositionEncodingKind, PrepareRenameResponse, ReferenceParams,
         Registration, RenameOptions, RenameParams, SaveOptions, SelectionRange,
-        SelectionRangeParams, ServerCapabilities, ServerInfo, SymbolInformation, SymbolKind,
-        TextDocumentContentChangeEvent, TextDocumentItem, TextDocumentPositionParams,
-        TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
-        TextDocumentSyncSaveOptions, Url, WorkspaceEdit, WorkspaceFoldersServerCapabilities,
-        WorkspaceServerCapabilities, WorkspaceSymbolParams,
+        SelectionRangeParams, SemanticTokensFullOptions, SemanticTokensLegend,
+        SemanticTokensOptions, SemanticTokensParams, SemanticTokensResult, ServerCapabilities,
+        ServerInfo, SymbolInformation, SymbolKind, TextDocumentContentChangeEvent,
+        TextDocumentItem, TextDocumentPositionParams, TextDocumentSyncCapability,
+        TextDocumentSyncKind, TextDocumentSyncOptions, TextDocumentSyncSaveOptions, Url,
+        WorkspaceEdit, WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
+        WorkspaceSymbolParams,
         request::{GotoDeclarationParams, GotoDeclarationResponse},
     },
 };
@@ -82,10 +84,16 @@ impl LanguageServer {
         Ok(crate::CHANGELOG)
     }
 
-    async fn refresh_diagnostics(&self) {
-        let supported = self.lock().await.diagnostic_refresh;
+    async fn refresh_analysis(&self) {
+        let (supported, semantic_refresh) = {
+            let state = self.lock().await;
+            (state.diagnostic_refresh, state.semantic_refresh)
+        };
         if supported && let Err(error) = self.client.workspace_diagnostic_refresh().await {
             tracing::warn!(%error, "Client rejected diagnostic refresh");
+        }
+        if semantic_refresh && let Err(error) = self.client.semantic_tokens_refresh().await {
+            tracing::warn!(%error, "Client rejected semantic token refresh");
         }
     }
 
@@ -112,6 +120,13 @@ impl tower_lsp::LanguageServer for LanguageServer {
         {
             let mut state = self.lock().await;
             state.disk.initialize(&params);
+            state.semantic_legend = crate::ops::semantic_tokens_legend(
+                params
+                    .capabilities
+                    .text_document
+                    .as_ref()
+                    .and_then(|caps| caps.semantic_tokens.as_ref()),
+            );
             state.hierarchical_symbols = params
                 .capabilities
                 .text_document
@@ -142,6 +157,11 @@ impl tower_lsp::LanguageServer for LanguageServer {
                     .did_change_watched_files
                     .as_ref()
                     .and_then(|caps| caps.dynamic_registration)
+                    .unwrap_or(false);
+                state.semantic_refresh = workspace
+                    .semantic_tokens
+                    .as_ref()
+                    .and_then(|caps| caps.refresh_support)
                     .unwrap_or(false);
                 state.diagnostic_refresh = workspace
                     .diagnostic
@@ -178,6 +198,14 @@ impl tower_lsp::LanguageServer for LanguageServer {
                 definition_provider: Some(OneOf::Left(true)),
                 declaration_provider: Some(DeclarationCapability::Simple(true)),
                 completion_provider: Some(CompletionOptions::default()),
+                semantic_tokens_provider: Some(
+                    SemanticTokensOptions {
+                        legend: self.lock().await.semantic_legend.clone(),
+                        full: Some(SemanticTokensFullOptions::Bool(true)),
+                        ..Default::default()
+                    }
+                    .into(),
+                ),
                 workspace: Some(WorkspaceServerCapabilities {
                     workspace_folders: Some(WorkspaceFoldersServerCapabilities {
                         supported: Some(true),
@@ -253,7 +281,7 @@ impl tower_lsp::LanguageServer for LanguageServer {
             state.reload_files(uris).await;
         }
         drop(state);
-        self.refresh_diagnostics().await;
+        self.refresh_analysis().await;
     }
 
     async fn did_change_workspace_folders(&self, params: DidChangeWorkspaceFoldersParams) {
@@ -266,7 +294,7 @@ impl tower_lsp::LanguageServer for LanguageServer {
         }
         state.reload_workspace().await;
         drop(state);
-        self.refresh_diagnostics().await;
+        self.refresh_analysis().await;
     }
 
     async fn shutdown(&self) -> Result<(), Error> {
@@ -289,7 +317,7 @@ impl tower_lsp::LanguageServer for LanguageServer {
         ws.update(state.wit_db(), path, text);
         state.open.insert(uri.to_string(), version);
         drop(state);
-        self.refresh_diagnostics().await;
+        self.refresh_analysis().await;
     }
 
     #[tracing::instrument(level = "debug", skip_all)]
@@ -325,7 +353,7 @@ impl tower_lsp::LanguageServer for LanguageServer {
             ws.update(state.wit_db(), path, text);
         }
         drop(state);
-        self.refresh_diagnostics().await;
+        self.refresh_analysis().await;
     }
 
     #[tracing::instrument(level = "debug", skip_all)]
@@ -343,7 +371,7 @@ impl tower_lsp::LanguageServer for LanguageServer {
             state.reload_files(vec![uri]).await;
         }
         drop(state);
-        self.refresh_diagnostics().await;
+        self.refresh_analysis().await;
     }
 
     #[tracing::instrument(level = "debug", skip_all)]
@@ -353,7 +381,7 @@ impl tower_lsp::LanguageServer for LanguageServer {
         state.open.remove(uri.as_str());
         state.reload_files(vec![uri]).await;
         drop(state);
-        self.refresh_diagnostics().await;
+        self.refresh_analysis().await;
     }
 
     #[tracing::instrument(level = "debug", skip_all)]
@@ -616,6 +644,24 @@ impl tower_lsp::LanguageServer for LanguageServer {
     }
 
     #[tracing::instrument(level = "debug", skip_all)]
+    async fn semantic_tokens_full(
+        &self,
+        params: SemanticTokensParams,
+    ) -> Result<Option<SemanticTokensResult>, Error> {
+        let snap = self.snapshot().await;
+        let db = snap.wit_db();
+        let Some(file) = snap
+            .ws
+            .lookup_by_path(db, params.text_document.uri.as_str())
+        else {
+            return Ok(None);
+        };
+        Ok(Some(
+            crate::ops::semantic_tokens(db, snap.ws, file, &snap.semantic_legend).into(),
+        ))
+    }
+
+    #[tracing::instrument(level = "debug", skip_all)]
     async fn document_highlight(
         &self,
         params: DocumentHighlightParams,
@@ -709,11 +755,13 @@ struct State {
     hierarchical_symbols: bool,
     extended_symbol_kinds: bool,
     workspace_symbol_kinds: Option<Vec<SymbolKind>>,
+    semantic_legend: SemanticTokensLegend,
     versioned_edits: bool,
     disk: WorkspaceFiles,
     open: HashMap<String, i32>,
     watch_registration: bool,
     diagnostic_refresh: bool,
+    semantic_refresh: bool,
 }
 
 impl State {
@@ -791,6 +839,7 @@ impl State {
             hierarchical_symbols: self.hierarchical_symbols,
             extended_symbol_kinds: self.extended_symbol_kinds,
             workspace_symbol_kinds: self.workspace_symbol_kinds.clone(),
+            semantic_legend: self.semantic_legend.clone(),
         }
     }
 }
@@ -806,11 +855,13 @@ impl Default for State {
             hierarchical_symbols: false,
             extended_symbol_kinds: false,
             workspace_symbol_kinds: None,
+            semantic_legend: crate::ops::semantic_tokens_legend(None),
             versioned_edits: false,
             disk: WorkspaceFiles::default(),
             open: HashMap::new(),
             watch_registration: false,
             diagnostic_refresh: false,
+            semantic_refresh: false,
         }
     }
 }
@@ -829,6 +880,7 @@ struct Snapshot {
     hierarchical_symbols: bool,
     extended_symbol_kinds: bool,
     workspace_symbol_kinds: Option<Vec<SymbolKind>>,
+    semantic_legend: SemanticTokensLegend,
     versioned_edits: bool,
 }
 

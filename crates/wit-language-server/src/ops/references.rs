@@ -75,7 +75,7 @@ pub(super) fn identifiers(db: &dyn Db, file: SourceFile) -> Vec<ast::Id<'_>> {
     ids
 }
 
-fn is_alias(id: ast::Id<'_>) -> bool {
+pub(super) fn is_alias(id: ast::Id<'_>) -> bool {
     let Some(parent) = id.syntax().parent() else {
         return false;
     };

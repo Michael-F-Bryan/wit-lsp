@@ -126,7 +126,7 @@ fn collect(
     }
 }
 
-fn symbol_name(node: Node<'_>) -> Option<(Node<'_>, SymbolKind)> {
+pub(super) fn symbol_name(node: Node<'_>) -> Option<(Node<'_>, SymbolKind)> {
     let (field, kind) = match node.kind() {
         "interface_item" => ("name", SymbolKind::INTERFACE),
         "world_item" => ("name", SymbolKind::NAMESPACE),

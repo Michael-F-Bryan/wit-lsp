@@ -6,6 +6,7 @@ mod highlights;
 mod hover;
 mod references;
 mod rename;
+mod semantic_tokens;
 mod symbols;
 
 pub use self::{
@@ -17,5 +18,6 @@ pub use self::{
     hover::hover,
     references::find_references,
     rename::{prepare_rename, rename},
+    semantic_tokens::{semantic_tokens, semantic_tokens_legend},
     symbols::{document_symbols, workspace_symbols},
 };
