@@ -85,9 +85,9 @@ fn error_code_index() -> color_eyre::Result<String> {
 
     diags.sort_by_key(|d| d.error_code.clone());
 
-    let ctx = serde_json::json!({
-        "diagnostics": diags,
-    });
+    let ctx = minijinja::context! {
+        diagnostics => minijinja::value::Serde(diags),
+    };
 
     let rendered = Environment::new().render_str(template, ctx)?;
 

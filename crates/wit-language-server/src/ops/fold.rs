@@ -1,6 +1,6 @@
 use im::Vector;
 use tower_lsp::lsp_types::{FoldingRange, FoldingRangeKind};
-use tree_sitter::{Node, QueryCursor};
+use tree_sitter::{Node, QueryCursor, StreamingIterator};
 use wit_compiler::queries::Ast;
 
 use crate::{Db, utils::Positions};
@@ -27,10 +27,11 @@ fn folding_range_impl(root: Node<'_>, src: &str) -> Vector<FoldingRange> {
 
     let capture_names = query.capture_names();
 
-    cursor
-        .matches(&query, root, src.as_bytes())
-        .flat_map(|m| {
-            let kind = match capture_names[m.pattern_index] {
+    let mut ranges = Vector::new();
+    let mut matches = cursor.matches(&query, root, src.as_bytes());
+    while let Some(m) = matches.next() {
+        for capture in m.captures() {
+            let kind = match capture_names[capture.index as usize] {
                 "comments" => Some(FoldingRangeKind::Comment),
                 "imports" => Some(FoldingRangeKind::Imports),
                 "normal" => None,
@@ -38,12 +39,10 @@ fn folding_range_impl(root: Node<'_>, src: &str) -> Vector<FoldingRange> {
                     "Unknown query capture name, {other:?}, expected one of {capture_names:?}"
                 ),
             };
-            let positions = &positions;
-            m.captures
-                .iter()
-                .map(move |cap| node_range(cap.node, kind.clone(), positions))
-        })
-        .collect()
+            ranges.push_back(node_range(capture.node, kind, &positions));
+        }
+    }
+    ranges
 }
 
 fn node_range(

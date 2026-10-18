@@ -105,7 +105,7 @@ fn print_diagnostics(
 
     for diag in diags {
         let diag = diag.as_diagnostic();
-        codespan_reporting::term::emit(writer, &config, &files, &diag)?;
+        codespan_reporting::term::emit_to_write_style(writer, &config, &files, &diag)?;
     }
 
     Ok(())

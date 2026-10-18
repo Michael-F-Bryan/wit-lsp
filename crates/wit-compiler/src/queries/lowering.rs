@@ -46,6 +46,10 @@ pub fn lower_package(db: &dyn Db, ws: Workspace, pkg: Package) -> hir::Package {
 
 #[salsa::tracked]
 #[tracing::instrument(level = "debug", skip_all, fields(dir = %pkg.dir(db).raw_path(db)))]
+#[allow(
+    dead_code,
+    reason = "Registered with Salsa but not yet called by package lowering"
+)]
 pub(crate) fn lower_package_docs(db: &dyn Db, pkg: Package) -> Option<Text> {
     let mut all_docs = pkg.files(db).into_iter().filter_map(|f| {
         let tree = crate::queries::parse(db, f);

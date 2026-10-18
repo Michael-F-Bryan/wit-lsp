@@ -43,11 +43,28 @@ impl Tree {
 
         let mut cursor = root.walk();
 
-        while cursor.goto_first_child_for_point(point).is_some() {
-            nodes.push(cursor.node());
-        }
+        loop {
+            if cursor.goto_first_child_for_point(point).is_none() && !cursor.goto_last_child() {
+                break;
+            }
 
-        nodes.push(cursor.node());
+            // Tree-sitter skips children ending at the cursor. Keep selecting
+            // the preceding token at its end, including before whitespace.
+            let child = cursor.node();
+            if child.start_position() >= point
+                && child
+                    .prev_sibling()
+                    .is_some_and(|previous| previous.end_position() == point)
+            {
+                cursor.goto_previous_sibling();
+            }
+
+            let child = cursor.node();
+            if point < child.start_position() || point > child.end_position() {
+                break;
+            }
+            nodes.push(child);
+        }
 
         nodes.into_iter().rev()
     }

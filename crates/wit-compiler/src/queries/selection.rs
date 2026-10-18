@@ -47,4 +47,26 @@ mod tests {
 
         insta::assert_debug_snapshot!(ranges);
     }
+
+    #[test]
+    fn selections_contain_the_cursor_at_token_boundaries_whitespace_and_eof() {
+        let src = "interface test { type sample = u32;   type other = string; }\n";
+        let tree = Tree::parse(src);
+
+        for offset in 0..=src.len() {
+            let prefix = &src[..offset];
+            let point = Point::new(
+                prefix.bytes().filter(|&b| b == b'\n').count(),
+                prefix.rsplit('\n').next().unwrap().len(),
+            );
+            let ranges = selection_ranges_impl(&tree, point).unwrap();
+            assert!(!ranges.is_empty(), "no selection at {point:?}");
+            for range in &ranges {
+                assert!(
+                    range.start_point <= point && point <= range.end_point,
+                    "selection {range:?} excludes cursor {point:?}"
+                );
+            }
+        }
+    }
 }

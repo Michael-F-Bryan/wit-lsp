@@ -12,32 +12,44 @@ repository = "https://github.com/Michael-F-Bryan/wit-lsp"
 license    = "MIT OR Apache-2.0"
 
 [workspace.dependencies]
-ahash              = "0.8.11"
+ahash              = "0.8.12"
 build-info         = "0.0.47"
 build-info-build   = "0.0.47"
-clap               = { version = "4.5.3", features = ["derive", "env"] }
-clap-stdin         = "0.4.0"
-codespan-reporting = { version = "0.11.1", features = ["serialization"] }
-color-eyre         = { version = "0.6.3", features = ["issue-url"] }
-futures            = "0.3.30"
+clap               = { version = "4.6.7", features = ["derive", "env"] }
+clap-stdin         = "0.8.1"
+codespan-reporting = { version = "0.13.1", features = ["serialization"] }
+color-eyre         = { version = "0.6.5", features = ["issue-url"] }
+futures            = "0.3.34"
+heck               = "0.5.0"
 im                 = { version = "15.1.0", features = ["serde"] }
-insta              = { version = "1.36.1", features = ["yaml"] }
-itertools          = "0.12.1"
-paste              = "1.0.14"
-pretty_assertions  = "1.4.0"
+insta              = { version = "1.49.0", features = ["yaml"] }
+itertools          = "0.15.0"
+libtest-mimic      = "0.8.2"
+minijinja          = { version = "3.0.1", features = ["serde"] }
+once_cell          = "1.21.4"
+paste              = "1.0.15"
+pretty_assertions  = "1.4.1"
+prettyplease       = "0.3.0"
+proc-macro2        = "1.0.107"
+pulldown-cmark     = "0.13.4"
+quote              = "1.0.47"
+regex              = "1.13.1"
 salsa              = { package = "salsa-2022", git = "https://github.com/salsa-rs/salsa", rev = "4151b09" }
-serde              = { version = "1.0.197", features = ["derive"] }
-serde_json         = "1.0.114"
-tokio              = { version = "1.36.0", features = ["io-std", "macros", "net", "rt-multi-thread"] }
+serde              = { version = "1.0.229", features = ["derive"] }
+serde_json         = "1.0.154"
+syn                = "3.0.9"
+tokio              = { version = "1.53.3", features = ["io-std", "macros", "net", "rt-multi-thread"] }
 tower-lsp          = "0.20.0"
-tower-service      = "0.3.2"
-tracing            = { version = "0.1.40", features = ["async-await"] }
-tracing-error      = "0.2.0"
-tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
-tree-sitter        = "0.22.6"
+tower-service      = "0.3.3"
+tracing            = { version = "0.1.44", features = ["async-await"] }
+tracing-error      = "0.2.1"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+tree-sitter        = "0.27.1"
 # tree-sitter-wit = { path = "../forks/tree-sitter-wit" }
 tree-sitter-wit    = { git = "https://github.com/Michael-F-Bryan/tree-sitter-wit", branch = "include-queries-in-rust" }
-uuid               = { version = "1.8.0", features = ["v4"] }
+uuid               = { version = "1.28.0", features = ["v4"] }
+walkdir            = "2.5.0"
+xshell             = "0.2.7"
 
 [profile.dist]
 inherits = "release"

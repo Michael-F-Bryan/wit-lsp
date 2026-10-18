@@ -20,7 +20,7 @@ path    = "tests/integration-test.rs"
 codespan-reporting = { workspace = true }
 color-eyre         = { workspace = true }
 im                 = { workspace = true }
-libtest-mimic      = "0.7.2"
+libtest-mimic      = { workspace = true }
 tracing            = { workspace = true }
 wit-compiler       = { path = "../crates/wit-compiler", version = "0.2.0" }
 
