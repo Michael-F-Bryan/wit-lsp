@@ -17,10 +17,10 @@ use tower_lsp::{
         GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams, InitializeParams,
         InitializeResult, InitializedParams, MarkupKind, OneOf, PositionEncodingKind,
         ReferenceParams, Registration, SaveOptions, SelectionRange, SelectionRangeParams,
-        ServerCapabilities, ServerInfo, TextDocumentContentChangeEvent, TextDocumentItem,
-        TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
-        TextDocumentSyncSaveOptions, Url, WorkspaceFoldersServerCapabilities,
-        WorkspaceServerCapabilities,
+        ServerCapabilities, ServerInfo, SymbolInformation, SymbolKind,
+        TextDocumentContentChangeEvent, TextDocumentItem, TextDocumentSyncCapability,
+        TextDocumentSyncKind, TextDocumentSyncOptions, TextDocumentSyncSaveOptions, Url,
+        WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities, WorkspaceSymbolParams,
     },
 };
 use wit_compiler::{Text, queries::Workspace};
@@ -125,6 +125,11 @@ impl tower_lsp::LanguageServer for LanguageServer {
                 .and_then(|caps| caps.value_set.as_ref())
                 .is_some();
             if let Some(workspace) = &params.capabilities.workspace {
+                state.workspace_symbol_kinds = workspace
+                    .symbol
+                    .as_ref()
+                    .and_then(|caps| caps.symbol_kind.as_ref())
+                    .and_then(|caps| caps.value_set.clone());
                 state.watch_registration = workspace
                     .did_change_watched_files
                     .as_ref()
@@ -155,6 +160,7 @@ impl tower_lsp::LanguageServer for LanguageServer {
                 code_action_provider: Some(true.into()),
                 hover_provider: Some(true.into()),
                 document_symbol_provider: Some(OneOf::Left(true)),
+                workspace_symbol_provider: Some(OneOf::Left(true)),
                 references_provider: Some(OneOf::Left(true)),
                 definition_provider: Some(OneOf::Left(true)),
                 completion_provider: Some(CompletionOptions::default()),
@@ -334,6 +340,20 @@ impl tower_lsp::LanguageServer for LanguageServer {
         state.reload_files(vec![uri]).await;
         drop(state);
         self.refresh_diagnostics().await;
+    }
+
+    #[tracing::instrument(level = "debug", skip_all)]
+    async fn symbol(
+        &self,
+        params: WorkspaceSymbolParams,
+    ) -> Result<Option<Vec<SymbolInformation>>, Error> {
+        let snap = self.snapshot().await;
+        Ok(Some(crate::ops::workspace_symbols(
+            snap.wit_db(),
+            snap.ws,
+            &params.query,
+            snap.workspace_symbol_kinds.as_deref(),
+        )))
     }
 
     #[tracing::instrument(level = "debug", skip_all)]
@@ -579,6 +599,7 @@ struct State {
     hover_markdown: bool,
     hierarchical_symbols: bool,
     extended_symbol_kinds: bool,
+    workspace_symbol_kinds: Option<Vec<SymbolKind>>,
     disk: WorkspaceFiles,
     open: HashMap<String, i32>,
     watch_registration: bool,
@@ -657,6 +678,7 @@ impl State {
             hover_markdown: self.hover_markdown,
             hierarchical_symbols: self.hierarchical_symbols,
             extended_symbol_kinds: self.extended_symbol_kinds,
+            workspace_symbol_kinds: self.workspace_symbol_kinds.clone(),
         }
     }
 }
@@ -671,6 +693,7 @@ impl Default for State {
             hover_markdown: false,
             hierarchical_symbols: false,
             extended_symbol_kinds: false,
+            workspace_symbol_kinds: None,
             disk: WorkspaceFiles::default(),
             open: HashMap::new(),
             watch_registration: false,
@@ -691,6 +714,7 @@ struct Snapshot {
     hover_markdown: bool,
     hierarchical_symbols: bool,
     extended_symbol_kinds: bool,
+    workspace_symbol_kinds: Option<Vec<SymbolKind>>,
 }
 
 impl Snapshot {

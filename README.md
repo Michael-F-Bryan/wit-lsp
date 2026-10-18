@@ -23,7 +23,7 @@ An alternative Language Server implementation for [WIT][wit].
 - [ ] View Memory Layout
 - [ ] Show Dependency Tree
 - [x] Find All References
-- [ ] Workspace Symbol
+- [x] Workspace Symbol
 - [ ] Assists
   - [x] Extract type alias
   - [ ] Generate documentation template

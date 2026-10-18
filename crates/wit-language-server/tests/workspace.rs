@@ -111,6 +111,59 @@ const CONSUMER: &str =
     "interface app { use example:types/types.{value}; type result-type = value; }";
 
 #[tokio::test]
+async fn symbol_search_tracks_unopened_files_and_workspace_removal() {
+    let files = Files::new();
+    let uri = files.write("deps/types/types.wit", TYPES);
+    let (mut server, _socket) = wit_language_server::service();
+    start(&mut server, json!([files.folder("")])).await;
+    let params = json!({"query": "value"});
+    let result = request(&mut server, "workspace/symbol", params.clone()).await;
+    assert_eq!(result.as_array().unwrap().len(), 1);
+    assert_eq!(
+        result[0]["location"],
+        json!({"uri": uri, "range": range(TYPES, "value")})
+    );
+
+    files.write("deps/types/types.wit", &TYPES.replace("value", "renamed"));
+    watched(&mut server, &uri, 2).await;
+    assert_eq!(
+        request(&mut server, "workspace/symbol", params.clone()).await,
+        json!([])
+    );
+    assert_eq!(
+        request(&mut server, "workspace/symbol", json!({"query": "renamed"})).await[0]["location"]
+            ["uri"],
+        uri
+    );
+
+    fs::remove_file(files.0.join("deps/types/types.wit")).unwrap();
+    watched(&mut server, &uri, 3).await;
+    assert_eq!(
+        request(&mut server, "workspace/symbol", json!({"query": ""})).await,
+        json!([])
+    );
+
+    files.write("deps/types/types.wit", TYPES);
+    watched(&mut server, &uri, 1).await;
+    assert_eq!(
+        request(&mut server, "workspace/symbol", params.clone()).await,
+        result
+    );
+    notify(
+        &mut server,
+        "workspace/didChangeWorkspaceFolders",
+        json!({"event": {
+            "added": [], "removed": [files.folder("")]
+        }}),
+    )
+    .await;
+    assert_eq!(
+        request(&mut server, "workspace/symbol", params).await,
+        json!([])
+    );
+}
+
+#[tokio::test]
 async fn references_include_unopened_files_and_follow_disk_changes() {
     let files = Files::new();
     let dependency = files.write("deps/types/types.wit", TYPES);

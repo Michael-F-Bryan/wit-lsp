@@ -4,10 +4,53 @@ use tower_lsp::lsp_types::{
 use tree_sitter::Node;
 use wit_compiler::{
     Db,
-    queries::{self, SourceFile},
+    queries::{self, SourceFile, Workspace},
 };
 
 use crate::utils::Positions;
+
+/// Search declarations in all known files using a case-insensitive name fragment.
+pub fn workspace_symbols(
+    db: &dyn Db,
+    ws: Workspace,
+    query: &str,
+    supported_kinds: Option<&[SymbolKind]>,
+) -> Vec<SymbolInformation> {
+    let query = query.to_lowercase();
+    let mut results = Vec::new();
+    for (path, file) in ws.files(db) {
+        let Ok(uri) = path.raw_path(db).parse::<Url>() else {
+            continue;
+        };
+        if let DocumentSymbolResponse::Flat(symbols) =
+            document_symbols(db, file, uri, false, supported_kinds.is_some())
+        {
+            results.extend(symbols.into_iter().filter_map(|mut symbol| {
+                if !symbol.name.to_lowercase().contains(&query) {
+                    return None;
+                }
+                if let Some(kinds) = supported_kinds
+                    && !kinds.contains(&symbol.kind)
+                {
+                    let fallback = legacy_kind(symbol.kind);
+                    symbol.kind = if kinds.contains(&fallback) {
+                        fallback
+                    } else {
+                        kinds.first().copied().unwrap_or(fallback)
+                    };
+                }
+                Some(symbol)
+            }));
+        }
+    }
+    results.sort_by(|left, right| {
+        left.name
+            .cmp(&right.name)
+            .then(left.location.uri.cmp(&right.location.uri))
+            .then(left.location.range.start.cmp(&right.location.range.start))
+    });
+    results
+}
 
 /// Describe declarations in source order, preserving their syntactic owners.
 pub fn document_symbols(
