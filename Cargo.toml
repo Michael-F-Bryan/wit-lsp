@@ -1,34 +1,44 @@
 [workspace]
-members = ["crates/*", "integration-tests"]
 resolver = "3"
+members  = ["crates/*", "integration-tests"]
 
 [workspace.package]
-# tombi:lint.rules.deprecated.disabled = true
-authors = ["Michael-F-Bryan <consulting@michaelfbryan.com>"]
-edition = "2024"
-homepage = "https://github.com/Michael-F-Bryan/wit-lsp"
-license = "MIT OR Apache-2.0"
-readme = "README.md"
+# tombi: lint.rules.deprecated.disabled = true
+authors    = ["Michael-F-Bryan <consulting@michaelfbryan.com>"]
+edition    = "2024"
+readme     = "README.md"
+homepage   = "https://github.com/Michael-F-Bryan/wit-lsp"
 repository = "https://github.com/Michael-F-Bryan/wit-lsp"
+license    = "MIT OR Apache-2.0"
 
 [workspace.dependencies]
-clap = { version = "4.5.3", features = ["derive", "env"] }
+ahash              = "0.8.11"
+build-info         = "0.0.47"
+build-info-build   = "0.0.47"
+clap               = { version = "4.5.3", features = ["derive", "env"] }
+clap-stdin         = "0.4.0"
 codespan-reporting = { version = "0.11.1", features = ["serialization"] }
-color-eyre = { version = "0.6.3", features = ["issue-url"] }
-im = { version = "15.1.0", features = ["serde"] }
-insta = { version = "1.36.1", features = ["yaml"] }
-pretty_assertions = "1.4.0"
-salsa = { git = "https://github.com/salsa-rs/salsa", package = "salsa-2022", rev = "4151b09" }
-serde = { version = "1.0.197", features = ["derive"] }
-serde_json = "1.0.114"
-tokio = { version = "1.36.0", features = ["macros", "rt-multi-thread", "net", "io-std"] }
-tracing = { version = "0.1.40", features = ["async-await"] }
-tracing-error = "0.2.0"
+color-eyre         = { version = "0.6.3", features = ["issue-url"] }
+futures            = "0.3.30"
+im                 = { version = "15.1.0", features = ["serde"] }
+insta              = { version = "1.36.1", features = ["yaml"] }
+itertools          = "0.12.1"
+paste              = "1.0.14"
+pretty_assertions  = "1.4.0"
+salsa              = { package = "salsa-2022", git = "https://github.com/salsa-rs/salsa", rev = "4151b09" }
+serde              = { version = "1.0.197", features = ["derive"] }
+serde_json         = "1.0.114"
+tokio              = { version = "1.36.0", features = ["io-std", "macros", "net", "rt-multi-thread"] }
+tower-lsp          = "0.20.0"
+tower-service      = "0.3.2"
+tracing            = { version = "0.1.40", features = ["async-await"] }
+tracing-error      = "0.2.0"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
-tree-sitter = ">=0.22.5"
+tree-sitter        = ">=0.22.5"
 # tree-sitter-wit = { path = "../forks/tree-sitter-wit" }
-tree-sitter-wit = { git = "https://github.com/Michael-F-Bryan/tree-sitter-wit", branch = "include-queries-in-rust" }
+tree-sitter-wit    = { git = "https://github.com/Michael-F-Bryan/tree-sitter-wit", branch = "include-queries-in-rust" }
+uuid               = { version = "1.8.0", features = ["v4"] }
 
 [profile.dist]
 inherits = "release"
-lto = "thin"
+lto      = "thin"
