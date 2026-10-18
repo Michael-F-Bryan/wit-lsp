@@ -93,6 +93,45 @@ pub(super) fn definition_for_identifier(
     None
 }
 
+pub(super) fn symbol_definition(
+    db: &dyn Db,
+    ws: Workspace,
+    file: SourceFile,
+    id: ast::Id<'_>,
+) -> Option<Location> {
+    definition_for_identifier(db, ws, file, id).or_else(|| declaration_for_identifier(db, file, id))
+}
+
+pub(super) fn declaration_for_identifier(
+    db: &dyn Db,
+    file: SourceFile,
+    id: ast::Id<'_>,
+) -> Option<Location> {
+    let parent = id.syntax().parent()?;
+    let field = match parent.kind() {
+        "type_item" => "alias",
+        "interface_item"
+        | "world_item"
+        | "record_item"
+        | "resource_item"
+        | "enum_items"
+        | "flags_items"
+        | "variant_items"
+        | "func_item"
+        | "static_resource_method"
+        | "record_field"
+        | "enum_case"
+        | "flags_case"
+        | "variant_case"
+        | "named_type"
+        | "import_item"
+        | "export_item" => "name",
+        _ => return None,
+    };
+    (parent.child_by_field_name(field) == Some(id.syntax()))
+        .then(|| Location::new(file.path(db), parent.range()))
+}
+
 fn ancestors(node: tree_sitter::Node<'_>) -> impl Iterator<Item = tree_sitter::Node<'_>> {
     std::iter::successors(Some(node), |node| node.parent())
 }

@@ -111,6 +111,54 @@ const CONSUMER: &str =
     "interface app { use example:types/types.{value}; type result-type = value; }";
 
 #[tokio::test]
+async fn references_include_unopened_files_and_follow_disk_changes() {
+    let files = Files::new();
+    let dependency = files.write("deps/types/types.wit", TYPES);
+    let consumer = files.write("app.wit", CONSUMER);
+    let (mut server, _socket) = wit_language_server::service();
+    start(&mut server, json!([files.folder("")])).await;
+    let params = json!({
+        "textDocument": {"uri": dependency},
+        "position": position(TYPES, TYPES.find("value").unwrap()),
+        "context": {"includeDeclaration": false}
+    });
+    let expected: Vec<_> = CONSUMER
+        .match_indices("value")
+        .map(|(offset, name)| {
+            json!({"uri": consumer, "range": {
+                "start": position(CONSUMER, offset),
+                "end": position(CONSUMER, offset + name.len())
+            }})
+        })
+        .collect();
+    assert_eq!(
+        request(&mut server, "textDocument/references", params.clone()).await,
+        json!(expected)
+    );
+
+    files.write("app.wit", &CONSUMER.replace("= value", "= u32"));
+    watched(&mut server, &consumer, 2).await;
+    assert_eq!(
+        request(&mut server, "textDocument/references", params.clone()).await,
+        json!([expected[0]])
+    );
+
+    fs::remove_file(files.0.join("app.wit")).unwrap();
+    watched(&mut server, &consumer, 3).await;
+    assert_eq!(
+        request(&mut server, "textDocument/references", params.clone()).await,
+        json!([])
+    );
+
+    files.write("app.wit", CONSUMER);
+    watched(&mut server, &consumer, 1).await;
+    assert_eq!(
+        request(&mut server, "textDocument/references", params).await,
+        json!(expected)
+    );
+}
+
+#[tokio::test]
 async fn discovers_unopened_dependencies_and_tracks_creation_changes_and_deletion() {
     let files = Files::new();
     let dependency = files.write("deps/types/types.wit", TYPES);

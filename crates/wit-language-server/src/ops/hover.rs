@@ -2,11 +2,10 @@ use tower_lsp::lsp_types::{Hover, HoverContents, MarkupContent, MarkupKind};
 use wit_compiler::{
     Db,
     ast::{self, AstNode, HasSource},
-    diagnostics::Location,
     queries::{self, SourceFile, Workspace},
 };
 
-use super::definition::{definition_for_identifier, identifier_at};
+use super::definition::{identifier_at, symbol_definition};
 
 /// Show the declaration and documentation of the name under the cursor.
 pub fn hover(
@@ -17,8 +16,7 @@ pub fn hover(
     markdown: bool,
 ) -> Option<Hover> {
     let id = identifier_at(db, file, point)?;
-    let location =
-        definition_for_identifier(db, ws, file, id).or_else(|| declaration(file, db, id))?;
+    let location = symbol_definition(db, ws, file, id)?;
     let target = ws.lookup_by_path(db, location.filename.raw_path(db))?;
     let ast = queries::parse(db, target);
     let node = ast
@@ -113,32 +111,6 @@ fn declaration_text(node: tree_sitter::Node<'_>, src: &str, start: usize) -> Str
         })
         .collect::<Vec<_>>()
         .join("\n")
-}
-
-fn declaration(file: SourceFile, db: &dyn Db, id: ast::Id<'_>) -> Option<Location> {
-    let parent = id.syntax().parent()?;
-    let field = match parent.kind() {
-        "type_item" => "alias",
-        "interface_item"
-        | "world_item"
-        | "record_item"
-        | "resource_item"
-        | "enum_items"
-        | "flags_items"
-        | "variant_items"
-        | "func_item"
-        | "static_resource_method"
-        | "record_field"
-        | "enum_case"
-        | "flags_case"
-        | "variant_case"
-        | "named_type"
-        | "import_item"
-        | "export_item" => "name",
-        _ => return None,
-    };
-    (parent.child_by_field_name(field) == Some(id.syntax()))
-        .then(|| Location::new(file.path(db), parent.range()))
 }
 
 #[cfg(test)]

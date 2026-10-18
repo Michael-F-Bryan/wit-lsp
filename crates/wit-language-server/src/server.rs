@@ -15,11 +15,12 @@ use tower_lsp::{
         DocumentDiagnosticParams, DocumentDiagnosticReportResult, DocumentSymbolParams,
         DocumentSymbolResponse, FileSystemWatcher, FoldingRange, FoldingRangeParams,
         GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams, InitializeParams,
-        InitializeResult, InitializedParams, MarkupKind, OneOf, PositionEncodingKind, Registration,
-        SaveOptions, SelectionRange, SelectionRangeParams, ServerCapabilities, ServerInfo,
-        TextDocumentContentChangeEvent, TextDocumentItem, TextDocumentSyncCapability,
-        TextDocumentSyncKind, TextDocumentSyncOptions, TextDocumentSyncSaveOptions, Url,
-        WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
+        InitializeResult, InitializedParams, MarkupKind, OneOf, PositionEncodingKind,
+        ReferenceParams, Registration, SaveOptions, SelectionRange, SelectionRangeParams,
+        ServerCapabilities, ServerInfo, TextDocumentContentChangeEvent, TextDocumentItem,
+        TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
+        TextDocumentSyncSaveOptions, Url, WorkspaceFoldersServerCapabilities,
+        WorkspaceServerCapabilities,
     },
 };
 use wit_compiler::{Text, queries::Workspace};
@@ -154,6 +155,7 @@ impl tower_lsp::LanguageServer for LanguageServer {
                 code_action_provider: Some(true.into()),
                 hover_provider: Some(true.into()),
                 document_symbol_provider: Some(OneOf::Left(true)),
+                references_provider: Some(OneOf::Left(true)),
                 definition_provider: Some(OneOf::Left(true)),
                 completion_provider: Some(CompletionOptions::default()),
                 workspace: Some(WorkspaceServerCapabilities {
@@ -480,6 +482,28 @@ impl tower_lsp::LanguageServer for LanguageServer {
         Ok(location
             .and_then(|location| utils::location_to_lsp(snap.wit_db(), snap.ws, location))
             .map(GotoDefinitionResponse::Scalar))
+    }
+
+    #[tracing::instrument(level = "debug", skip_all)]
+    async fn references(
+        &self,
+        params: ReferenceParams,
+    ) -> Result<Option<Vec<tower_lsp::lsp_types::Location>>, Error> {
+        let snap = self.snapshot().await;
+        let db = snap.wit_db();
+        let uri = params.text_document_position.text_document.uri;
+        let Some(file) = snap.ws.lookup_by_path(db, uri.as_str()) else {
+            return Ok(None);
+        };
+        let point =
+            utils::Positions::new(db, file).to_point(params.text_document_position.position)?;
+        Ok(Some(crate::ops::find_references(
+            db,
+            snap.ws,
+            file,
+            point,
+            params.context.include_declaration,
+        )))
     }
 
     #[tracing::instrument(level = "debug", skip_all)]
