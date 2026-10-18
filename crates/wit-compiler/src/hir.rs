@@ -5,12 +5,13 @@ use std::fmt::Debug;
 use im::{OrdMap, Vector};
 
 use crate::{
-    access::{
-        AnyFuncItemIndex, EnumIndex, FlagsIndex, FunctionIndex, InterfaceIndex, RecordIndex,
-        ResourceIndex, ScopeIndex, TypeAliasIndex, VariantIndex, WorldIndex,
-    },
-    queries::{metadata::Ident, FilePath, PackageId},
     Text,
+    access::{
+        AnyFuncItemIndex, EnumIndex, FlagsIndex, FunctionIndex, InlineInterfaceIndex,
+        InterfaceIndex, RecordIndex, ResourceIndex, ScopeIndex, TypeAliasIndex, VariantIndex,
+        WorldIndex,
+    },
+    queries::{FilePath, PackageId, metadata::Ident},
 };
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
@@ -26,6 +27,7 @@ pub struct World {
     pub name: Ident,
     pub docs: Option<Text>,
     pub type_definitions: Vector<TypeDefinition>,
+    pub inline_interfaces: OrdMap<InlineInterfaceIndex, Interface>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

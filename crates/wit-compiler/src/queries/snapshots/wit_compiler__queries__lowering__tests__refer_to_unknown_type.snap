@@ -1,0 +1,32 @@
+---
+source: crates/wit-compiler/src/queries/lowering.rs
+info:
+  src: "interface i { type x = this-does-not-exist; }"
+  ast: "(source_file (top_level_item (interface_item name: (id) body: (interface_body interface_items: (interface_items typedef: (typedef_item (type_item alias: (id) type: (ty (id)))))))))"
+---
+[
+    UnknownName(
+        UnknownName {
+            name: "this-does-not-exist",
+            location: Location {
+                filename: FilePath(
+                    Id {
+                        value: 1,
+                    },
+                ),
+                range: Range {
+                    start_byte: 23,
+                    end_byte: 42,
+                    start_point: Point {
+                        row: 0,
+                        column: 23,
+                    },
+                    end_point: Point {
+                        row: 0,
+                        column: 42,
+                    },
+                },
+            },
+        },
+    ),
+]

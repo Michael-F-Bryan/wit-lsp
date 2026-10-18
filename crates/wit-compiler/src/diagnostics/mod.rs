@@ -6,8 +6,8 @@ mod deprecated;
 mod lints;
 
 use crate::{
-    queries::{Package, SourceFile, Workspace},
     Db,
+    queries::{Package, SourceFile, Workspace},
 };
 
 pub use self::{all::all_diagnostics, deprecated::Deprecated, lints::*};
@@ -15,7 +15,7 @@ pub use self::{all::all_diagnostics, deprecated::Deprecated, lints::*};
 use codespan_reporting::diagnostic::{Label, Severity};
 use tree_sitter::Range;
 
-use crate::{queries::FilePath, Text};
+use crate::{Text, queries::FilePath};
 
 /// Check an entire workspace.
 pub fn check_all(db: &dyn Db, ws: Workspace) -> Vec<Diagnostic> {
@@ -23,6 +23,7 @@ pub fn check_all(db: &dyn Db, ws: Workspace) -> Vec<Diagnostic> {
 }
 
 #[salsa::tracked]
+#[allow(clippy::clone_on_copy)]
 pub fn check_workspace(db: &dyn Db, ws: Workspace) {
     let packages = crate::queries::workspace_packages(db, ws);
 
@@ -32,6 +33,7 @@ pub fn check_workspace(db: &dyn Db, ws: Workspace) {
 }
 
 #[salsa::tracked]
+#[allow(clippy::clone_on_copy)]
 pub(crate) fn check_package(db: &dyn Db, ws: Workspace, pkg: Package) {
     let _ = crate::queries::lower_package(db, ws, pkg);
 
@@ -41,6 +43,7 @@ pub(crate) fn check_package(db: &dyn Db, ws: Workspace, pkg: Package) {
 }
 
 #[salsa::tracked]
+#[allow(clippy::clone_on_copy)]
 pub(crate) fn lint_file(db: &dyn Db, ws: Workspace, pkg: Package, current_file: SourceFile) {
     for pass in LINT_PASSES {
         let ctx = LintContext::new(db, ws, pkg, current_file);
@@ -505,11 +508,11 @@ mod tests {
         let path = path.as_ref();
         let contents = normalize_newlines(contents.as_ref());
 
-        if let Ok(old_contents) = std::fs::read_to_string(path) {
-            if contents == normalize_newlines(&old_contents) {
-                tracing::debug!("File is already up to date");
-                return;
-            }
+        if let Ok(old_contents) = std::fs::read_to_string(path)
+            && contents == normalize_newlines(&old_contents)
+        {
+            tracing::debug!("File is already up to date");
+            return;
         }
 
         let display_path = path.strip_prefix(project_root()).unwrap_or(path);

@@ -4,9 +4,9 @@ use codespan_reporting::files::Error as CodespanError;
 use im::{OrdMap, Vector};
 
 use crate::{
+    Db, Text,
     ast::{AstNode, HasSource},
     diagnostics::{Diagnostics, Location, MismatchedPackageDeclaration},
-    Db, Text,
 };
 
 /// The path to a [`SourceFile`] in the [`Workspace`].
@@ -44,6 +44,15 @@ impl Workspace {
                 files.insert(path, file);
                 self.set_files(db).to(files);
             }
+        }
+    }
+
+    /// Remove a document that is no longer part of the workspace.
+    pub fn remove(self, db: &mut dyn Db, path: &str) {
+        if let Some(file) = self.lookup_by_path(db, path) {
+            let mut files = self.files(db);
+            files.remove(&file.path(db));
+            self.set_files(db).to(files);
         }
     }
 
@@ -118,7 +127,7 @@ pub fn workspace_packages(db: &dyn Db, ws: Workspace) -> Vector<Package> {
         // practice we'll only ever be receiving URIs or fs paths, and both
         // satisfy that assumption.
         let path = path.raw_path(db);
-        let dir = match path.rsplit_once(|c| c == '/' || c == '\\') {
+        let dir = match path.rsplit_once(['/', '\\']) {
             Some((dir, _)) => dir,
             None => ".",
         };

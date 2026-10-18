@@ -14,32 +14,46 @@ An alternative Language Server implementation for [WIT][wit].
 - [x] Show Syntax Tree
 - [x] Selection range
 - [x] Diagnostic reporting
-- [ ] Semantic Syntax Highlighting
+- [x] Semantic Syntax Highlighting
 - [x] Semantic Autocomplete
-- [ ] Jump to Definition
-- [ ] Jump to Declaration
-- [ ] Hover
+- [x] Jump to Definition
+- [x] Jump to Declaration
+- [x] Hover
+- [x] Document Symbols
 - [ ] View Memory Layout
 - [ ] Show Dependency Tree
-- [ ] Find All References
-- [ ] Workspace Symbol
+- [x] Find All References
+- [x] Document Highlights
+- [x] Workspace Symbol
 - [ ] Assists
   - [x] Extract type alias
   - [ ] Generate documentation template
   - [ ] Autoimport
-  - [ ] Rename
+  - [x] Rename
   - [ ] Inline type alias
   - [ ] Merge imports
   - [ ] Sort items
+
+## Workspace files
+
+The server discovers `.wit` files in workspace folders, including WIT dependency
+folders, so navigation, completion, and hover work without opening every file.
+It skips symlinked subtrees and common build, version-control, and dependency-cache
+directories such as `target`, `.git`, and `node_modules`.
+
+Unsaved editor buffers take precedence over disk contents. Closing a document
+reloads its saved contents, or removes it if it no longer exists in the workspace.
+Disk updates use the editor's `workspace/didChangeWatchedFiles` support. Clients
+without dynamic file watching still get initial discovery and open-buffer updates.
 
 ## License
 
 This project is licensed under either of
 
-- Apache License, Version 2.0, ([LICENSE-APACHE](./LICENSE-APACHE.md) or
+- Apache License, Version 2.0, ([LICENSE-APACHE](./LICENSE_APACHE.md) or
   <http://www.apache.org/licenses/LICENSE-2.0>)
-- MIT license ([LICENSE-MIT](./LICENSE-MIT.md) or
-   <http://opensource.org/licenses/MIT>)
+- MIT license ([LICENSE-MIT](./LICENSE_MIT.md) or
+  <http://opensource.org/licenses/MIT>)
 
 at your option.
 

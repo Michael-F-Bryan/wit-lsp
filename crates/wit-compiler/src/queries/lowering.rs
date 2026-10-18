@@ -2,20 +2,21 @@ use ast::HasSource;
 use im::{OrdMap, Vector};
 
 use crate::{
+    Db, Text,
     access::{AnyFuncItemIndex, InterfaceIndex, NodeKind, Pointer, WorldIndex},
     ast::{self, AstNode, HasAttr, HasIdent as _},
     diagnostics::{Diagnostics, DuplicateName, Location, MultiplePackageDocs, UnknownName},
     hir,
     queries::{
+        Ast, FilePath, Package, SourceFile, Workspace,
         metadata::{
             ConstructorMetadata, EnumMetadata, FlagsMetadata, FuncItemMetadata, HasDefinition,
-            HasIdent, Ident, InterfaceItemMetadata, InterfaceMetadata, MethodMetadata,
-            RecordMetadata, ResourceMetadata, StaticMethodMetadata, TypeAliasMetadata,
-            TypeDefinitionMetadata, VariantCaseMetadata, VariantMetadata, WorldMetadata,
+            HasIdent, Ident, InlineInterfaceMetadata, InterfaceItemMetadata, InterfaceMetadata,
+            MethodMetadata, RecordMetadata, ResourceMetadata, StaticMethodMetadata,
+            TypeAliasMetadata, TypeDefinitionMetadata, VariantCaseMetadata, VariantMetadata,
+            WorldMetadata,
         },
-        Ast, FilePath, Package, SourceFile, Workspace,
     },
-    Db, Text,
 };
 
 #[salsa::tracked]
@@ -45,6 +46,10 @@ pub fn lower_package(db: &dyn Db, ws: Workspace, pkg: Package) -> hir::Package {
 
 #[salsa::tracked]
 #[tracing::instrument(level = "debug", skip_all, fields(dir = %pkg.dir(db).raw_path(db)))]
+#[allow(
+    dead_code,
+    reason = "Registered with Salsa but not yet called by package lowering"
+)]
 pub(crate) fn lower_package_docs(db: &dyn Db, pkg: Package) -> Option<Text> {
     let mut all_docs = pkg.files(db).into_iter().filter_map(|f| {
         let tree = crate::queries::parse(db, f);
@@ -91,6 +96,12 @@ pub(crate) fn lower_world(
         docs: node.docs(file.contents(db)),
         name: meta.name(db),
         type_definitions,
+        inline_interfaces: meta
+            .inline_interfaces(db)
+            .filter_map(|meta| {
+                lower_inline_interface(db, ws, meta).map(|interface| (meta.index(db), interface))
+            })
+            .collect(),
     })
 }
 
@@ -116,6 +127,25 @@ pub(crate) fn lower_interface(
     Some(hir::Interface {
         docs: node.docs(file.contents(db)),
         name: meta.name(db),
+        items,
+    })
+}
+
+#[salsa::tracked]
+pub(crate) fn lower_inline_interface(
+    db: &dyn Db,
+    ws: Workspace,
+    meta: InlineInterfaceMetadata,
+) -> Option<hir::Interface> {
+    let _ = crate::queries::imported_types(db, ws, meta.index(db).into());
+    let items = meta
+        .items(db)
+        .into_iter()
+        .filter_map(|item| lower_interface_item(db, ws, item))
+        .collect();
+    Some(hir::Interface {
+        name: meta.name(db)?,
+        docs: None,
         items,
     })
 }
@@ -159,7 +189,7 @@ pub(crate) fn lower_func_definition(
 #[derive(Copy, Clone)]
 struct Context<'db> {
     db: &'db dyn Db,
-    _ws: Workspace,
+    ws: Workspace,
     file: SourceFile,
     src: &'db str,
     ast: Ast,
@@ -173,7 +203,7 @@ impl<'db> Context<'db> {
 
         Context {
             db,
-            _ws: ws,
+            ws,
             file,
             ast,
             src,
@@ -646,10 +676,9 @@ fn lower_type(ctx: Context<'_>, node: ast::Ty<'_>) -> Option<hir::Type> {
 fn resolve_handle(ctx: Context<'_>, handle: ast::Handle<'_>) -> Option<hir::Type> {
     let (ty, borrowed) = if let Some(node) = handle.borrowed_handle() {
         (node.id()?, true)
-    } else if let Some(node) = handle.owned_handle() {
-        (node.id()?, false)
     } else {
-        return None;
+        let node = handle.owned_handle()?;
+        (node.id()?, false)
     };
 
     let ty = resolve_user_defined_type(ctx, ty)?;
@@ -679,7 +708,13 @@ fn resolve_user_defined_type(ctx: Context<'_>, ty: ast::Id<'_>) -> Option<hir::T
     let ident = ty.utf8_text(ctx.src);
     let location = Location::new(ctx.path(), ty.range());
 
-    // TODO: Implement this
+    let name = Ident::from_ast(ctx.db, ty, ctx.src);
+    if let Some(reference) =
+        crate::queries::resolve_type(ctx.db, ctx.ws, ctx.file, ty.range().start_point, name)
+    {
+        return Some(hir::Type::UserDefinedType(reference));
+    }
+
     let diag = UnknownName {
         name: ident.into(),
         location,
@@ -751,9 +786,9 @@ fn resolve_builtin(ctx: Context<'_>, builtin: ast::Builtin<'_>) -> Option<hir::B
 #[cfg(test)]
 mod tests {
     use crate::{
+        Compiler,
         diagnostics::Diagnostics,
         queries::{FilePath, SourceFile},
-        Compiler,
     };
 
     use super::*;
@@ -919,20 +954,6 @@ mod tests {
         resource_with_constructor: "interface i { resource r { constructor(arg1: string, arg2: bool); } }",
         resource_with_method: "interface i { resource r { method: func(arg1: string, arg2: bool) -> u32; } }",
         resource_with_static_method: "interface i { resource r { method: static func(arg1: string, arg2: bool) -> u32; } }",
-        #[ignore]
-        refer_to_user_defined_type: "interface i {
-            record r {}
-            type x = list<r>;
-        }",
-        #[ignore]
-        refer_to_user_defined_type_from_other_interface: "
-            interface first { record r {} }
-            interface second {
-                use first.{r};
-                type x = r;
-            }
-        ",
-
         empty_variant: "interface i { variant v {} }",
         varant_with_one_field: "interface i { variant v { case } }",
         varant_with_multiple_fields_and_payloads: "interface i {
@@ -967,9 +988,43 @@ mod tests {
         }"
     }
 
+    #[test]
+    fn refer_to_user_defined_types() {
+        for source in [
+            "interface i { record r {} type x = list<r>; }",
+            "interface first { record r {} } interface second { use first.{r}; type x = list<r>; }",
+        ] {
+            let db = Compiler::default();
+            let path = FilePath::new(&db, "types.wit".into());
+            let file = SourceFile::new(&db, path, source.into());
+            let ws = Workspace::new(&db, [(path, file)].into_iter().collect());
+            let pkg = crate::queries::workspace_packages(&db, ws)[0];
+            let lowered = super::lower_package(&db, ws, pkg);
+            assert!(super::lower_package::accumulated::<Diagnostics>(&db, ws, pkg).is_empty());
+            let alias = lowered
+                .interfaces
+                .values()
+                .flat_map(|interface| &interface.items)
+                .find_map(|item| match item {
+                    hir::InterfaceItem::Type(hir::TypeDefinition::TypeAlias(alias)) => Some(alias),
+                    _ => None,
+                })
+                .unwrap();
+            let hir::Type::List(element) = &alias.ty else {
+                panic!("{:?}", alias.ty)
+            };
+            assert!(matches!(
+                element.as_ref(),
+                hir::Type::UserDefinedType(hir::ItemReference {
+                    kind: hir::ItemReferenceKind::Record(_),
+                    ..
+                })
+            ));
+        }
+    }
+
     lowering_error_tests! {
         syntax_errors_are_emitted: "#$",
-        #[ignore]
         refer_to_unknown_type: "interface i { type x = this-does-not-exist; }",
         #[ignore]
         recursive_records_are_not_allowed: "interface i { record recursive { inner: recursive } }",

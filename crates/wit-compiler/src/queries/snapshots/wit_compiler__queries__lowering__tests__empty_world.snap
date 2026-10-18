@@ -2,7 +2,7 @@
 source: crates/wit-compiler/src/queries/lowering.rs
 info:
   src: "world empty {}"
-  ast: "(source_file (top_level_item (world_item name: (identifier))))"
+  ast: "(source_file (top_level_item (world_item name: (id) body: (world_body))))"
 ---
 Package {
     docs: None,
@@ -25,6 +25,7 @@ Package {
             ),
             docs: None,
             type_definitions: [],
+            inline_interfaces: {},
         },
     },
     interfaces: {},

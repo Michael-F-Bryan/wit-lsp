@@ -111,10 +111,10 @@ pub(crate) struct CatchPanic<S>(pub S);
 impl<S> Service<tower_lsp::jsonrpc::Request> for CatchPanic<S>
 where
     S: Service<
-        tower_lsp::jsonrpc::Request,
-        Response = Option<tower_lsp::jsonrpc::Response>,
-        Error = tower_lsp::ExitedError,
-    >,
+            tower_lsp::jsonrpc::Request,
+            Response = Option<tower_lsp::jsonrpc::Response>,
+            Error = tower_lsp::ExitedError,
+        >,
     S::Future: Send + 'static,
 {
     type Response = S::Response;

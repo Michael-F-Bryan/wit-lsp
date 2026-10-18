@@ -4,13 +4,32 @@
 
 This project contains several releasable components,
 
-- `tree-sitter-wit` - a [Tree Sitter][tree-sitter] parser for [the WIT format][wit]
+- `tree-sitter-wit` - an external [Tree Sitter][tree-sitter] parser dependency for [the WIT format][wit], selected in the root `Cargo.toml`
 - `crates/wit-compiler` - an incremental compiler for the WIT language
 - `crates/wit-language-server` - the actual [Language Server][ls] implementation
-- `crates/wit` - a monolithic command-line tool for end users
+- `crates/wit-cli` - the `wit` command-line tool, including the language server
 - `plugins/vscode` - an extension for VS Code which uses the language server
 
 It also contains a `crates/xtask` crate for running useful internal commands.
+
+## Development
+
+Use the Rust toolchain pinned in `rust-toolchain.toml`. Build the executable with
+`cargo build-ls`, then configure your editor to run `target/release/wit` with
+`language-server --stdio`. Rebuild it and restart the language server after changes.
+
+Before submitting a change, run:
+
+```sh
+cargo fmt --all --check
+cargo clippy --workspace --all-targets --locked -- -D warnings
+cargo nextest run --workspace --locked
+cargo test --doc --workspace --locked
+```
+
+The test command requires `cargo-nextest`, as used in CI. Regenerate syntax wrappers
+with `cargo xtask codegen ast` when changing their generator rather than editing
+`crates/wit-syntax/src/generated.rs` directly.
 
 ## Design Goals
 

@@ -1,9 +1,8 @@
 use tower_lsp::lsp_types::{CompletionItem, CompletionItemKind};
 use wit_compiler::{
-    access::ScopeIndex,
-    ast::{self, AstNode, HasSource},
-    queries::{metadata::HasIdent, SourceFile, Workspace},
     Db,
+    ast::{self, AstNode, HasSource},
+    queries::{SourceFile, Workspace},
 };
 
 pub fn complete(
@@ -21,36 +20,12 @@ pub fn complete(
     });
     completions.extend(keywords);
 
-    // Now, we do the hard job of figuring out which identifiers are in scope.
-    // FIXME: This doesn't take imported items into account
-    let path = file.path(db);
-    let pkg = wit_compiler::queries::workspace_packages(db, ws)
-        .into_iter()
-        .find(|pkg| pkg.contains(db, path))
-        .expect("unreachable");
-
-    let items = wit_compiler::queries::package_items(db, pkg);
-
-    if let Some(index) = items.enclosing_item(db, point) {
-        let types = match index {
-            ScopeIndex::World(index) => items.get_world(db, index).definitions(db),
-            ScopeIndex::Interface(index) => items
-                .get_interface(db, index)
-                .items(db)
-                .into_iter()
-                .filter_map(|item| match item {
-                    wit_compiler::queries::metadata::InterfaceItemMetadata::Func(_) => None,
-                    wit_compiler::queries::metadata::InterfaceItemMetadata::Type(ty) => Some(ty),
-                })
-                .collect(),
-        };
-
-        let names = types
-            .iter()
-            .map(|t| t.ident(db).raw(db).to_string())
-            .map(Completion::type_name);
-        completions.extend(names);
-    }
+    let types = wit_compiler::queries::visible_types(db, ws, file, point);
+    completions.extend(
+        types
+            .keys()
+            .map(|name| Completion::type_name(name.raw(db).as_str())),
+    );
 
     let ast = wit_compiler::queries::parse(db, file);
     if let Some(ident) = ast.tree(db).ancestors(point).find_map(ast::Id::cast) {
@@ -119,7 +94,7 @@ mod tests {
     use std::borrow::Cow;
 
     use im::OrdMap;
-    use wit_compiler::{queries::FilePath, Compiler, Tree};
+    use wit_compiler::{Compiler, Tree, queries::FilePath};
 
     use super::*;
 
@@ -159,5 +134,53 @@ mod tests {
             .collect();
 
         insta::assert_debug_snapshot!(result);
+    }
+
+    #[test]
+    fn completes_only_types_visible_in_the_current_file_and_scope() {
+        for scope in ["interface", "world"] {
+            let db = Compiler::default();
+            let source_path = FilePath::new(&db, "file:///source.wit".into());
+            let source_file = SourceFile::new(
+                &db,
+                source_path,
+                "interface source { type original = u32; type hidden = string; }".into(),
+            );
+            let path = FilePath::new(&db, "file:///consumer.wit".into());
+            let source = format!(
+                "{scope} consumer {{ use source.{{original as renamed}}; type local = u32; /* here */ }}"
+            );
+            let point = tree_sitter::Point::new(0, source.find("/* here */").unwrap());
+            let file = SourceFile::new(&db, path, source.into());
+            let ws = Workspace::new(
+                &db,
+                [(source_path, source_file), (path, file)]
+                    .into_iter()
+                    .collect(),
+            );
+            let mut names = complete(&db, ws, file, point)
+                .into_iter()
+                .filter(|item| item.kind == CompletionKind::TypeName)
+                .map(|item| item.text)
+                .collect::<Vec<_>>();
+            names.sort();
+            assert_eq!(names, ["local", "renamed"]);
+            for name in names {
+                let ident = wit_compiler::queries::metadata::Ident::new(&db, name.into());
+                assert!(wit_compiler::queries::resolve_type(&db, ws, file, point, ident).is_some());
+            }
+        }
+    }
+
+    #[test]
+    fn imported_aliases_are_filtered_by_the_typed_prefix() {
+        let db = Compiler::default();
+        let path = FilePath::new(&db, "file:///types.wit".into());
+        let source = "interface source { type original = u32; } interface consumer { use source.{original as renamed}; type alias = ren; }";
+        let file = SourceFile::new(&db, path, source.into());
+        let ws = Workspace::new(&db, [(path, file)].into_iter().collect());
+        let point = tree_sitter::Point::new(0, source.find("= ren;").unwrap() + 2);
+        let items = complete(&db, ws, file, point);
+        assert_eq!(items, [Completion::type_name("renamed")]);
     }
 }

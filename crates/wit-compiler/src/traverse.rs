@@ -37,7 +37,7 @@ pub trait Cursor {
     fn node(&self) -> Self::Node;
 }
 
-impl<'a, T> Cursor for &'a mut T
+impl<T> Cursor for &mut T
 where
     T: Cursor,
 {
@@ -328,8 +328,8 @@ impl<'a> Traverse<tree_sitter::TreeCursor<'a>> {
 pub fn tree(
     tree: &tree_sitter::Tree,
     order: Order,
-) -> impl FusedIterator<Item = tree_sitter::Node> {
-    return cursor(tree.walk(), order);
+) -> impl FusedIterator<Item = tree_sitter::Node<'_>> {
+    cursor(tree.walk(), order)
 }
 
 /// Traverse an n-ary tree using `cursor`, returning the nodes of the tree
@@ -346,8 +346,8 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         match self {
-            Traverse::Post(ref mut i) => i.next(),
-            Traverse::Pre(ref mut i) => i.next(),
+            Traverse::Post(i) => i.next(),
+            Traverse::Pre(i) => i.next(),
         }
     }
 }

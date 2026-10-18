@@ -1,31 +1,30 @@
 [package]
-name = "integration-tests"
-version = "0.1.0"
-publish = false
-authors.workspace = true
-edition.workspace = true
-homepage.workspace = true
-license.workspace = true
-readme.workspace = true
+name                 = "integration-tests"
+version              = "0.1.0"
+authors.workspace    = true
+edition.workspace    = true
+readme.workspace     = true
+homepage.workspace   = true
 repository.workspace = true
-rust-version.workspace = true
+license.workspace    = true
+publish              = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[[test]]
+harness = false
+name    = "integration-tests"
+path    = "tests/integration-test.rs"
+
 [dependencies]
 codespan-reporting = { workspace = true }
-color-eyre = { workspace = true }
-im = { workspace = true }
-libtest-mimic = "0.7.2"
-tracing = { workspace = true }
-wit-compiler = { version = "0.2.0", path = "../crates/wit-compiler" }
+color-eyre         = { workspace = true }
+im                 = { workspace = true }
+libtest-mimic      = { workspace = true }
+tracing            = { workspace = true }
+wit-compiler       = { path = "../crates/wit-compiler", version = "0.2.0" }
 
 [dev-dependencies]
-clap = { workspace = true }
+clap               = { workspace = true }
+tracing-error      = { workspace = true }
 tracing-subscriber = { workspace = true }
-tracing-error = { workspace = true }
-
-[[test]]
-name = "integration-tests"
-path = "tests/integration-test.rs"
-harness = false

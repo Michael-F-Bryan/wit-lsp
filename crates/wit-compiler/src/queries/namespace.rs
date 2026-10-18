@@ -1,19 +1,238 @@
-use im::{OrdMap, Vector};
+use im::OrdMap;
 
 use crate::{
+    Db,
     access::{InterfaceIndex, ScopeIndex},
     ast::{self, AstNode, HasSource},
-    diagnostics::{Diagnostic, Diagnostics, DuplicateName, Location, UnknownName, UnknownPackage},
+    diagnostics::{Diagnostic, Diagnostics, DuplicateName, Location, UnknownName},
     hir,
     queries::{
+        FilePath, SourceFile, Workspace,
         metadata::{
-            GetByIndex, HasIdent, Ident, InterfaceItemMetadata, PackageMetadata,
-            TopLevelItemMetadata, TypeDefinitionMetadata,
+            HasDefinition, HasIdent, Ident, ScopeMetadata, TopLevelItemMetadata,
+            TypeDefinitionMetadata, file_scopes,
         },
-        FilePath, Package, PackageId, SourceFile, Workspace,
     },
-    Db,
 };
+
+/// Resolve a type name in the interface or world containing its use site.
+/// References retain the declaration's identity rather than expanding its type.
+pub fn resolve_type(
+    db: &dyn Db,
+    ws: Workspace,
+    file: SourceFile,
+    point: tree_sitter::Point,
+    name: Ident,
+) -> Option<hir::ItemReference> {
+    visible_types(db, ws, file, point).get(&name).copied()
+}
+
+/// Find the enclosing interface or world in this file.
+pub fn enclosing_scope(
+    db: &dyn Db,
+    file: SourceFile,
+    point: tree_sitter::Point,
+) -> Option<ScopeMetadata> {
+    file_scopes(db, file)
+        .into_iter()
+        .filter(|item| item.definition(db).contains(point))
+        .min_by_key(|item| {
+            let range = item.definition(db).range;
+            range.end_byte - range.start_byte
+        })
+}
+
+/// Type names visible at a position, including local names for imported types.
+pub fn visible_types(
+    db: &dyn Db,
+    ws: Workspace,
+    file: SourceFile,
+    point: tree_sitter::Point,
+) -> OrdMap<Ident, hir::ItemReference> {
+    let Some(enclosing) = enclosing_scope(db, file, point) else {
+        return OrdMap::new();
+    };
+    let scope = enclosing.index(db);
+    let mut types = imported_types(db, ws, scope);
+    for meta in enclosing.definitions(db) {
+        types.insert(meta.ident(db), type_reference(db, scope, meta));
+    }
+    types
+}
+
+/// Locate the declaration identified by a resolved type reference.
+pub fn type_definition(
+    db: &dyn Db,
+    ws: Workspace,
+    reference: hir::ItemReference,
+) -> Option<Location> {
+    let file = ws.file(db, reference.file);
+    let scope = file_scopes(db, file)
+        .into_iter()
+        .find(|item| item.index(db) == reference.scope)?;
+    scope
+        .definitions(db)
+        .into_iter()
+        .find(|meta| type_reference(db, reference.scope, *meta) == reference)
+        .map(|meta| meta.definition(db))
+}
+
+fn type_reference(
+    db: &dyn Db,
+    scope: ScopeIndex,
+    meta: TypeDefinitionMetadata,
+) -> hir::ItemReference {
+    let kind = match meta {
+        TypeDefinitionMetadata::Enum(meta) => meta.index(db).into(),
+        TypeDefinitionMetadata::Record(meta) => meta.index(db).into(),
+        TypeDefinitionMetadata::Resource(meta) => meta.index(db).into(),
+        TypeDefinitionMetadata::Variant(meta) => meta.index(db).into(),
+        TypeDefinitionMetadata::Flags(meta) => meta.index(db).into(),
+        TypeDefinitionMetadata::Alias(meta) => meta.index(db).into(),
+    };
+    hir::ItemReference {
+        file: scope.file(),
+        scope,
+        kind,
+    }
+}
+
+/// Resolve the source name in a `use path.{name as alias}` declaration.
+/// The declaration's path is authoritative even if a local name shadows its alias.
+pub fn resolve_imported_type(
+    db: &dyn Db,
+    ws: Workspace,
+    file: SourceFile,
+    path: ast::UsePath<'_>,
+    name: Ident,
+) -> Option<hir::ItemReference> {
+    let TopLevelItemMetadata::Interface(meta) = super::resolve_use_path(db, ws, file, path)? else {
+        return None;
+    };
+    interface_type(db, ws, meta.index(db), name)
+}
+
+/// Resolve the name that a rename should change, retaining explicit import aliases.
+pub fn resolve_type_binding(
+    db: &dyn Db,
+    ws: Workspace,
+    file: SourceFile,
+    point: tree_sitter::Point,
+    name: Ident,
+) -> Option<Location> {
+    let scope = enclosing_scope(db, file, point)?;
+    type_resolution(db, ws, scope.index(db), name).map(|(_, binding)| binding)
+}
+
+/// Resolve the source side of an import without crossing explicit alias bindings.
+pub fn resolve_imported_type_binding(
+    db: &dyn Db,
+    ws: Workspace,
+    file: SourceFile,
+    path: ast::UsePath<'_>,
+    name: Ident,
+) -> Option<Location> {
+    let TopLevelItemMetadata::Interface(meta) = super::resolve_use_path(db, ws, file, path)? else {
+        return None;
+    };
+    type_resolution(db, ws, meta.index(db).into(), name).map(|(_, binding)| binding)
+}
+
+fn interface_type(
+    db: &dyn Db,
+    ws: Workspace,
+    index: InterfaceIndex,
+    name: Ident,
+) -> Option<hir::ItemReference> {
+    type_resolution(db, ws, index.into(), name).map(|(reference, _)| reference)
+}
+
+fn type_resolution(
+    db: &dyn Db,
+    ws: Workspace,
+    mut index: ScopeIndex,
+    mut name: Ident,
+) -> Option<(hir::ItemReference, Location)> {
+    let mut binding = None;
+    let mut visited = std::collections::HashSet::new();
+    loop {
+        if !visited.insert((index, name)) {
+            return None;
+        }
+        let file = ws.file(db, index.file());
+        let scope = file_scopes(db, file)
+            .into_iter()
+            .find(|item| item.index(db) == index)?;
+        if let Some(item) = scope
+            .definitions(db)
+            .into_iter()
+            .find(|item| item.ident(db) == name)
+        {
+            return Some((
+                type_reference(db, index, item),
+                binding.unwrap_or_else(|| item.definition(db)),
+            ));
+        }
+        let src = file.contents(db);
+        let (path, source, alias) = scope_uses(db, ws, index).into_iter().find_map(|item| {
+            item.names()?.iter_use_names_items().find_map(|entry| {
+                let source = entry.name()?;
+                let local = entry.alias_opt().unwrap_or(source);
+                (Ident::from_ast(db, local, src) == name).then(|| {
+                    (
+                        item.path(),
+                        Ident::from_ast(db, source, src),
+                        entry.alias_opt(),
+                    )
+                })
+            })
+        })?;
+        if binding.is_none() {
+            binding = alias.map(|id| Location::new(file.path(db), id.range()));
+        }
+        let TopLevelItemMetadata::Interface(target) = super::resolve_use_path(db, ws, file, path?)?
+        else {
+            return None;
+        };
+        index = target.index(db).into();
+        name = source;
+    }
+}
+
+fn scope_uses(db: &dyn Db, ws: Workspace, scope: ScopeIndex) -> Vec<ast::UseItem<'_>> {
+    let file = ws.file(db, scope.file());
+    let ast = crate::queries::parse(db, file);
+
+    match file_scopes(db, file)
+        .into_iter()
+        .find(|item| item.index(db) == scope)
+    {
+        Some(ScopeMetadata::World(w)) => {
+            let ptr = w.ptr(db);
+            let node = ast.get(db, ptr);
+            node.body()
+                .into_iter()
+                .flat_map(|body| body.iter_world_items())
+                .filter_map(|item| item.use_item_opt())
+                .collect()
+        }
+        Some(ScopeMetadata::Interface(i)) => {
+            let ptr = i.ptr(db);
+            let node = ast.get(db, ptr);
+            node.body()
+                .into_iter()
+                .flat_map(|body| body.iter_interface_items())
+                .filter_map(|item| item.use_opt())
+                .collect()
+        }
+        Some(ScopeMetadata::InlineInterface(i)) => ast
+            .get(db, i.ptr(db))
+            .iter_interface_items()
+            .filter_map(|item| item.use_opt())
+            .collect(),
+        None => Vec::new(),
+    }
+}
 
 /// Determine the items that have been imported inside a particular world or
 /// interface.
@@ -23,45 +242,13 @@ pub fn imported_types(
     ws: Workspace,
     scope: ScopeIndex,
 ) -> OrdMap<Ident, hir::ItemReference> {
-    let packages = crate::queries::workspace_packages(db, ws);
     let path = scope.file();
-
-    let pkg = packages
-        .iter()
-        .copied()
-        .find(|pkg| pkg.contains(db, path))
-        .unwrap();
-    let meta = crate::queries::package_items(db, pkg);
-
     let file = ws.file(db, path);
-    let ast = crate::queries::parse(db, file);
-
-    let use_statements: Vec<_> = match scope {
-        ScopeIndex::World(w) => {
-            let ptr = meta.get_by_index(db, w).ptr(db);
-            let node = ast.get(db, ptr);
-            node.body()
-                .into_iter()
-                .flat_map(|body| body.iter_world_items())
-                .filter_map(|item| item.use_item_opt())
-                .collect()
-        }
-        ScopeIndex::Interface(i) => {
-            let ptr = meta.get_by_index(db, i).ptr(db);
-            let node = ast.get(db, ptr);
-            node.body()
-                .into_iter()
-                .flat_map(|body| body.iter_interface_items())
-                .filter_map(|item| item.use_opt())
-                .collect()
-        }
-    };
+    let use_statements = scope_uses(db, ws, scope);
 
     let mut ctx = Context {
         db,
-        packages,
         path,
-        meta,
         ws,
         src: file.contents(db),
         imports: OrdMap::new(),
@@ -88,8 +275,6 @@ struct Context<'db> {
     src: &'db str,
     path: FilePath,
     imports: OrdMap<Ident, (hir::ItemReference, Location)>,
-    packages: Vector<Package>,
-    meta: PackageMetadata,
     ws: Workspace,
 }
 
@@ -116,74 +301,20 @@ impl Context<'_> {
     }
 
     fn resolve_path(&self, path: ast::UsePath<'_>) -> Option<InterfaceIndex> {
-        let (meta, item_name_node) = if let Some(bare_ident) = path.id() {
-            // TODO: Also check for top-level `use` statements that refer to
-            // this package.
-            let raw = bare_ident.utf8_text(self.src);
-            let ident = Ident::new(self.db, raw.into());
-            let item = self.meta.items_by_name(self.db).get(&ident).copied();
-
-            (item, bare_ident)
-        } else if let Some(fully_qualified) = path.fully_qualified_use_path() {
-            let pkg_id = self.resolve_package_id(fully_qualified)?;
-            let pkg = self.find_pkg(pkg_id, fully_qualified)?;
-
-            let item_name = fully_qualified.iter_ids().last()?;
-            let raw = item_name.utf8_text(self.src);
-            let ident = Ident::new(self.db, raw.into());
-
-            let meta = crate::queries::package_items(self.db, pkg);
-            let meta = meta.items_by_name(self.db).get(&ident).copied();
-
-            (meta, item_name)
-        } else {
-            return None;
-        };
-
-        match meta {
-            Some(TopLevelItemMetadata::Interface(i)) => Some(i.index(self.db)),
-            Some(TopLevelItemMetadata::World(_)) => todo!(),
-            None => {
-                self.emit(crate::diagnostics::UnknownName {
-                    name: item_name_node.utf8_text(self.src).into(),
-                    location: Location::new(self.path, item_name_node.range()),
-                });
-                None
-            }
+        let file = self.ws.file(self.db, self.path);
+        if let Some(TopLevelItemMetadata::Interface(meta)) =
+            crate::queries::resolve_use_path(self.db, self.ws, file, path)
+        {
+            return Some(meta.index(self.db));
         }
-    }
-
-    fn resolve_package_id(
-        &self,
-        package_name: ast::FullyQualifiedUsePath<'_>,
-    ) -> Option<PackageId> {
-        let raw = package_name.utf8_text(self.src);
-
-        self.packages.iter().find_map(|pkg| {
-            let pkg_id = pkg.id(self.db)?;
-            if pkg_id.raw(self.db) == raw {
-                Some(pkg_id)
-            } else {
-                None
-            }
-        })
-    }
-
-    fn find_pkg(&self, pkg_id: PackageId, node: ast::FullyQualifiedUsePath<'_>) -> Option<Package> {
-        let pkg = self
-            .packages
-            .iter()
-            .copied()
-            .find(|pkg| pkg.id(self.db) == Some(pkg_id));
-
-        if pkg.is_none() {
-            self.emit(UnknownPackage {
-                package_id: pkg_id.raw(self.db).clone(),
-                location: Location::new(self.path, node.range()),
-            });
-        };
-
-        pkg
+        let name = path
+            .id()
+            .or_else(|| path.fully_qualified_use_path()?.iter_ids().last())?;
+        self.emit(UnknownName {
+            name: name.utf8_text(self.src).into(),
+            location: Location::new(self.path, name.range()),
+        });
+        None
     }
 
     fn emit(&self, diag: impl Into<Diagnostic>) {
@@ -195,60 +326,20 @@ impl Context<'_> {
         index: InterfaceIndex,
         use_name: ast::UseNamesItem<'_>,
     ) -> Option<(Ident, hir::ItemReference, Location)> {
-        let path = index.file();
-        let packages = crate::queries::workspace_packages(self.db, self.ws);
-        let pkg = packages
-            .iter()
-            .copied()
-            .find(|pkg| pkg.contains(self.db, path))
-            .unwrap();
+        let source_node = use_name.name()?;
+        let source_name = source_node.utf8_text(self.src);
+        let source_ident = Ident::from_ast(self.db, source_node, self.src);
+        let ident_node = use_name.alias_opt().unwrap_or(source_node);
+        let ident = Ident::from_ast(self.db, ident_node, self.src);
 
-        let meta = crate::queries::package_items(self.db, pkg);
-        let interface_meta = meta.get_by_index(self.db, index);
-
-        let ident_node = use_name.alias_opt().or_else(|| use_name.name())?;
-        let name = ident_node.utf8_text(self.src);
-        let ident = Ident::new(self.db, name.into());
-
-        let Some(item_meta) = interface_meta
-            .items(self.db)
-            .into_iter()
-            .find(|item| item.ident(self.db) == ident)
-        else {
+        let Some(reference) = interface_type(self.db, self.ws, index, source_ident) else {
             self.emit(UnknownName {
-                name: name.into(),
-                location: Location::new(path, ident_node.range()),
+                name: source_name.into(),
+                location: Location::new(self.path, source_node.range()),
             });
             return None;
         };
 
-        let kind: hir::ItemReferenceKind = match item_meta {
-            InterfaceItemMetadata::Func(_) => todo!("Can you import a function?"),
-            InterfaceItemMetadata::Type(TypeDefinitionMetadata::Enum(meta)) => {
-                meta.index(self.db).into()
-            }
-            InterfaceItemMetadata::Type(TypeDefinitionMetadata::Record(meta)) => {
-                meta.index(self.db).into()
-            }
-            InterfaceItemMetadata::Type(TypeDefinitionMetadata::Resource(meta)) => {
-                meta.index(self.db).into()
-            }
-            InterfaceItemMetadata::Type(TypeDefinitionMetadata::Variant(meta)) => {
-                meta.index(self.db).into()
-            }
-            InterfaceItemMetadata::Type(TypeDefinitionMetadata::Flags(meta)) => {
-                meta.index(self.db).into()
-            }
-            InterfaceItemMetadata::Type(TypeDefinitionMetadata::Alias(meta)) => {
-                meta.index(self.db).into()
-            }
-        };
-
-        let reference = hir::ItemReference {
-            file: path,
-            scope: index.into(),
-            kind,
-        };
         let location = Location::new(self.path, ident_node.range());
 
         Some((ident, reference, location))
@@ -274,7 +365,10 @@ impl Context<'_> {
 #[cfg(test)]
 mod tests {
 
-    use crate::{queries::FilePath, Compiler};
+    use crate::{
+        Compiler, diagnostics,
+        queries::{FilePath, metadata::InterfaceItemMetadata},
+    };
     use im::OrdMap;
 
     use super::*;
@@ -336,5 +430,318 @@ mod tests {
                 .collect();
 
         insta::assert_debug_snapshot!(all_imports);
+    }
+
+    fn workspace(db: &Compiler, files: &[(&str, &str)]) -> Workspace {
+        Workspace::new(
+            db,
+            files
+                .iter()
+                .map(|(path, text)| {
+                    let path = FilePath::new(db, (*path).into());
+                    (path, SourceFile::new(db, path, (*text).into()))
+                })
+                .collect(),
+        )
+    }
+
+    #[test]
+    fn inline_interfaces_have_distinct_scopes_and_lowered_bodies() {
+        let db = Compiler::default();
+        let ws = workspace(
+            &db,
+            &[(
+                "inline.wit",
+                "world app { import api: interface { record value { x: u32 } f: func(v: value); } export api: interface { type value = bool; f: func(v: value); } }",
+            )],
+        );
+        assert!(diagnostics::check_all(&db, ws).is_empty());
+        let file = ws.lookup_by_path(&db, "inline.wit").unwrap();
+        let scopes = file_scopes(&db, file);
+        assert_eq!(scopes.len(), 3);
+        let inline: Vec<_> = scopes
+            .into_iter()
+            .filter_map(|scope| match scope {
+                ScopeMetadata::InlineInterface(meta) => Some(meta),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(inline.len(), 2);
+        assert_ne!(inline[0].index(&db), inline[1].index(&db));
+        let pkg = crate::queries::workspace_packages(&db, ws)[0];
+        assert_eq!(
+            crate::queries::package_items(&db, pkg)
+                .items_by_name(&db)
+                .len(),
+            1
+        );
+        let lowered = crate::queries::lower_package(&db, ws, pkg);
+        assert!(lowered.interfaces.is_empty());
+        let world = lowered.worlds.values().next().unwrap();
+        assert_eq!(world.inline_interfaces.len(), 2);
+        for meta in inline {
+            let body = &world.inline_interfaces[&meta.index(&db)];
+            assert_eq!(body.items.len(), 2);
+            let definition = ScopeMetadata::InlineInterface(meta).definitions(&db)[0];
+            let expected =
+                hir::Type::UserDefinedType(type_reference(&db, meta.index(&db).into(), definition));
+            let function = body
+                .items
+                .iter()
+                .find_map(|item| match item {
+                    hir::InterfaceItem::Func(f) => Some(f),
+                    _ => None,
+                })
+                .unwrap();
+            assert_eq!(function.params[0].ty, expected);
+        }
+    }
+
+    #[test]
+    fn lowers_local_types_and_forward_references() {
+        let db = Compiler::default();
+        let ws = workspace(
+            &db,
+            &[(
+                "local.wit",
+                r#"
+            interface example {
+                record span { start: position, end: option<position> }
+                record position { line: u32, column: u32 }
+                enum color { red, blue }
+                flags permissions { read, write }
+                variant value { point(position), color(color) }
+                resource file {
+                    read: func(at: position) -> value;
+                }
+                type points = list<position>;
+                inspect: func(p: points, c: color, f: borrow<file>, flags: permissions)
+                    -> result<tuple<span, value>, string>;
+            }
+            world example-world {
+                type count = u32;
+                type counts = list<count>;
+            }
+        "#,
+            )],
+        );
+        assert!(diagnostics::check_all(&db, ws).is_empty());
+
+        let file = ws.lookup_by_path(&db, "local.wit").unwrap();
+        let meta = crate::queries::file_items(&db, file)
+            .into_iter()
+            .find_map(|item| match item {
+                TopLevelItemMetadata::Interface(meta) => Some(meta),
+                _ => None,
+            })
+            .unwrap();
+        let pkg = crate::queries::workspace_packages(&db, ws)[0];
+        let lowered = crate::queries::lower_package(&db, ws, pkg);
+        let span = lowered.interfaces[&meta.index(&db)]
+            .items
+            .iter()
+            .find_map(|item| match item {
+                hir::InterfaceItem::Type(hir::TypeDefinition::Record(record))
+                    if record.name.raw(&db) == "span" =>
+                {
+                    Some(record)
+                }
+                _ => None,
+            })
+            .unwrap();
+        // A successful lookup must produce a real declaration reference, not
+        // merely suppress the diagnostic and leave an error type behind.
+        let position = meta
+            .items(&db)
+            .into_iter()
+            .find_map(|item| match item {
+                InterfaceItemMetadata::Type(TypeDefinitionMetadata::Record(meta))
+                    if meta.name(&db).raw(&db) == "position" =>
+                {
+                    Some(meta)
+                }
+                _ => None,
+            })
+            .unwrap();
+        let expected = hir::Type::UserDefinedType(type_reference(
+            &db,
+            meta.index(&db).into(),
+            TypeDefinitionMetadata::Record(position),
+        ));
+        assert_eq!(span.fields[0].ty, expected);
+    }
+
+    #[test]
+    fn resolves_renamed_imports_across_files() {
+        let db = Compiler::default();
+        let ws = workspace(
+            &db,
+            &[
+                (
+                    "types.wit",
+                    "interface types { record position { line: u32 } }",
+                ),
+                (
+                    "consumer.wit",
+                    r#"
+                interface consumer {
+                    use types.{position as location};
+                    record span { start: location, end: option<location> }
+                }
+                world consumer-world {
+                    use types.{position};
+                    type positions = list<position>;
+                }
+            "#,
+                ),
+            ],
+        );
+        assert!(diagnostics::check_all(&db, ws).is_empty());
+        let file = ws.lookup_by_path(&db, "consumer.wit").unwrap();
+        let reference = resolve_type(
+            &db,
+            ws,
+            file,
+            tree_sitter::Point::new(3, 40),
+            Ident::new(&db, "location".into()),
+        )
+        .unwrap();
+        assert_eq!(reference.file.raw_path(&db), "types.wit");
+        assert!(matches!(reference.kind, hir::ItemReferenceKind::Record(_)));
+    }
+
+    #[test]
+    fn does_not_resolve_types_from_other_scopes_or_functions() {
+        let db = Compiler::default();
+        let ws = workspace(
+            &db,
+            &[
+                ("a.wit", "interface first { type hidden = u32; }"),
+                ("b.wit", "interface second { type invalid = hidden; }"),
+                (
+                    "c.wit",
+                    "interface third { function: func(); type invalid = function; }",
+                ),
+            ],
+        );
+        let diags = diagnostics::check_all(&db, ws);
+        let mut unknown = diags
+            .iter()
+            .filter_map(|diag| match diag {
+                Diagnostic::UnknownName(diag) => Some((
+                    diag.location.filename.raw_path(&db).as_str(),
+                    diag.name.as_str(),
+                )),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        unknown.sort();
+        assert_eq!(unknown, [("b.wit", "hidden"), ("c.wit", "function")]);
+    }
+
+    #[test]
+    fn invalid_imports_report_errors_without_panicking() {
+        for declaration in [
+            "world source {}",
+            "interface source { value: func(); }",
+            "interface source { type other = u32; }",
+        ] {
+            let db = Compiler::default();
+            let ws = workspace(
+                &db,
+                &[
+                    ("source.wit", declaration),
+                    (
+                        "consumer.wit",
+                        "interface consumer { use source.{value as renamed}; type alias = renamed; }",
+                    ),
+                ],
+            );
+            let diags = diagnostics::check_all(&db, ws);
+            assert!(!diags.is_empty(), "{declaration}");
+            for diag in diags {
+                assert!(matches!(diag, Diagnostic::UnknownName(_)), "{diag:?}");
+                assert_eq!(diag.location().filename.raw_path(&db), "consumer.wit");
+            }
+        }
+    }
+
+    #[test]
+    fn qualified_and_transitive_imports_share_type_resolution() {
+        let db = Compiler::default();
+        let ws = workspace(
+            &db,
+            &[
+                (
+                    "dep/types.wit",
+                    "package example:remote@1.2.3; interface types { type %type = u32; }",
+                ),
+                (
+                    "bridge/bridge.wit",
+                    "package example:bridge; use example:remote/types@1.2.3 as remote-types; interface bridge { use remote-types.{%type as value}; }",
+                ),
+                (
+                    "app/main.wit",
+                    "use example:bridge/bridge; interface consumer { use bridge.{value as local}; type alias = local; }",
+                ),
+            ],
+        );
+        assert!(diagnostics::check_all(&db, ws).is_empty());
+        let file = ws.lookup_by_path(&db, "app/main.wit").unwrap();
+        let point = tree_sitter::Point::new(0, file.contents(&db).find("type alias").unwrap());
+        let reference =
+            resolve_type(&db, ws, file, point, Ident::new(&db, "local".into())).unwrap();
+        assert_eq!(reference.file.raw_path(&db), "dep/types.wit");
+        let location = type_definition(&db, ws, reference).unwrap();
+        let source = ws.file(&db, location.filename).contents(&db);
+        assert_eq!(
+            &source[location.range.start_byte..location.range.end_byte],
+            "type %type = u32;"
+        );
+    }
+
+    #[test]
+    fn cyclic_imports_report_errors_without_recursing() {
+        let db = Compiler::default();
+        let ws = workspace(
+            &db,
+            &[(
+                "cycles.wit",
+                "use second as first; use first as second; interface a { use first.{missing}; use b.{value}; type x = value; } interface b { use a.{value}; type x = value; }",
+            )],
+        );
+        let diags = diagnostics::check_all(&db, ws);
+        assert!(!diags.is_empty());
+        assert!(
+            diags
+                .iter()
+                .all(|diag| matches!(diag, Diagnostic::UnknownName(_)))
+        );
+    }
+
+    #[test]
+    fn updates_resolution_after_editing_a_declaration() {
+        let mut db = Compiler::default();
+        let ws = workspace(
+            &db,
+            &[(
+                "edit.wit",
+                "interface example { type value = u32; type alias = value; }",
+            )],
+        );
+        assert!(diagnostics::check_all(&db, ws).is_empty());
+        ws.update(
+            &mut db,
+            "edit.wit",
+            "interface example { type renamed = u32; type alias = value; }",
+        );
+        let diags = diagnostics::check_all(&db, ws);
+        assert!(matches!(&diags[..], [Diagnostic::UnknownName(diag)] if diag.name == "value"));
+        ws.update(
+            &mut db,
+            "edit.wit",
+            "interface example { type value = u32; type alias = value; }",
+        );
+        assert!(diagnostics::check_all(&db, ws).is_empty());
     }
 }

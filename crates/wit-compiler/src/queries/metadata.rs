@@ -1,16 +1,14 @@
 use std::{any::TypeId, collections::HashMap};
 
-use ast::HasSource;
 use im::{OrdMap, Vector};
 use salsa::DebugWithDb;
-use tree_sitter::Point;
 
 use crate::{
-    access::{self, *},
-    ast::{self, AstNode, HasIdent as _},
+    Db, Text,
+    access::*,
+    ast::{self, AstNode, HasIdent as _, HasSource},
     diagnostics::{Diagnostics, DuplicateName, Location, MultipleConstructors},
     queries::{FilePath, Package, SourceFile},
-    Db, Text,
 };
 
 /// Find all the top-level items exposed by a [`Package`].
@@ -18,6 +16,7 @@ use crate::{
 /// If there are any duplicate items, a [`DuplicateName`] diagnostic will be
 /// emitted.
 #[salsa::tracked]
+#[allow(clippy::clone_on_copy)]
 #[tracing::instrument(level = "debug", skip_all, fields(dir = %pkg.dir(db).raw_path(db)))]
 pub fn package_items(db: &dyn Db, pkg: Package) -> PackageMetadata {
     let mut items: HashMap<Ident, TopLevelItemMetadata> = HashMap::new();
@@ -72,7 +71,9 @@ pub fn file_items(db: &dyn Db, file: SourceFile) -> Vector<TopLevelItemMetadata>
         }
     }
 
-    items.into_values().collect()
+    in_source_order(db, items.into_values())
+        .into_iter()
+        .collect()
 }
 
 fn lower_top_level_item(
@@ -98,42 +99,12 @@ pub struct PackageMetadata {
 }
 
 impl PackageMetadata {
-    pub fn enclosing_item(self, db: &dyn Db, point: Point) -> Option<ScopeIndex> {
-        self.items_by_name(db)
-            .into_iter()
-            .map(|(_, item)| item)
-            .find_map(|meta| {
-                let location = meta.definition(db);
-                if location.contains(point) {
-                    Some(meta.index(db))
-                } else {
-                    None
-                }
-            })
-    }
-
     pub fn get_world(self, db: &dyn Db, index: WorldIndex) -> WorldMetadata {
         self.worlds(db).get(&index).copied().unwrap()
     }
 
     pub fn get_interface(self, db: &dyn Db, index: InterfaceIndex) -> InterfaceMetadata {
         self.interfaces(db).get(&index).copied().unwrap()
-    }
-}
-
-impl GetByIndex<access::World> for PackageMetadata {
-    type Metadata = WorldMetadata;
-
-    fn try_get_by_index(&self, db: &dyn Db, index: WorldIndex) -> Option<WorldMetadata> {
-        self.worlds(db).get(&index).copied()
-    }
-}
-
-impl GetByIndex<access::Interface> for PackageMetadata {
-    type Metadata = InterfaceMetadata;
-
-    fn try_get_by_index(&self, db: &dyn Db, index: InterfaceIndex) -> Option<InterfaceMetadata> {
-        self.interfaces(db).get(&index).copied()
     }
 }
 
@@ -167,20 +138,44 @@ fn interface_metadata(
 ) -> Option<InterfaceMetadata> {
     let name = node.identifier(ctx.src)?;
     let name = Ident::new(ctx.db, name.into());
-    let mut items = HashMap::new();
-
-    for child in node.body()?.iter_interface_items() {
-        if let Some(item) = interface_item_metadata(ctx, child) {
-            push_item(ctx.db, &mut items, item);
-        }
-    }
-
+    let items = interface_body_items(ctx, node.body()?);
     Some(InterfaceMetadata::new(
         ctx.db,
         name,
         ctx.index(),
         InterfacePtr::for_node(ctx.path, node),
-        items.into_values().collect(),
+        items,
+    ))
+}
+
+fn interface_body_items(
+    ctx: &mut Context<'_>,
+    body: ast::InterfaceBody<'_>,
+) -> Vector<InterfaceItemMetadata> {
+    let mut items = HashMap::new();
+    for child in body.iter_interface_items() {
+        if let Some(item) = interface_item_metadata(ctx, child) {
+            push_item(ctx.db, &mut items, item);
+        }
+    }
+    in_source_order(ctx.db, items.into_values())
+        .into_iter()
+        .collect()
+}
+
+fn inline_interface_metadata(
+    ctx: &mut Context<'_>,
+    name: Option<Ident>,
+    external: Option<ast::ExternType<'_>>,
+) -> Option<InlineInterfaceMetadata> {
+    let body = external?.interface_body()?;
+    let items = interface_body_items(ctx, body);
+    Some(InlineInterfaceMetadata::new(
+        ctx.db,
+        name,
+        ctx.index(),
+        InlineInterfacePtr::for_node(ctx.path, body),
+        items,
     ))
 }
 
@@ -231,7 +226,9 @@ fn world_metadata(ctx: &mut Context<'_>, node: ast::WorldItem<'_>) -> Option<Wor
         name,
         ctx.index(),
         WorldPtr::for_node(ctx.path, node),
-        definitions.into_values().collect(),
+        in_source_order(ctx.db, definitions.into_values())
+            .into_iter()
+            .collect(),
         exports,
         imports,
     ))
@@ -268,28 +265,30 @@ fn push_with_optional_name<T>(
 }
 
 fn export_metadata(ctx: &mut Context, node: ast::ExportItem<'_>) -> Option<ExportMetadata> {
-    let ident = node
-        .name_opt()
-        .map(|n| Ident::new(ctx.db, n.utf8_text(ctx.src).into()));
+    let ident = node.name_opt().map(|n| Ident::from_ast(ctx.db, n, ctx.src));
+
+    let inline = inline_interface_metadata(ctx, ident, node.extern_type());
 
     Some(ExportMetadata::new(
         ctx.db,
         ident,
         ctx.index(),
         Pointer::for_node(ctx.path, node),
+        inline,
     ))
 }
 
 fn import_metadata(ctx: &mut Context, node: ast::ImportItem<'_>) -> Option<ImportMetadata> {
-    let ident = node
-        .name_opt()
-        .map(|n| Ident::new(ctx.db, n.utf8_text(ctx.src).into()));
+    let ident = node.name_opt().map(|n| Ident::from_ast(ctx.db, n, ctx.src));
+
+    let inline = inline_interface_metadata(ctx, ident, node.extern_type());
 
     Some(ImportMetadata::new(
         ctx.db,
         ident,
         ctx.index(),
         Pointer::for_node(ctx.path, node),
+        inline,
     ))
 }
 
@@ -449,17 +448,17 @@ fn resource_metadata(
             if let Some(item) = simple_item_metadata(ctx, method, MethodMetadata::new) {
                 push_item(ctx.db, &mut all_methods, AnyMethod::Method(item));
             }
-        } else if let Some(method) = method.static_resource_method() {
-            if let Some(item) = simple_item_metadata(ctx, method, StaticMethodMetadata::new) {
-                push_item(ctx.db, &mut all_methods, AnyMethod::Static(item));
-            }
+        } else if let Some(method) = method.static_resource_method()
+            && let Some(item) = simple_item_metadata(ctx, method, StaticMethodMetadata::new)
+        {
+            push_item(ctx.db, &mut all_methods, AnyMethod::Static(item));
         }
     }
 
     let mut methods = Vector::new();
     let mut static_methods = Vector::new();
 
-    for m in all_methods.into_values() {
+    for m in in_source_order(ctx.db, all_methods.into_values()) {
         match m {
             AnyMethod::Method(m) => methods.push_back(m),
             AnyMethod::Static(s) => static_methods.push_back(s),
@@ -481,11 +480,11 @@ fn type_alias_metadata(
     ctx: &mut Context<'_>,
     node: ast::TypeItem<'_>,
 ) -> Option<TypeAliasMetadata> {
-    let name = node.alias()?.utf8_text(ctx.src);
+    let name = Ident::from_ast(ctx.db, node.alias()?, ctx.src);
 
     Some(TypeAliasMetadata::new(
         ctx.db,
-        Ident::new(ctx.db, name.into()),
+        name,
         ctx.index(),
         Pointer::for_node(ctx.path, node),
     ))
@@ -518,19 +517,6 @@ pub trait HasDefinition {
 
 pub trait HasIdent {
     fn ident(&self, db: &dyn Db) -> Ident;
-}
-
-pub(crate) trait GetByIndex<K> {
-    type Metadata;
-
-    fn try_get_by_index(&self, db: &dyn Db, index: Index<K>) -> Option<Self::Metadata>;
-
-    fn get_by_index(&self, db: &dyn Db, index: Index<K>) -> Self::Metadata {
-        match self.try_get_by_index(db, index) {
-            Some(value) => value,
-            None => panic!("Lookup failed: {index:?}"),
-        }
-    }
 }
 
 pub trait HasIndex {
@@ -635,6 +621,7 @@ pub struct ExportMetadata {
     #[id]
     pub index: ExportIndex,
     pub ptr: ExportPtr,
+    pub inline_interface: Option<InlineInterfaceMetadata>,
 }
 
 impl HasDefinition for ExportMetadata {
@@ -655,6 +642,7 @@ pub struct ImportMetadata {
     #[id]
     pub index: ExportIndex,
     pub ptr: ImportPtr,
+    pub inline_interface: Option<InlineInterfaceMetadata>,
 }
 
 impl HasDefinition for ImportMetadata {
@@ -679,6 +667,92 @@ pub struct InterfaceMetadata {
 }
 
 impl_common!(InterfaceMetadata);
+
+/// An interface body owned by a world import or export, never a package item.
+#[salsa::tracked]
+pub struct InlineInterfaceMetadata {
+    pub name: Option<Ident>,
+    #[id]
+    pub index: InlineInterfaceIndex,
+    pub ptr: InlineInterfacePtr,
+    pub items: Vector<InterfaceItemMetadata>,
+}
+
+impl HasDefinition for InlineInterfaceMetadata {
+    fn definition(&self, db: &dyn Db) -> Location {
+        self.ptr(db).location()
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum ScopeMetadata {
+    World(WorldMetadata),
+    Interface(InterfaceMetadata),
+    InlineInterface(InlineInterfaceMetadata),
+}
+
+impl ScopeMetadata {
+    pub fn index(self, db: &dyn Db) -> ScopeIndex {
+        match self {
+            Self::World(meta) => meta.index(db).into(),
+            Self::Interface(meta) => meta.index(db).into(),
+            Self::InlineInterface(meta) => meta.index(db).into(),
+        }
+    }
+
+    pub fn definitions(self, db: &dyn Db) -> Vector<TypeDefinitionMetadata> {
+        let items = match self {
+            Self::World(meta) => return meta.definitions(db),
+            Self::Interface(meta) => meta.items(db),
+            Self::InlineInterface(meta) => meta.items(db),
+        };
+        items
+            .into_iter()
+            .filter_map(|item| item.as_type())
+            .collect()
+    }
+}
+
+impl HasDefinition for ScopeMetadata {
+    fn definition(&self, db: &dyn Db) -> Location {
+        match self {
+            Self::World(meta) => meta.definition(db),
+            Self::Interface(meta) => meta.definition(db),
+            Self::InlineInterface(meta) => meta.definition(db),
+        }
+    }
+}
+
+impl WorldMetadata {
+    pub fn inline_interfaces(self, db: &dyn Db) -> impl Iterator<Item = InlineInterfaceMetadata> {
+        self.imports(db)
+            .into_iter()
+            .filter_map(|item| item.inline_interface(db))
+            .chain(
+                self.exports(db)
+                    .into_iter()
+                    .filter_map(|item| item.inline_interface(db)),
+            )
+    }
+}
+
+/// All lexical scopes in a file. Inline interfaces stay owned by their world.
+pub fn file_scopes(db: &dyn Db, file: SourceFile) -> Vec<ScopeMetadata> {
+    let mut scopes = Vec::new();
+    for item in file_items(db, file) {
+        match item {
+            TopLevelItemMetadata::Interface(meta) => scopes.push(ScopeMetadata::Interface(meta)),
+            TopLevelItemMetadata::World(meta) => {
+                scopes.push(ScopeMetadata::World(meta));
+                scopes.extend(
+                    meta.inline_interfaces(db)
+                        .map(ScopeMetadata::InlineInterface),
+                );
+            }
+        }
+    }
+    scopes
+}
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum InterfaceItemMetadata {
@@ -918,6 +992,21 @@ pub struct Ident {
     pub raw: Text,
 }
 
+impl Ident {
+    pub fn from_ast(db: &dyn Db, node: ast::Id<'_>, src: &str) -> Self {
+        let raw = node.utf8_text(src);
+        Self::new(db, raw.strip_prefix('%').unwrap_or(raw).into())
+    }
+}
+
+// These collections contain declarations from one source file. Keep their
+// source order after using a map to detect duplicate names.
+fn in_source_order<T: HasDefinition>(db: &dyn Db, items: impl IntoIterator<Item = T>) -> Vec<T> {
+    let mut items: Vec<_> = items.into_iter().collect();
+    items.sort_unstable_by_key(|item| item.definition(db).range.start_byte);
+    items
+}
+
 fn push_item<T>(db: &dyn Db, items: &mut HashMap<Ident, T>, item: T)
 where
     T: HasIdent + HasDefinition,
@@ -943,7 +1032,7 @@ where
 mod tests {
     use std::ops::Range;
 
-    use crate::{queries::FilePath, Compiler};
+    use crate::{Compiler, queries::FilePath};
 
     use super::*;
 
@@ -1156,6 +1245,100 @@ mod tests {
                 }
             )*
         };
+    }
+
+    fn names<T: HasIdent>(db: &dyn Db, items: impl IntoIterator<Item = T>) -> Vec<String> {
+        items
+            .into_iter()
+            .map(|item| item.ident(db).raw(db).to_string())
+            .collect()
+    }
+
+    #[test]
+    fn declarations_follow_source_order() {
+        let db = Compiler::default();
+        // Existing interned names must not determine declaration order.
+        for name in ["alpha", "middle", "zulu"] {
+            Ident::new(&db, name.into());
+        }
+        let path = FilePath::new(&db, "order.wit".into());
+        let file = SourceFile::new(
+            &db,
+            path,
+            r#"
+            interface zulu {
+                type zulu = u32;
+                alpha: func();
+                resource middle {
+                    zulu: func();
+                    build-zulu: static func();
+                    alpha: func();
+                    build-alpha: static func();
+                }
+            }
+            world alpha { type zulu = u32; type alpha = string; type middle = bool; }
+            interface middle {}
+        "#
+            .into(),
+        );
+        let items = file_items(&db, file);
+        assert_eq!(names(&db, items.clone()), ["zulu", "alpha", "middle"]);
+        let TopLevelItemMetadata::Interface(interface) = items[0] else {
+            panic!()
+        };
+        assert_eq!(
+            names(&db, interface.items(&db)),
+            ["zulu", "alpha", "middle"]
+        );
+        let InterfaceItemMetadata::Type(TypeDefinitionMetadata::Resource(resource)) =
+            interface.items(&db)[2]
+        else {
+            panic!()
+        };
+        assert_eq!(names(&db, resource.methods(&db)), ["zulu", "alpha"]);
+        assert_eq!(
+            names(&db, resource.static_methods(&db)),
+            ["build-zulu", "build-alpha"]
+        );
+        let TopLevelItemMetadata::World(world) = items[1] else {
+            panic!()
+        };
+        assert_eq!(
+            names(&db, world.definitions(&db)),
+            ["zulu", "alpha", "middle"]
+        );
+        assert!(file_items::accumulated::<Diagnostics>(&db, file).is_empty());
+    }
+
+    #[test]
+    fn declaration_order_tracks_edits() {
+        let mut db = Compiler::default();
+        let path = FilePath::new(&db, "edits.wit".into());
+        let file = SourceFile::new(&db, path, "interface zulu {} interface alpha {}".into());
+        assert_eq!(names(&db, file_items(&db, file)), ["zulu", "alpha"]);
+        file.set_contents(&mut db)
+            .to("interface alpha {} interface zulu {}".into());
+        assert_eq!(names(&db, file_items(&db, file)), ["alpha", "zulu"]);
+    }
+
+    #[test]
+    fn source_order_keeps_first_duplicate_and_its_diagnostic() {
+        let db = Compiler::default();
+        let path = FilePath::new(&db, "duplicates.wit".into());
+        let source = "interface zulu {} interface alpha {} interface zulu {}";
+        let file = SourceFile::new(&db, path, source.into());
+        let items = file_items(&db, file);
+        assert_eq!(names(&db, items.clone()), ["zulu", "alpha"]);
+        assert_eq!(items[0].definition(&db).range.start_byte, 0);
+        let diags = file_items::accumulated::<Diagnostics>(&db, file);
+        let [crate::diagnostics::Diagnostic::DuplicateName(diag)] = diags.as_slice() else {
+            panic!("{diags:?}")
+        };
+        assert_eq!(diag.original_definition.range.start_byte, 0);
+        assert_eq!(
+            diag.location.range.start_byte,
+            source.rfind("interface zulu").unwrap()
+        );
     }
 
     item_metadata_tests! {

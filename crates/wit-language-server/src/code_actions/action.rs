@@ -1,8 +1,8 @@
 use im::OrdMap;
 use tower_lsp::lsp_types::{CodeAction, CodeActionKind, WorkspaceEdit};
 use wit_compiler::{
-    queries::{FilePath, LineNumbers, Workspace},
     Db,
+    queries::{FilePath, Workspace},
 };
 
 use crate::code_actions::{Indel, TextEdit};
@@ -65,10 +65,10 @@ fn workplace_edit(
     let changes = modifications
         .into_iter()
         .map(|(path, edit)| {
-            let line_numbers = wit_compiler::queries::calculate_line_numbers(db, files[&path]);
+            let positions = crate::utils::Positions::new(db, files[&path]);
             (
                 path.raw_path(db).to_string().parse().unwrap(),
-                text_edits(edit, &line_numbers),
+                text_edits(edit, &positions),
             )
         })
         .collect();
@@ -79,12 +79,15 @@ fn workplace_edit(
     }
 }
 
-fn text_edits(edit: TextEdit, line_numbers: &LineNumbers) -> Vec<tower_lsp::lsp_types::TextEdit> {
+fn text_edits(
+    edit: TextEdit,
+    positions: &crate::utils::Positions<'_>,
+) -> Vec<tower_lsp::lsp_types::TextEdit> {
     edit.into_iter()
         .map(|Indel { insert, delete }| tower_lsp::lsp_types::TextEdit {
             range: tower_lsp::lsp_types::Range {
-                start: crate::utils::ts_to_position(line_numbers.point(delete.start).unwrap()),
-                end: crate::utils::ts_to_position(line_numbers.point(delete.end).unwrap()),
+                start: positions.offset_to_lsp(delete.start),
+                end: positions.offset_to_lsp(delete.end),
             },
             new_text: insert,
         })

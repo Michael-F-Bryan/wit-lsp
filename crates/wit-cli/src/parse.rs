@@ -1,15 +1,15 @@
 use clap::Parser;
-use clap_stdin::{FileOrStdin, Source};
+use clap_stdin::FileOrStdin;
 use codespan_reporting::{
     diagnostic::{Diagnostic as Diag, Label},
     term::termcolor::ColorChoice,
 };
 use im::OrdMap;
 use wit_compiler::{
+    Compiler, Db, Text,
     diagnostics::{Diagnostic, Diagnostics},
     queries::{FilePath, SourceFile, Workspace},
     traverse::Cursor,
-    Compiler, Db, Text,
 };
 
 use crate::Format;
@@ -35,10 +35,12 @@ impl Parse {
 
         let db = Compiler::default();
 
-        let path = match &input.source {
-            Source::Arg(path) => FilePath::new(&db, path.into()),
-            Source::Stdin => FilePath::new(&db, "<stdin>".into()),
+        let path = if input.is_stdin() {
+            "<stdin>"
+        } else {
+            input.filename()
         };
+        let path = FilePath::new(&db, path.into());
 
         let input = input.contents()?;
         let input = Text::from(input);

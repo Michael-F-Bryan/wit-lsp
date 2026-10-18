@@ -4,9 +4,10 @@ use std::io::IsTerminal;
 
 use clap::Parser;
 use tracing_error::ErrorLayer;
-use tracing_subscriber::{
-    fmt::format::FmtSpan, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter,
-};
+use tracing_subscriber::EnvFilter;
+use tracing_subscriber::fmt::format::FmtSpan;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
 use wit_cli::Args;
 
 const RUST_LOG: &[&str] = &[
@@ -35,12 +36,14 @@ fn initialize_logging() -> color_eyre::Result<()> {
         .add_issue_metadata("version", env!("CARGO_PKG_VERSION"))
         .install()?;
 
-    if std::env::var_os("RUST_LOG").is_none() {
-        std::env::set_var("RUST_LOG", RUST_LOG.join(","));
-    }
+    let filter = if std::env::var_os("RUST_LOG").is_some() {
+        EnvFilter::from_default_env()
+    } else {
+        EnvFilter::new(RUST_LOG.join(","))
+    };
 
     tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::from_default_env())
+        .with_env_filter(filter)
         .with_writer(std::io::stderr)
         .with_ansi(isatty)
         .with_span_events(FmtSpan::CLOSE)

@@ -3,13 +3,13 @@ use std::collections::HashSet;
 use tower_lsp::lsp_types::CodeActionParams;
 use tree_sitter::{Range, TreeCursor};
 use wit_compiler::{
+    Tree,
     ast::AstNode,
     diagnostics::{Diagnostic, Diagnostics},
     queries::{FilePath, Package, SourceFile, Workspace},
-    Tree,
 };
 
-use crate::{utils, Db};
+use crate::{Db, utils};
 
 #[derive(Debug, Clone)]
 pub struct CodeActionContext<'db> {
@@ -32,7 +32,7 @@ impl<'db> CodeActionContext<'db> {
         let uri = params.text_document.uri.as_str();
         let packages = wit_compiler::queries::workspace_packages(db.as_wit(), ws);
 
-        let current_file = ws.lookup_by_path(db.as_wit(), uri).unwrap();
+        let current_file = ws.lookup_by_path(db.as_wit(), uri)?;
         let path = current_file.path(db.as_wit());
         let current_package = packages
             .iter()
@@ -58,18 +58,9 @@ impl<'db> CodeActionContext<'db> {
             hash_codes.contains(&hash_code)
         });
 
-        let start = utils::position_to_ts(params.range.start);
-        let end = utils::position_to_ts(params.range.end);
-        let line_numbers = wit_compiler::queries::calculate_line_numbers(db.as_wit(), current_file);
-        let start_byte = line_numbers.offset_for_point(start).unwrap();
-        let end_byte = line_numbers.offset_for_point(end).unwrap();
-
-        let selection = Range {
-            start_byte,
-            end_byte,
-            start_point: start,
-            end_point: end,
-        };
+        let selection = utils::Positions::new(db.as_wit(), current_file)
+            .to_range(params.range)
+            .ok()?;
 
         Some(CodeActionContext {
             db,

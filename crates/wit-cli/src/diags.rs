@@ -1,5 +1,5 @@
-use codespan_reporting::term::{termcolor::WriteColor, Config};
-use wit_compiler::{diagnostics::Diagnostic, queries::Workspace, Db};
+use codespan_reporting::term::{Config, termcolor::WriteColor};
+use wit_compiler::{Db, diagnostics::Diagnostic, queries::Workspace};
 
 #[tracing::instrument(skip_all)]
 pub(crate) fn print_diagnostics(
@@ -13,7 +13,7 @@ pub(crate) fn print_diagnostics(
 
     for diag in diags {
         let diag = diag.as_diagnostic();
-        codespan_reporting::term::emit(writer, &config, &files, &diag)?;
+        codespan_reporting::term::emit_to_write_style(writer, &config, &files, &diag)?;
     }
 
     Ok(())

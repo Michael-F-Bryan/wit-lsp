@@ -4,7 +4,7 @@ use codespan_reporting::files::Error as CodespanError;
 use im::Vector;
 use tree_sitter::Point;
 
-use crate::{queries::SourceFile, Db, Text};
+use crate::{Db, Text, queries::SourceFile};
 
 #[salsa::tracked]
 pub fn calculate_line_numbers(db: &dyn Db, file: SourceFile) -> LineNumbers {
@@ -73,7 +73,7 @@ impl LineNumbers {
     pub fn point(&self, byte_index: usize) -> Result<Point, CodespanError> {
         let row = self.line_index(byte_index)?;
         let range = self.line_range(row)?;
-        let column = byte_index - range.start - 1;
+        let column = byte_index - range.start;
 
         Ok(Point { row, column })
     }
@@ -117,6 +117,21 @@ mod tests {
 
         let got = line_numbers.point(5).unwrap();
 
-        assert_eq!(got, Point { row: 2, column: 2 });
+        assert_eq!(got, Point { row: 2, column: 3 });
+    }
+
+    #[test]
+    fn byte_points_round_trip_at_line_boundaries() {
+        for src in ["", "abc", "aé😀\r\nβ\n"] {
+            let lines = LineNumbers::for_text(src.into());
+            for offset in (0..=src.len()).filter(|&i| src.is_char_boundary(i)) {
+                let point = lines.point(offset).unwrap();
+                assert_eq!(lines.offset_for_point(point).unwrap(), offset);
+            }
+            assert_eq!(lines.point(0).unwrap(), Point::new(0, 0));
+            for (offset, _) in src.match_indices('\n') {
+                assert_eq!(lines.point(offset + 1).unwrap().column, 0);
+            }
+        }
     }
 }

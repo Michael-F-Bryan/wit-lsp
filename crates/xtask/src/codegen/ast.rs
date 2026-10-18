@@ -1,7 +1,7 @@
 use std::{collections::BTreeMap, path::PathBuf};
 
 use clap::Parser;
-use color_eyre::{eyre::Context, Report};
+use color_eyre::{Report, eyre::Context};
 use heck::ToPascalCase;
 use once_cell::sync::Lazy;
 use proc_macro2::{Ident, TokenStream};
@@ -197,7 +197,11 @@ fn generate_helper_trait_impls(ident: &Ident, node: &NodeType) -> TokenStream {
 
 fn field_getter(field: &Field, name: &str) -> TokenStream {
     let item_types: Vec<_> = field.types.iter().filter(|ty| ty.named).collect();
-    assert_eq!(item_types.len(), 1, "The \"{name}\" getter can't be generated when there are multiple named types (item_types: {item_types:?})");
+    assert_eq!(
+        item_types.len(),
+        1,
+        "The \"{name}\" getter can't be generated when there are multiple named types (item_types: {item_types:?})"
+    );
     let item_ty = item_types[0].type_name();
 
     if field.multiple {
@@ -208,7 +212,7 @@ fn field_getter(field: &Field, name: &str) -> TokenStream {
         };
 
         quote! {
-            pub fn #method_name(&self) -> impl Iterator<Item=#item_ty<'tree>> {
+            pub fn #method_name(self) -> impl Iterator<Item=#item_ty<'tree>> {
                 let mut cursor = self.0.walk();
                 let children: Vec<_> = self.0.children_by_field_name(#name, &mut cursor)
                     .filter_map(<#item_ty as super::AstNode>::cast)

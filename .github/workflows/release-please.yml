@@ -1,11 +1,10 @@
 name: Release Please
 
 on:
- push:
-  branches:
-    - main
-  tags: "*"
- repository_dispatch:
+  push:
+    branches: [main]
+    tags: ["*"]
+  repository_dispatch:
 
 env:
   DEFAULT_CRATE_NAME: wit_language_server
@@ -14,50 +13,56 @@ env:
 jobs:
   release:
     name: Create Release
+    if: github.repository_owner == 'Michael-F-Bryan'
     runs-on: ubuntu-latest
+    env: { REPOSITORY_URL: "${{ github.repositoryUrl }}" }
     steps:
-    - name: Install release-please
-      run: npm install --global release-please@15.11
-    - name: Update the Release PR
-      run: |
-        release-please release-pr \
-          --debug \
-          --token=${{ secrets.RELEASE_PLEASE_GH_TOKEN }} \
-          --repo-url=${{ github.repositoryUrl }} \
-          --config-file=.github/release-please/config.json \
+      - name: Install release-please
+        run: npm install --global release-please@17.11.2
+      - name: Update the Release PR
+        env: &token { GITHUB_TOKEN: "${{ secrets.RELEASE_PLEASE_GH_TOKEN }}" }
+        run: release-please release-pr
+          --debug
+          --repo-url="${REPOSITORY_URL}"
+          --config-file=.github/release-please/config.json
           --manifest-file=.github/release-please/manifest.json
-    - name: Publish the GitHub Release
-      run: |
-        release-please github-release \
-          --debug \
-          --prerelease \
-          --token=${{ secrets.RELEASE_PLEASE_GH_TOKEN }} \
-          --repo-url=${{ github.repositoryUrl }} \
-          --config-file=.github/release-please/config.json \
+          --token=/dev/stdin
+          <<<"${GITHUB_TOKEN}"
+      - name: Publish the GitHub Release
+        env: *token
+        run: release-please github-release
+          --debug
+          --prerelease
+          --repo-url="${REPOSITORY_URL}"
+          --config-file=.github/release-please/config.json
           --manifest-file=.github/release-please/manifest.json
+          --token=/dev/stdin
+          <<<"${GITHUB_TOKEN}"
 
   publish-to-crates-io:
     name: Publish to crates.io (if necessary)
+    if: github.repository_owner == 'Michael-F-Bryan'
     runs-on: ubuntu-latest
     needs:
       - release
     concurrency: release-please-publish-crates-io
+    cache-mode: write-only
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v7
       - name: Setup Rust
         uses: dsherret/rust-toolchain-file@v1
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
       - name: Install cargo-workspaces
         uses: taiki-e/install-action@v2
-        with:
-          tool: cargo-workspaces
+        with: { tool: cargo-workspaces }
       - name: Publish
-        run: cargo workspaces publish --from-git --token "${{ secrets.CRATES_IO_TOKEN }}" --yes
+        env: { CARGO_REGISTRY_TOKEN: "${{ secrets.CRATES_IO_TOKEN }}" }
+        run: cargo workspaces publish --from-git --yes
 
   publish-vscode-plugin:
     name: Publish the VS Code plugin (${{ matrix.target }})
-    if: startsWith(github.ref, 'refs/tags/vscode-plugin-v')
+    if: startsWith(github.ref, 'refs/tags/vscode-plugin-v') && github.repository_owner == 'Michael-F-Bryan'
     runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
@@ -75,13 +80,13 @@ jobs:
         working-directory: plugins/vscode
         shell: bash
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v7
       - name: Setup Rust
         uses: dsherret/rust-toolchain-file@v1
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: latest
           cache: npm
@@ -91,20 +96,20 @@ jobs:
       - name: Build
         run: npm run package
       - name: Package
-        run: npx @vscode/vsce package --no-update-package-json --target=${{ matrix.target }}
+        run: npx @vscode/vsce package --no-update-package-json --target='${{ matrix.target }}'
       - name: Upload the vsix file to the GitHub Release
-        run: gh release upload ${TAG_NAME#refs/tags/} *.vsix
+        run: gh release upload "${TAG_NAME#refs/tags/}" ./*.vsix
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PLEASE_GH_TOKEN }}
           TAG_NAME: ${{ github.ref }}
       - name: Publish
-        run: npx @vscode/vsce publish --no-update-package-json --target=${{ matrix.target }}
+        run: npx @vscode/vsce publish --no-update-package-json --target='${{ matrix.target }}'
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
 
   upload-language-server-artifacts:
     name: Upload the Language Server binary (${{ matrix.target }})
-    if: startsWith(github.ref, 'refs/tags/wit-language-server-v')
+    if: startsWith(github.ref, 'refs/tags/wit-language-server-v') && github.repository_owner == 'Michael-F-Bryan'
     runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
@@ -118,24 +123,22 @@ jobs:
           - runner: windows-latest
             target: x86_64-pc-windows-msvc
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v7
       - name: Setup Rust
         uses: dsherret/rust-toolchain-file@v1
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
       - name: Install cargo-dist
         uses: taiki-e/install-action@v2
-        with:
-          tool: cargo-dist
+        with: { tool: cargo-dist }
       - name: Record the Tag Name
-        run: echo "TAG_NAME=${TAG_NAME#refs/tags/}" >> $GITHUB_ENV
+        run: echo "TAG_NAME=${TAG_NAME#refs/tags/}" >> "${GITHUB_ENV}"
       - name: Compile
         run: cargo build --workspace --verbose --profile=dist
       - name: Generate the Archive
-        run: cargo dist --verbose=info --target=${{ matrix.target }} --tag=${TAG_NAME}
+        run: cargo dist --verbose=info --target='${{ matrix.target }}' --tag="${TAG_NAME}"
       - name: Upload Release Artifacts
-        run: |
-          rm target/distrib/source.*
-          gh release upload ${TAG_NAME} target/distrib/wit-language-server*
+        run: rm -rf ./target/distrib/source.*;
+          gh release upload "${TAG_NAME}" target/distrib/wit-language-server*
       - name: Mark this as the latest release
-        run: gh release edit --latest ${TAG_NAME}
+        run: gh release edit --latest "${TAG_NAME}"
