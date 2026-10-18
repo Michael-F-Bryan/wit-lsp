@@ -138,22 +138,44 @@ fn interface_metadata(
 ) -> Option<InterfaceMetadata> {
     let name = node.identifier(ctx.src)?;
     let name = Ident::new(ctx.db, name.into());
-    let mut items = HashMap::new();
-
-    for child in node.body()?.iter_interface_items() {
-        if let Some(item) = interface_item_metadata(ctx, child) {
-            push_item(ctx.db, &mut items, item);
-        }
-    }
-
+    let items = interface_body_items(ctx, node.body()?);
     Some(InterfaceMetadata::new(
         ctx.db,
         name,
         ctx.index(),
         InterfacePtr::for_node(ctx.path, node),
-        in_source_order(ctx.db, items.into_values())
-            .into_iter()
-            .collect(),
+        items,
+    ))
+}
+
+fn interface_body_items(
+    ctx: &mut Context<'_>,
+    body: ast::InterfaceBody<'_>,
+) -> Vector<InterfaceItemMetadata> {
+    let mut items = HashMap::new();
+    for child in body.iter_interface_items() {
+        if let Some(item) = interface_item_metadata(ctx, child) {
+            push_item(ctx.db, &mut items, item);
+        }
+    }
+    in_source_order(ctx.db, items.into_values())
+        .into_iter()
+        .collect()
+}
+
+fn inline_interface_metadata(
+    ctx: &mut Context<'_>,
+    name: Option<Ident>,
+    external: Option<ast::ExternType<'_>>,
+) -> Option<InlineInterfaceMetadata> {
+    let body = external?.interface_body()?;
+    let items = interface_body_items(ctx, body);
+    Some(InlineInterfaceMetadata::new(
+        ctx.db,
+        name,
+        ctx.index(),
+        InlineInterfacePtr::for_node(ctx.path, body),
+        items,
     ))
 }
 
@@ -245,22 +267,28 @@ fn push_with_optional_name<T>(
 fn export_metadata(ctx: &mut Context, node: ast::ExportItem<'_>) -> Option<ExportMetadata> {
     let ident = node.name_opt().map(|n| Ident::from_ast(ctx.db, n, ctx.src));
 
+    let inline = inline_interface_metadata(ctx, ident, node.extern_type());
+
     Some(ExportMetadata::new(
         ctx.db,
         ident,
         ctx.index(),
         Pointer::for_node(ctx.path, node),
+        inline,
     ))
 }
 
 fn import_metadata(ctx: &mut Context, node: ast::ImportItem<'_>) -> Option<ImportMetadata> {
     let ident = node.name_opt().map(|n| Ident::from_ast(ctx.db, n, ctx.src));
 
+    let inline = inline_interface_metadata(ctx, ident, node.extern_type());
+
     Some(ImportMetadata::new(
         ctx.db,
         ident,
         ctx.index(),
         Pointer::for_node(ctx.path, node),
+        inline,
     ))
 }
 
@@ -593,6 +621,7 @@ pub struct ExportMetadata {
     #[id]
     pub index: ExportIndex,
     pub ptr: ExportPtr,
+    pub inline_interface: Option<InlineInterfaceMetadata>,
 }
 
 impl HasDefinition for ExportMetadata {
@@ -613,6 +642,7 @@ pub struct ImportMetadata {
     #[id]
     pub index: ExportIndex,
     pub ptr: ImportPtr,
+    pub inline_interface: Option<InlineInterfaceMetadata>,
 }
 
 impl HasDefinition for ImportMetadata {
@@ -637,6 +667,92 @@ pub struct InterfaceMetadata {
 }
 
 impl_common!(InterfaceMetadata);
+
+/// An interface body owned by a world import or export, never a package item.
+#[salsa::tracked]
+pub struct InlineInterfaceMetadata {
+    pub name: Option<Ident>,
+    #[id]
+    pub index: InlineInterfaceIndex,
+    pub ptr: InlineInterfacePtr,
+    pub items: Vector<InterfaceItemMetadata>,
+}
+
+impl HasDefinition for InlineInterfaceMetadata {
+    fn definition(&self, db: &dyn Db) -> Location {
+        self.ptr(db).location()
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum ScopeMetadata {
+    World(WorldMetadata),
+    Interface(InterfaceMetadata),
+    InlineInterface(InlineInterfaceMetadata),
+}
+
+impl ScopeMetadata {
+    pub fn index(self, db: &dyn Db) -> ScopeIndex {
+        match self {
+            Self::World(meta) => meta.index(db).into(),
+            Self::Interface(meta) => meta.index(db).into(),
+            Self::InlineInterface(meta) => meta.index(db).into(),
+        }
+    }
+
+    pub fn definitions(self, db: &dyn Db) -> Vector<TypeDefinitionMetadata> {
+        let items = match self {
+            Self::World(meta) => return meta.definitions(db),
+            Self::Interface(meta) => meta.items(db),
+            Self::InlineInterface(meta) => meta.items(db),
+        };
+        items
+            .into_iter()
+            .filter_map(|item| item.as_type())
+            .collect()
+    }
+}
+
+impl HasDefinition for ScopeMetadata {
+    fn definition(&self, db: &dyn Db) -> Location {
+        match self {
+            Self::World(meta) => meta.definition(db),
+            Self::Interface(meta) => meta.definition(db),
+            Self::InlineInterface(meta) => meta.definition(db),
+        }
+    }
+}
+
+impl WorldMetadata {
+    pub fn inline_interfaces(self, db: &dyn Db) -> impl Iterator<Item = InlineInterfaceMetadata> {
+        self.imports(db)
+            .into_iter()
+            .filter_map(|item| item.inline_interface(db))
+            .chain(
+                self.exports(db)
+                    .into_iter()
+                    .filter_map(|item| item.inline_interface(db)),
+            )
+    }
+}
+
+/// All lexical scopes in a file. Inline interfaces stay owned by their world.
+pub fn file_scopes(db: &dyn Db, file: SourceFile) -> Vec<ScopeMetadata> {
+    let mut scopes = Vec::new();
+    for item in file_items(db, file) {
+        match item {
+            TopLevelItemMetadata::Interface(meta) => scopes.push(ScopeMetadata::Interface(meta)),
+            TopLevelItemMetadata::World(meta) => {
+                scopes.push(ScopeMetadata::World(meta));
+                scopes.extend(
+                    meta.inline_interfaces(db)
+                        .map(ScopeMetadata::InlineInterface),
+                );
+            }
+        }
+    }
+    scopes
+}
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum InterfaceItemMetadata {

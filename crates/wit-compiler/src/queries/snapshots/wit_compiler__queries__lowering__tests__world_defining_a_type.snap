@@ -2,7 +2,7 @@
 source: crates/wit-compiler/src/queries/lowering.rs
 info:
   src: "world w { type x = u32; }"
-  ast: "(source_file (top_level_item (world_item name: (identifier) items: (world_items (typedef_item (type_item name: (identifier) ty: (ty (builtins))))))))"
+  ast: "(source_file (top_level_item (world_item name: (id) body: (world_body world_items: (world_items typedef_item: (typedef_item (type_item alias: (id) type: (ty (builtin)))))))))"
 ---
 Package {
     docs: None,
@@ -49,6 +49,7 @@ Package {
                     },
                 ),
             ],
+            inline_interfaces: {},
         },
     },
     interfaces: {},

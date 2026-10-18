@@ -193,6 +193,18 @@ async fn keyword_names_are_escaped_and_ranges_use_utf16() {
 async fn collisions_and_invalid_names_are_rejected_without_editing() {
     for (source, new_name) in [
         (
+            "world app { import api: interface { type |value = u32; type occupied = bool; } }",
+            "occupied",
+        ),
+        (
+            "interface types { type |value = u32; } world app { import api: interface { use types.{value}; type occupied = bool; f: func(v: value); } }",
+            "occupied",
+        ),
+        (
+            "world app { export api: interface { record r { |value: u32, occupied: bool } } }",
+            "occupied",
+        ),
+        (
             "interface i { type |value = u32; type occupied = u32; }",
             "occupied",
         ),
@@ -220,31 +232,23 @@ async fn collisions_and_invalid_names_are_rejected_without_editing() {
         ),
         ("interface i { type |value = u32; }", " name "),
     ] {
-        let (mut server, _socket) = wit_language_server::service();
+        let (mut server, mut socket) = wit_language_server::service();
         initialize(&mut server).await;
         let offset = source.find('|').unwrap();
         let source = source.replace('|', "");
         let uri = "file:///collision.wit";
         open(&mut server, uri, &source).await;
         let before = diagnostics(&mut server, uri).await;
-        let response = call(&mut server, "textDocument/rename", json!({
+        rejected_rename(&mut server, &mut socket, json!({
             "textDocument": {"uri": uri}, "position": position(&source, offset), "newName": new_name
         })).await;
-        assert_eq!(
-            response
-                .error()
-                .unwrap_or_else(|| panic!("accepted {source} -> {new_name}: {response:?}"))
-                .code
-                .code(),
-            -32602
-        );
         assert_eq!(diagnostics(&mut server, uri).await, before);
     }
 }
 
 #[tokio::test]
 async fn preparation_rejects_non_symbols_and_unresolved_names() {
-    let (mut server, _socket) = wit_language_server::service();
+    let (mut server, mut socket) = wit_language_server::service();
     initialize(&mut server).await;
     let source = "package example:test; interface i { type value = u32; type x = missing; }";
     let uri = "file:///types.wit";
@@ -257,12 +261,7 @@ async fn preparation_rejects_non_symbols_and_unresolved_names() {
         );
         let mut params = params;
         params["newName"] = json!("updated");
-        assert!(
-            call(&mut server, "textDocument/rename", params)
-                .await
-                .error()
-                .is_some()
-        );
+        rejected_rename(&mut server, &mut socket, params).await;
     }
 }
 
@@ -328,27 +327,18 @@ async fn edits_use_current_versions_and_support_older_clients() {
 }
 
 #[tokio::test]
-async fn inline_interface_names_are_rejected_until_their_scope_is_resolved() {
-    let (mut server, _socket) = wit_language_server::service();
-    initialize(&mut server).await;
-    let uri = "file:///inline.wit";
-    let source = "interface types { type value = u32; } world app { import inline: interface { use types.{value}; type x = value; } }";
-    open(&mut server, uri, source).await;
-    for (offset, _) in source.match_indices("value") {
-        let params = json!({"textDocument": {"uri": uri}, "position": position(source, offset)});
-        assert_eq!(
-            request(&mut server, "textDocument/prepareRename", params.clone()).await,
-            Value::Null
-        );
-        let mut params = params;
-        params["newName"] = json!("updated");
-        assert!(
-            call(&mut server, "textDocument/rename", params)
-                .await
-                .error()
-                .is_some()
-        );
-    }
+async fn inline_interface_renames_preserve_sibling_and_world_bindings() {
+    verify(&[("file:///inline.wit", "world app { type value = u32; import api: interface { record «value» { x: u32 } f: func(v: «value»); } export api: interface { type value = bool; f: func(v: value); } }")], "updated", "updated").await;
+    verify(&[("file:///inline.wit", "interface types { type «value» = u32; } world app { import api: interface { type value = bool; f: func(v: value); } }")], "updated", "updated").await;
+}
+
+#[tokio::test]
+async fn inline_imports_follow_shared_alias_binding_rules() {
+    verify(&[
+        ("file:///deps/types.wit", "package example:types; interface types { type «value» = u32; }"),
+        ("file:///app/main.wit", "world app { import api: interface { use example:types/types.{«value»}; f: func(v: «value»); } export api: interface { use example:types/types.{«value» as local}; f: func(v: local); } }")
+    ], "updated", "updated").await;
+    verify(&[("file:///inline.wit", "interface types { type value = u32; } world app { import api: interface { use types.{value as «local»}; f: func(v: «local»); } export api: interface { use types.{value as local}; f: func(v: local); } }")], "updated", "updated").await;
 }
 
 #[tokio::test]
@@ -370,5 +360,31 @@ async fn unrelated_existing_errors_do_not_block_rename() {
     assert_eq!(
         edit["changes"][uri],
         json!([{"range": range(source, "value"), "newText": "updated"}])
+    );
+}
+
+#[tokio::test]
+async fn invalid_name_explains_the_rule_and_success_sends_no_warning() {
+    use futures::{FutureExt, StreamExt};
+    let (mut server, mut socket) = wit_language_server::service();
+    initialize(&mut server).await;
+    let uri = "file:///rename.wit";
+    let source = "interface api { record source-reference { line: u32 } type reference = option<source-reference>; }";
+    open(&mut server, uri, source).await;
+    let params = json!({"textDocument": {"uri": uri},
+        "position": position(source, source.rfind("source-reference").unwrap()),
+        "newName": "sourceReference"});
+    let reason = rejected_rename(&mut server, &mut socket, params.clone()).await;
+    assert!(reason.contains("hyphen-separated"), "{reason}");
+    assert!(reason.contains("lowercase or uppercase"), "{reason}");
+    assert_eq!(diagnostics(&mut server, uri).await, json!([]));
+
+    let mut params = params;
+    params["newName"] = json!("source-ref");
+    let edits = request(&mut server, "textDocument/rename", params).await;
+    assert_eq!(edits["changes"][uri].as_array().unwrap().len(), 2);
+    assert!(
+        socket.next().now_or_never().is_none(),
+        "Successful rename sent a notification"
     );
 }

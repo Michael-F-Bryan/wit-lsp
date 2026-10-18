@@ -46,22 +46,6 @@ fn target(
     if !identifiers(db, file).contains(&id) {
         return None;
     }
-    let name = id.utf8_text(file.contents(db)).trim_start_matches('%');
-    // Inline interfaces have no compiler scope yet. A matching name there may
-    // be a use or a shadowing declaration, so don't offer a partial rename.
-    if ws.files(db).values().any(|file| {
-        identifiers(db, *file).into_iter().any(|id| {
-            id.utf8_text(file.contents(db)).trim_start_matches('%') == name
-                && std::iter::successors(Some(id.syntax()), |node| node.parent()).any(|node| {
-                    node.kind() == "interface_body"
-                        && node
-                            .parent()
-                            .is_some_and(|parent| parent.kind() == "extern_type")
-                })
-        })
-    }) {
-        return None;
-    }
     // Unresolved imports and invalid path kinds must not become rename targets.
     symbol_definition(db, ws, file, id)?;
     Some((id, symbol_binding(db, ws, file, id)?))
@@ -78,7 +62,7 @@ pub fn rename(
     let (_, binding) = target(db, ws, file, point)
         .ok_or_else(|| Error::invalid_params("This position does not name a renameable symbol"))?;
     let replacement = replacement_name(new_name)
-        .ok_or_else(|| Error::invalid_params("The new name must be a valid WIT identifier"))?;
+        .ok_or_else(|| Error::invalid_params("Invalid WIT name. Use hyphen-separated ASCII words such as my-type, with each word entirely lowercase or uppercase. Digits are allowed after the first letter."))?;
     let mut edits = BTreeMap::new();
     for (path, file) in ws.files(db) {
         let mut ranges: Vec<_> = identifiers(db, file)

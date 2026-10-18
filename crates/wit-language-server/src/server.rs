@@ -15,7 +15,7 @@ use tower_lsp::{
         DocumentDiagnosticParams, DocumentDiagnosticReportResult, DocumentSymbolParams,
         DocumentSymbolResponse, FileSystemWatcher, FoldingRange, FoldingRangeParams,
         GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams, InitializeParams,
-        InitializeResult, InitializedParams, MarkupKind, OneOf, PositionEncodingKind,
+        InitializeResult, InitializedParams, MarkupKind, MessageType, OneOf, PositionEncodingKind,
         PrepareRenameResponse, ReferenceParams, Registration, RenameOptions, RenameParams,
         SaveOptions, SelectionRange, SelectionRangeParams, ServerCapabilities, ServerInfo,
         SymbolInformation, SymbolKind, TextDocumentContentChangeEvent, TextDocumentItem,
@@ -533,23 +533,41 @@ impl tower_lsp::LanguageServer for LanguageServer {
 
     #[tracing::instrument(level = "debug", skip_all)]
     async fn rename(&self, params: RenameParams) -> Result<Option<WorkspaceEdit>, Error> {
-        let snap = self.snapshot().await;
-        let db = snap.wit_db();
-        let position = params.text_document_position;
-        let file = snap
-            .ws
-            .lookup_by_path(db, position.text_document.uri.as_str())
-            .ok_or_else(|| Error::invalid_params("The document is not in the workspace"))?;
-        let point = utils::Positions::new(db, file).to_point(position.position)?;
-        crate::ops::rename(
-            db,
-            snap.ws,
-            file,
-            point,
-            &params.new_name,
-            snap.versioned_edits.then_some(&snap.versions),
-        )
-        .map(Some)
+        let result = {
+            let snap = self.snapshot().await;
+            let db = snap.wit_db();
+            let position = params.text_document_position;
+            let file = snap
+                .ws
+                .lookup_by_path(db, position.text_document.uri.as_str())
+                .ok_or_else(|| Error::invalid_params("The document is not in the workspace"))?;
+            let point = utils::Positions::new(db, file).to_point(position.position)?;
+            crate::ops::rename(
+                db,
+                snap.ws,
+                file,
+                point,
+                &params.new_name,
+                snap.versioned_edits.then_some(&snap.versions),
+            )
+            .map(Some)
+        };
+        if let Err(error) = &result {
+            let message = format!("Rename failed: {}", error.message);
+            tracing::warn!(%message);
+            self.client
+                .log_message(MessageType::WARNING, &message)
+                .await;
+            if error.code == tower_lsp::jsonrpc::ErrorCode::InvalidParams {
+                self.client
+                    .show_message(MessageType::WARNING, &message)
+                    .await;
+                // The warning explains the rejection. An RPC error would make
+                // the editor display a second, generic failure notification.
+                return Ok(None);
+            }
+        }
+        result
     }
 
     #[tracing::instrument(level = "debug", skip_all)]

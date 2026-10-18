@@ -7,8 +7,9 @@ use im::{OrdMap, Vector};
 use crate::{
     Text,
     access::{
-        AnyFuncItemIndex, EnumIndex, FlagsIndex, FunctionIndex, InterfaceIndex, RecordIndex,
-        ResourceIndex, ScopeIndex, TypeAliasIndex, VariantIndex, WorldIndex,
+        AnyFuncItemIndex, EnumIndex, FlagsIndex, FunctionIndex, InlineInterfaceIndex,
+        InterfaceIndex, RecordIndex, ResourceIndex, ScopeIndex, TypeAliasIndex, VariantIndex,
+        WorldIndex,
     },
     queries::{FilePath, PackageId, metadata::Ident},
 };
@@ -26,6 +27,7 @@ pub struct World {
     pub name: Ident,
     pub docs: Option<Text>,
     pub type_definitions: Vector<TypeDefinition>,
+    pub inline_interfaces: OrdMap<InlineInterfaceIndex, Interface>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

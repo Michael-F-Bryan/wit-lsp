@@ -77,6 +77,7 @@ macro_rules! node_kinds {
 node_kinds! {
     World => (WorldItem, crate::queries::metadata::WorldMetadata),
     Interface => (InterfaceItem, crate::queries::metadata::InterfaceMetadata),
+    InlineInterface => (InterfaceBody, crate::queries::metadata::InlineInterfaceMetadata),
     Record => (RecordItem, crate::queries::metadata::RecordMetadata),
     TypeAlias => (TypeItem, crate::queries::metadata::TypeAliasMetadata),
     Enum => (EnumItems, crate::queries::metadata::EnumMetadata),
@@ -191,6 +192,7 @@ pub enum AnyFuncItemIndex {
 pub enum ScopeIndex {
     World(WorldIndex),
     Interface(InterfaceIndex),
+    InlineInterface(InlineInterfaceIndex),
 }
 
 impl ScopeIndex {
@@ -198,6 +200,7 @@ impl ScopeIndex {
         match self {
             ScopeIndex::World(w) => w.file(),
             ScopeIndex::Interface(i) => i.file(),
+            ScopeIndex::InlineInterface(i) => i.file(),
         }
     }
 }
@@ -205,6 +208,12 @@ impl ScopeIndex {
 impl From<InterfaceIndex> for ScopeIndex {
     fn from(v: InterfaceIndex) -> Self {
         Self::Interface(v)
+    }
+}
+
+impl From<InlineInterfaceIndex> for ScopeIndex {
+    fn from(v: InlineInterfaceIndex) -> Self {
+        Self::InlineInterface(v)
     }
 }
 
@@ -219,6 +228,7 @@ impl From<ScopeIndex> for AnyIndex {
         match value {
             ScopeIndex::World(w) => w.into(),
             ScopeIndex::Interface(i) => i.into(),
+            ScopeIndex::InlineInterface(i) => i.into(),
         }
     }
 }

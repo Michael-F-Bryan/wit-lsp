@@ -115,7 +115,7 @@ async fn rename_includes_unopened_files_without_writing_them() {
     let files = Files::new();
     let dependency = files.write("deps/types/types.wit", TYPES);
     let consumer = files.write("app.wit", CONSUMER);
-    let (mut server, _socket) = wit_language_server::service();
+    let (mut server, mut socket) = wit_language_server::service();
     request(
         &mut server,
         "initialize",
@@ -161,12 +161,7 @@ async fn rename_includes_unopened_files_without_writing_them() {
         "package example:types; interface types {}",
     );
     watched(&mut server, &dependency, 2).await;
-    assert!(
-        call(&mut server, "textDocument/rename", params)
-            .await
-            .error()
-            .is_some()
-    );
+    rejected_rename(&mut server, &mut socket, params).await;
 }
 
 #[tokio::test]

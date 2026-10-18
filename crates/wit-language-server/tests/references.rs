@@ -236,3 +236,12 @@ async fn edits_invalidate_references_and_unresolved_names_do_not_match() {
         Value::Null
     );
 }
+
+#[tokio::test]
+async fn inline_references_respect_scopes_and_import_origins() {
+    verify(&[("file:///inline.wit", "world app { type value = u32; import api: interface { record ‹value› { x: u32 } f: func(v: «value»); } export api: interface { type value = bool; f: func(v: value); } }")]).await;
+    verify(&[
+        ("file:///deps/types.wit", "package example:types; interface types { type ‹value› = u32; }"),
+        ("file:///app/main.wit", "world app { import api: interface { use example:types/types.{«value» as ‹local›}; f: func(v: «local»); } export api: interface { type local = bool; f: func(v: local); } }")
+    ]).await;
+}

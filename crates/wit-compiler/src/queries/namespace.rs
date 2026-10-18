@@ -1,4 +1,4 @@
-use im::{OrdMap, Vector};
+use im::OrdMap;
 
 use crate::{
     Db,
@@ -8,7 +8,10 @@ use crate::{
     hir,
     queries::{
         FilePath, SourceFile, Workspace,
-        metadata::{HasDefinition, HasIdent, Ident, TopLevelItemMetadata, TypeDefinitionMetadata},
+        metadata::{
+            HasDefinition, HasIdent, Ident, ScopeMetadata, TopLevelItemMetadata,
+            TypeDefinitionMetadata, file_scopes,
+        },
     },
 };
 
@@ -29,10 +32,14 @@ pub fn enclosing_scope(
     db: &dyn Db,
     file: SourceFile,
     point: tree_sitter::Point,
-) -> Option<TopLevelItemMetadata> {
-    crate::queries::file_items(db, file)
+) -> Option<ScopeMetadata> {
+    file_scopes(db, file)
         .into_iter()
-        .find(|item| item.definition(db).contains(point))
+        .filter(|item| item.definition(db).contains(point))
+        .min_by_key(|item| {
+            let range = item.definition(db).range;
+            range.end_byte - range.start_byte
+        })
 }
 
 /// Type names visible at a position, including local names for imported types.
@@ -47,7 +54,7 @@ pub fn visible_types(
     };
     let scope = enclosing.index(db);
     let mut types = imported_types(db, ws, scope);
-    for meta in scope_definitions(db, enclosing) {
+    for meta in enclosing.definitions(db) {
         types.insert(meta.ident(db), type_reference(db, scope, meta));
     }
     types
@@ -60,24 +67,14 @@ pub fn type_definition(
     reference: hir::ItemReference,
 ) -> Option<Location> {
     let file = ws.file(db, reference.file);
-    let scope = crate::queries::file_items(db, file)
+    let scope = file_scopes(db, file)
         .into_iter()
         .find(|item| item.index(db) == reference.scope)?;
-    scope_definitions(db, scope)
+    scope
+        .definitions(db)
         .into_iter()
         .find(|meta| type_reference(db, reference.scope, *meta) == reference)
         .map(|meta| meta.definition(db))
-}
-
-fn scope_definitions(db: &dyn Db, scope: TopLevelItemMetadata) -> Vector<TypeDefinitionMetadata> {
-    match scope {
-        TopLevelItemMetadata::Interface(meta) => meta
-            .items(db)
-            .into_iter()
-            .filter_map(|item| item.as_type())
-            .collect(),
-        TopLevelItemMetadata::World(meta) => meta.definitions(db),
-    }
 }
 
 fn type_reference(
@@ -163,10 +160,11 @@ fn type_resolution(
             return None;
         }
         let file = ws.file(db, index.file());
-        let scope = super::file_items(db, file)
+        let scope = file_scopes(db, file)
             .into_iter()
             .find(|item| item.index(db) == index)?;
-        if let Some(item) = scope_definitions(db, scope)
+        if let Some(item) = scope
+            .definitions(db)
             .into_iter()
             .find(|item| item.ident(db) == name)
         {
@@ -205,11 +203,11 @@ fn scope_uses(db: &dyn Db, ws: Workspace, scope: ScopeIndex) -> Vec<ast::UseItem
     let file = ws.file(db, scope.file());
     let ast = crate::queries::parse(db, file);
 
-    match crate::queries::file_items(db, file)
+    match file_scopes(db, file)
         .into_iter()
         .find(|item| item.index(db) == scope)
     {
-        Some(TopLevelItemMetadata::World(w)) => {
+        Some(ScopeMetadata::World(w)) => {
             let ptr = w.ptr(db);
             let node = ast.get(db, ptr);
             node.body()
@@ -218,7 +216,7 @@ fn scope_uses(db: &dyn Db, ws: Workspace, scope: ScopeIndex) -> Vec<ast::UseItem
                 .filter_map(|item| item.use_item_opt())
                 .collect()
         }
-        Some(TopLevelItemMetadata::Interface(i)) => {
+        Some(ScopeMetadata::Interface(i)) => {
             let ptr = i.ptr(db);
             let node = ast.get(db, ptr);
             node.body()
@@ -227,6 +225,11 @@ fn scope_uses(db: &dyn Db, ws: Workspace, scope: ScopeIndex) -> Vec<ast::UseItem
                 .filter_map(|item| item.use_opt())
                 .collect()
         }
+        Some(ScopeMetadata::InlineInterface(i)) => ast
+            .get(db, i.ptr(db))
+            .iter_interface_items()
+            .filter_map(|item| item.use_opt())
+            .collect(),
         None => Vec::new(),
     }
 }
@@ -440,6 +443,58 @@ mod tests {
                 })
                 .collect(),
         )
+    }
+
+    #[test]
+    fn inline_interfaces_have_distinct_scopes_and_lowered_bodies() {
+        let db = Compiler::default();
+        let ws = workspace(
+            &db,
+            &[(
+                "inline.wit",
+                "world app { import api: interface { record value { x: u32 } f: func(v: value); } export api: interface { type value = bool; f: func(v: value); } }",
+            )],
+        );
+        assert!(diagnostics::check_all(&db, ws).is_empty());
+        let file = ws.lookup_by_path(&db, "inline.wit").unwrap();
+        let scopes = file_scopes(&db, file);
+        assert_eq!(scopes.len(), 3);
+        let inline: Vec<_> = scopes
+            .into_iter()
+            .filter_map(|scope| match scope {
+                ScopeMetadata::InlineInterface(meta) => Some(meta),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(inline.len(), 2);
+        assert_ne!(inline[0].index(&db), inline[1].index(&db));
+        let pkg = crate::queries::workspace_packages(&db, ws)[0];
+        assert_eq!(
+            crate::queries::package_items(&db, pkg)
+                .items_by_name(&db)
+                .len(),
+            1
+        );
+        let lowered = crate::queries::lower_package(&db, ws, pkg);
+        assert!(lowered.interfaces.is_empty());
+        let world = lowered.worlds.values().next().unwrap();
+        assert_eq!(world.inline_interfaces.len(), 2);
+        for meta in inline {
+            let body = &world.inline_interfaces[&meta.index(&db)];
+            assert_eq!(body.items.len(), 2);
+            let definition = ScopeMetadata::InlineInterface(meta).definitions(&db)[0];
+            let expected =
+                hir::Type::UserDefinedType(type_reference(&db, meta.index(&db).into(), definition));
+            let function = body
+                .items
+                .iter()
+                .find_map(|item| match item {
+                    hir::InterfaceItem::Func(f) => Some(f),
+                    _ => None,
+                })
+                .unwrap();
+            assert_eq!(function.params[0].ty, expected);
+        }
     }
 
     #[test]

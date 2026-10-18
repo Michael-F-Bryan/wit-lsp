@@ -11,9 +11,10 @@ use crate::{
         Ast, FilePath, Package, SourceFile, Workspace,
         metadata::{
             ConstructorMetadata, EnumMetadata, FlagsMetadata, FuncItemMetadata, HasDefinition,
-            HasIdent, Ident, InterfaceItemMetadata, InterfaceMetadata, MethodMetadata,
-            RecordMetadata, ResourceMetadata, StaticMethodMetadata, TypeAliasMetadata,
-            TypeDefinitionMetadata, VariantCaseMetadata, VariantMetadata, WorldMetadata,
+            HasIdent, Ident, InlineInterfaceMetadata, InterfaceItemMetadata, InterfaceMetadata,
+            MethodMetadata, RecordMetadata, ResourceMetadata, StaticMethodMetadata,
+            TypeAliasMetadata, TypeDefinitionMetadata, VariantCaseMetadata, VariantMetadata,
+            WorldMetadata,
         },
     },
 };
@@ -91,6 +92,12 @@ pub(crate) fn lower_world(
         docs: node.docs(file.contents(db)),
         name: meta.name(db),
         type_definitions,
+        inline_interfaces: meta
+            .inline_interfaces(db)
+            .filter_map(|meta| {
+                lower_inline_interface(db, ws, meta).map(|interface| (meta.index(db), interface))
+            })
+            .collect(),
     })
 }
 
@@ -116,6 +123,25 @@ pub(crate) fn lower_interface(
     Some(hir::Interface {
         docs: node.docs(file.contents(db)),
         name: meta.name(db),
+        items,
+    })
+}
+
+#[salsa::tracked]
+pub(crate) fn lower_inline_interface(
+    db: &dyn Db,
+    ws: Workspace,
+    meta: InlineInterfaceMetadata,
+) -> Option<hir::Interface> {
+    let _ = crate::queries::imported_types(db, ws, meta.index(db).into());
+    let items = meta
+        .items(db)
+        .into_iter()
+        .filter_map(|item| lower_interface_item(db, ws, item))
+        .collect();
+    Some(hir::Interface {
+        name: meta.name(db)?,
+        docs: None,
         items,
     })
 }

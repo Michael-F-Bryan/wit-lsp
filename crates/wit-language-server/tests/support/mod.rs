@@ -83,3 +83,41 @@ pub fn range(src: &str, text: &str) -> Value {
     let start = src.find(text).unwrap();
     json!({"start": position(src, start), "end": position(src, start + text.len())})
 }
+
+/// Consume client notifications concurrently with the request, as an editor does.
+pub async fn rejected_rename(
+    server: &mut impl LanguageServerService,
+    socket: &mut tower_lsp::ClientSocket,
+    params: Value,
+) -> String {
+    use futures::StreamExt;
+    let (response, messages) = futures::join!(call(server, "textDocument/rename", params), async {
+        let log = socket.next().await.unwrap();
+        let show = socket.next().await.unwrap();
+        [log, show]
+    });
+    assert!(
+        response.error().is_none(),
+        "Rejection must not trigger an RPC error popup: {response:?}"
+    );
+    assert_eq!(response.result(), Some(&Value::Null));
+    let reason = messages[0].params().unwrap()["message"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    assert!(reason.starts_with("Rename failed: "));
+    for (message, method) in messages
+        .iter()
+        .zip(["window/logMessage", "window/showMessage"])
+    {
+        assert_eq!(message.method(), method);
+        assert!(message.id().is_none());
+        assert_eq!(
+            message.params(),
+            Some(&json!({
+                "type": 2, "message": reason
+            }))
+        );
+    }
+    reason
+}
