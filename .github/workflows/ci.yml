@@ -4,7 +4,7 @@ on:
   pull_request:
   push:
     branches:
-    - main
+      - main
 
 env:
   RUST_BACKTRACE: 1
@@ -88,6 +88,7 @@ jobs:
 
   code-coverage:
     name: Code Coverage
+    if: github.repository_owner == 'Michael-F-Bryan'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -154,5 +155,3 @@ jobs:
             Make sure you keep an eye on build times!
 
             The goal is to keep CI times under 5 minutes so developers can maintain a fast edit-compile-test cycle.
-
-
