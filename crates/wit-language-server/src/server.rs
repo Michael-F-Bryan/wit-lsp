@@ -8,7 +8,7 @@ use tower_lsp::{
     jsonrpc::Error,
     lsp_types::{
         CodeActionParams, CodeActionResponse, CompletionOptions, CompletionParams,
-        CompletionResponse, DiagnosticOptions, DiagnosticServerCapabilities,
+        CompletionResponse, DeclarationCapability, DiagnosticOptions, DiagnosticServerCapabilities,
         DidChangeTextDocumentParams, DidChangeWatchedFilesParams,
         DidChangeWatchedFilesRegistrationOptions, DidChangeWorkspaceFoldersParams,
         DidCloseTextDocumentParams, DidOpenTextDocumentParams, DidSaveTextDocumentParams,
@@ -22,6 +22,7 @@ use tower_lsp::{
         TextDocumentPositionParams, TextDocumentSyncCapability, TextDocumentSyncKind,
         TextDocumentSyncOptions, TextDocumentSyncSaveOptions, Url, WorkspaceEdit,
         WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities, WorkspaceSymbolParams,
+        request::{GotoDeclarationParams, GotoDeclarationResponse},
     },
 };
 use wit_compiler::{Text, queries::Workspace};
@@ -173,6 +174,7 @@ impl tower_lsp::LanguageServer for LanguageServer {
                     work_done_progress_options: Default::default(),
                 })),
                 definition_provider: Some(OneOf::Left(true)),
+                declaration_provider: Some(DeclarationCapability::Simple(true)),
                 completion_provider: Some(CompletionOptions::default()),
                 workspace: Some(WorkspaceServerCapabilities {
                     workspace_folders: Some(WorkspaceFoldersServerCapabilities {
@@ -512,6 +514,25 @@ impl tower_lsp::LanguageServer for LanguageServer {
         Ok(location
             .and_then(|location| utils::location_to_lsp(snap.wit_db(), snap.ws, location))
             .map(GotoDefinitionResponse::Scalar))
+    }
+
+    #[tracing::instrument(level = "debug", skip_all)]
+    async fn goto_declaration(
+        &self,
+        params: GotoDeclarationParams,
+    ) -> Result<Option<GotoDeclarationResponse>, Error> {
+        let path = &params.text_document_position_params.text_document.uri;
+        tracing::debug!(document.uri=%path);
+        let snap = self.snapshot().await;
+        let db = snap.wit_db();
+        let Some(file) = snap.ws.lookup_by_path(db, path.as_str()) else {
+            return Ok(None);
+        };
+        let point = utils::Positions::new(db, file)
+            .to_point(params.text_document_position_params.position)?;
+        Ok(crate::ops::goto_declaration(db, snap.ws, file, point)
+            .and_then(|location| utils::location_to_lsp(db, snap.ws, location))
+            .map(GotoDeclarationResponse::Scalar))
     }
 
     #[tracing::instrument(level = "debug", skip_all)]

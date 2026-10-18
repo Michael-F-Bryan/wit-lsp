@@ -18,6 +18,16 @@ pub fn goto_definition(
     definition_for_identifier(db, ws, file, identifier_at(db, file, point)?)
 }
 
+/// Find the symbol's declaration, retaining explicit import aliases.
+pub fn goto_declaration(
+    db: &dyn Db,
+    ws: Workspace,
+    file: SourceFile,
+    point: tree_sitter::Point,
+) -> Option<Location> {
+    symbol_binding(db, ws, file, identifier_at(db, file, point)?)
+}
+
 pub(super) fn identifier_at(
     db: &dyn Db,
     file: SourceFile,

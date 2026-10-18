@@ -9,7 +9,7 @@ mod symbols;
 
 pub use self::{
     completion::complete,
-    definition::goto_definition,
+    definition::{goto_declaration, goto_definition},
     diagnostics::file_diagnostics,
     fold::folding_range,
     hover::hover,

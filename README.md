@@ -17,7 +17,7 @@ An alternative Language Server implementation for [WIT][wit].
 - [ ] Semantic Syntax Highlighting
 - [x] Semantic Autocomplete
 - [x] Jump to Definition
-- [ ] Jump to Declaration
+- [x] Jump to Declaration
 - [x] Hover
 - [x] Document Symbols
 - [ ] View Memory Layout

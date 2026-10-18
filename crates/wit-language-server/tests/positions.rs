@@ -124,6 +124,7 @@ async fn invalid_positions_return_errors_without_breaking_the_server() {
         for method in [
             "textDocument/completion",
             "textDocument/definition",
+            "textDocument/declaration",
             "textDocument/hover",
             "textDocument/references",
             "textDocument/prepareRename",
